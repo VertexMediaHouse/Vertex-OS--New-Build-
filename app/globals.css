@@ -1,0 +1,241 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Design tokens: docs/design-spec.md §1 (sampled from the PDF). */
+:root {
+  /* surfaces */
+  --sidebar-bg: #181c25;
+  --sidebar-card: #1f2734;
+  --sidebar-active: #1f3b61;
+  --sidebar-switch-active: #1f3c6c;
+  --sidebar-text: #e6eaf0;
+  --sidebar-muted: #c9d3de;
+  --sidebar-vmh-avatar: #4e3f7a;
+  --sidebar-vth-avatar: #286057;
+  --page-bg: #f4f7fa;
+  --card-bg: #ffffff;
+  --card-border: #e6eaf0;
+  --surface-muted: #f1f4f8;
+  --track: #e9eef4;
+  --text: #0f172a;
+  --text-2: #334155;
+  --text-muted: #5b6478;
+  --text-faint: #94a3b8;
+
+  /* brand */
+  --blue: #1167fb;
+  --blue-soft: #e2edfc;
+  --vmh: #7231fb;
+  --vmh-chart: #8650f8;
+  --vmh-chart-light: #9276fc;
+  --vmh-soft: #f4eafd;
+  --vmh-text: #6d28d9;
+  --vth: #00b675;
+  --vth-chart: #28c89c;
+  --vth-soft: #e4f8f0;
+  --vth-text: #047857;
+  /* accent: blue, or green on VTH-scoped screens (primary buttons, active tabs, links) */
+  --brand: var(--blue);
+  --brand-soft: var(--blue-soft);
+  --brand-text: var(--blue);
+
+  /* semantic: solid / soft / text */
+  --success: #10b981;
+  --success-soft: #ddf7ec;
+  --success-text: #047857;
+  --warning: #f2b92e;
+  --warning-soft: #fcf0e0;
+  --warning-text: #ea580c;
+  --danger: #ef5356;
+  --danger-soft: #fce6e8;
+  --danger-text: #dc2626;
+  --info: #3b88fc;
+  --info-soft: #e0ecfc;
+  --info-text: #2563eb;
+  --review: #8b5cf6;
+  --review-soft: #f2e8fc;
+  --review-text: #7c3aed;
+  --neutral: #94a3b8;
+  --neutral-soft: #f0f4f8;
+  --neutral-text: #5b6478;
+
+  /* shadcn variables mapped onto the tokens */
+  --background: var(--page-bg);
+  --foreground: var(--text);
+  --card: var(--card-bg);
+  --card-foreground: var(--text);
+  --popover: #ffffff;
+  --popover-foreground: var(--text);
+  --primary: var(--brand);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-muted);
+  --secondary-foreground: var(--text-2);
+  --muted: var(--surface-muted);
+  --muted-foreground: var(--text-muted);
+  --accent: #f4f6f9;
+  --accent-foreground: var(--text);
+  --destructive: var(--danger-text);
+  --border: var(--card-border);
+  --input: #e2e7ee;
+  --ring: var(--brand);
+  --radius: 0.5rem;
+  --chart-1: var(--vmh-chart);
+  --chart-2: var(--vth-chart);
+  --chart-3: var(--blue);
+  --chart-4: var(--warning);
+  --chart-5: var(--danger);
+  --sidebar: var(--sidebar-bg);
+  --sidebar-foreground: var(--sidebar-text);
+  --sidebar-primary: var(--blue);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--sidebar-active);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2a3240;
+  --sidebar-ring: var(--blue);
+}
+
+[data-scope="vth"] {
+  --brand: var(--vth);
+  --brand-soft: var(--vth-soft);
+  --brand-text: var(--vth-text);
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-heading: var(--font-sans);
+
+  /* type scale measured from the PDF (px at the 1536 canvas) */
+  --text-2xs: 11px;
+  --text-2xs--line-height: 16px;
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 18px;
+  --text-md: 14px;
+  --text-md--line-height: 20px;
+  --text-base: 15px;
+  --text-base--line-height: 22px;
+  --text-lg: 16px;
+  --text-lg--line-height: 24px;
+  --text-xl: 19px;
+  --text-xl--line-height: 26px;
+  --text-2xl: 22px;
+  --text-2xl--line-height: 28px;
+  --text-3xl: 24px;
+  --text-3xl--line-height: 30px;
+  --text-4xl: 30px;
+  --text-4xl--line-height: 36px;
+
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-card: var(--sidebar-card);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-switch-active: var(--sidebar-switch-active);
+  --color-sidebar-text: var(--sidebar-text);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-vmh-avatar: var(--sidebar-vmh-avatar);
+  --color-sidebar-vth-avatar: var(--sidebar-vth-avatar);
+  --color-page: var(--page-bg);
+  --color-card-border: var(--card-border);
+  --color-surface-muted: var(--surface-muted);
+  --color-track: var(--track);
+  --color-ink: var(--text);
+  --color-ink-2: var(--text-2);
+  --color-ink-muted: var(--text-muted);
+  --color-ink-faint: var(--text-faint);
+  --color-blue: var(--blue);
+  --color-blue-soft: var(--blue-soft);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-text: var(--brand-text);
+  --color-vmh: var(--vmh);
+  --color-vmh-chart: var(--vmh-chart);
+  --color-vmh-soft: var(--vmh-soft);
+  --color-vmh-text: var(--vmh-text);
+  --color-vth: var(--vth);
+  --color-vth-chart: var(--vth-chart);
+  --color-vth-soft: var(--vth-soft);
+  --color-vth-text: var(--vth-text);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-text: var(--success-text);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-text: var(--warning-text);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-text: var(--danger-text);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-text: var(--info-text);
+  --color-review: var(--review);
+  --color-review-soft: var(--review-soft);
+  --color-review-text: var(--review-text);
+  --color-neutral: var(--neutral);
+  --color-neutral-soft: var(--neutral-soft);
+  --color-neutral-text: var(--neutral-text);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+  --radius-4xl: 24px;
+
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.03);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-sm text-ink-2;
+    font-feature-settings: "cv11", "ss01";
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}

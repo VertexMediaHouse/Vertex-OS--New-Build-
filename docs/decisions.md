@@ -1,0 +1,75 @@
+# Decisions log
+
+Choices made where the brief or the PDF left room, newest last. Each entry: what, why.
+
+## Phase 1: Analysis (24 Oct 2026)
+
+1. **Design PDF location.** The brief points to `docs/vertex-design.pdf`, which didn't exist. Copied
+   `~/Downloads/Vertex_Command_Center_All_Dashboard_Designs.pdf` (13 pages; the two copies in Downloads are
+   byte-identical) to `docs/vertex-design.pdf`.
+2. **Reference images.** Each PDF page is one 1536 × 1024 raster. They are extracted losslessly to
+   `docs/reference/page-NN.png` and serve as the comparison baseline. (The PDF reader needs poppler, which isn't
+   installed; extraction used a small Node script and no new dependencies.)
+3. **Comparison viewport = 1536 × 1024**, the PDF's native size, so screenshots line up 1:1 with the reference
+   images. 1440 × 900 screenshots are captured as well, per the brief.
+4. **PDF colours override the brief's suggested values** where they differ: sidebar `#181C25` (not `#0F1A2B`),
+   primary `#1167FB`, VMH `#7231FB`, VTH `#00B675`. Full table in `design-spec.md` §1.1.
+5. **Filled VMH pill is purple** (page 5 and the brief), not blue (page 2).
+6. **Spacing follows the PDF**: 12–14 px gaps and 16 px page padding (the brief suggested 16–20 / 24).
+7. **Logo recreated as SVG.** The logo files in Downloads don't match the PDF's "V" mark.
+8. **Docked side panels.** The task, invoice, goal and file panels are docked columns in the PDF, not overlays. They
+   dock at ≥ 1440 px and become overlay sheets below that.
+9. **PDF self-contradictions** are resolved per `design-spec.md` §5. Seed targets get recorded here in Phase 2.
+
+## Plan approval (24 Oct 2026), owner's answers
+
+10. **Dashboard layout by scope.** All → page 1 layout ("Welcome back" command center). VMH / VTH → page 2 layout
+    (Revenue Trend, Project Status, Tasks, Team Workload, Leads Pipeline, Agenda), filtered, single colour. Page 2's
+    combined mock-up is not built.
+11. **Local dev without Docker.** Postgres runs through the `embedded-postgres` npm package and storage through a
+    standalone MinIO exe, both started by `npm run services` (and by `npm run dev`). No docker-compose file.
+12. **Scope = the brief.** The extra modules in `Vertex Command Center - System Requirements.docx` are listed in
+    `docs/backlog.md`. Where the doc and the brief conflict, the brief wins: 5 team members, video files uploaded to S3,
+    one shared lead pipeline for both companies.
+13. **Better Auth instead of Auth.js.** Auth.js v5 is still beta (5.0.0-beta.32), its email/password login can't use
+    database sessions (the brief requires DB sessions), and Auth.js is now maintained by the Better Auth team.
+    Better Auth has email/password, Google, DB sessions, a Prisma adapter and rate limiting built in.
+14. **Prisma 7.10.1** (stable). npm's `latest` tag points at an 8.0 release candidate.
+15. **Pinned clock.** `SEED_TODAY` (e.g. `2026-10-22`) drives both the seed and `lib/clock.ts → now()`, so relative
+    dates match the PDF in screenshots and E2E runs. When unset, the real date is used.
+16. **Dev email.** With no `RESEND_API_KEY`, emails are logged to the server console instead of sent.
+
+## Phase 2: Foundation (24 Oct 2026)
+
+17. **MinIO is gone.** Its binary download now returns 410 Gone (MinIO stopped publishing free binaries in
+    2025). The candidate replacement, RustFS 1.0.3 (MinIO-compatible, Apache-2.0), was downloaded to `.bin/`, but
+    running a downloaded executable was blocked by the session's safety check. **Open decision for the owner**,
+    needed before Phase 7 (file storage). Until then `npm run services` starts Postgres only.
+18. **Embedded Postgres runs on port 5433** with UTF-8 encoding (Windows defaults to WIN1252, which can't store ₹).
+    It creates `vertex` and `vertex_test` databases.
+19. **Company ids are their lowercase codes** (`vmh`, `vth`), so scope filters are a plain `companyId in (...)` with
+    no lookup.
+20. **Scope lives in a cookie, kept in sync with `?company=` by `proxy.ts`.** Server code reads only the cookie
+    (`getRequestContext()`), and the proxy rewrites the request cookie, so the first render after a switch is
+    already correct. The scope is narrowed to the companies the user belongs to.
+21. **Port 3000 is used by the dev server.** `BETTER_AUTH_URL` in `.env` must match the port the app runs on.
+22. **Owner time counts in totals but not in team lists.** Dhrumil logs 28h 30m, so October totals (186h 30m) and
+    the page-13 per-person hours (Rohan 42h 30m … Dhruv 18h 20m) both hold. Team lists show staff only, as in the
+    PDF.
+23. **Client "Total Revenue" = sum of the client's project values** (contract value). This reproduces the page-4
+    column (e.g. Bright Labs ₹2,80,000 = ₹80,000 shorts + ₹2,00,000 website). Period revenue elsewhere comes from
+    invoices and payments.
+24. **Avatars are initials on tinted circles.** The PDF uses stock photos we don't have.
+
+### Seed results vs the PDF (module pages are the source of truth; dashboards derive)
+
+| Area | Matches the PDF | Differs (and why) |
+|---|---|---|
+| Clients (p4) | 68 total; VMH 38; segments 54 / 5 / 6 / 3; all 10 table rows | VTH tab 36 (PDF 30): 6 clients work with both companies, and per the brief they count in both |
+| Leads (p3) | Columns 8 / 10 / 6 / 5 / 3 with every visible card; 18 VMH / 14 VTH; open pipeline ₹28,50,000; sources 8/6/5/4/4/3/2 | Proposal column ₹9,30,000 (PDF ₹7,80,000), needed for the ₹28,50,000 pipeline. VMH/VTH pipeline split is computed (₹10,25,000 / ₹18,25,000). Won = 3 (PDF KPI says 8) |
+| Projects (p5, p6) | VMH 28: 18 active / 4 in review / 6 completed; VTH 12; all 20 visible list rows | VTH completed 1, active 9 (PDF 2 / 8). Two internal projects ("Operations", "System Setup") exist but aren't client projects |
+| Tasks (p7) | Board 12 / 18 / 8 / 10 / 20 with every visible card; 8 due today | 68 total (PDF KPI 54); 7 overdue (PDF 6, from the visible due dates); drawer task 60% = checklist 3/5 (PDF 70%); Bright Labs project 7/12 done (PDF 8/12; five open tasks are visible, so 8 is impossible) |
+| Time (p8, p13) | 186h 30m; VMH 108h 20m / VTH 78h 10m; billable 152h 15m (92h 40m / 59h 35m); GreenBuild 42h 30m / 38h 15m; all 8 timesheet rows | "This week" widgets are computed for the real current week |
+| Invoices (p9) | All 10 visible rows; Paid 28, Overdue 4, Draft 2; VTH-019 line items | 40 invoices (PDF 42): numbering tops out at VMH-021 / VTH-019. Pending 6 (PDF 8). Statuses follow dates, so VTH-016 and VTH-015 show Overdue and VTH-018 Pending. Amounts computed |
+| Goals (p1, p10, p11) | Every visible goal with its progress | 19 goals (PDF 18 + the page-1 goals). Status is computed: 8 on track, 5 at risk, 4 off track, 1 completed, 1 overdue |
+| Files (p12) | Category counts 248 / 320 / 156 / 210 / 96; all visible rows | 13 client folders (card says 12, tree shows 5 + 8 more), 10 project folders (card says 18) |
