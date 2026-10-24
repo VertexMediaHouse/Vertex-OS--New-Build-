@@ -65,9 +65,15 @@ export async function updateClient(id: string, input: z.input<typeof clientSchem
   const { user, client } = await assertClient("update", id);
   const { companies, contactName, contactEmail, ...d } = parsed.data;
   companies.forEach((c) => assertCan(user, "update", "client", c));
+  const removed = client.companies.filter((c) => !companies.includes(c.companyId as "vmh")).map((c) => c.companyId);
+  if (removed.length) {
+    // Projects and invoices keep their own company, so removing one would leave them
+    // pointing at a client that no longer belongs there.
+    const stillUsed = await db.project.findFirst({ where: { clientId: client.id, companyId: { in: removed } }, select: { companyId: true } });
+    if (stillUsed) return { ok: false, error: `${client.name} still has projects in ${stillUsed.companyId.toUpperCase()}.` };
+  }
   await db.$transaction(async (tx) => {
     await tx.client.update({ where: { id: client.id }, data: { ...d, ownerId: d.ownerId || client.ownerId, tags: d.tags ?? [], lastActivityAt: new Date() } });
-    const removed = client.companies.filter((c) => !companies.includes(c.companyId as "vmh")).map((c) => c.companyId);
     if (removed.length) await tx.clientCompany.deleteMany({ where: { clientId: client.id, companyId: { in: removed } } });
     for (const companyId of companies) {
       await tx.clientCompany.upsert({ where: { clientId_companyId: { clientId: client.id, companyId } }, create: { clientId: client.id, companyId }, update: {} });

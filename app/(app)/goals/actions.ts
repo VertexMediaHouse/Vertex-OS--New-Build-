@@ -35,6 +35,9 @@ export async function createGoal(input: z.input<typeof goalSchema>): Promise<Act
   if (d.endDate <= d.startDate) return { ok: false, error: "End date must be after the start date." };
   assertCan(user, "update", "goal", companyId || undefined);
   if (companyId === "" || d.scope === "COMPANY") assertCan(user, "create", "goal", companyId || undefined);
+  // A self-tracking goal reads revenue, clients, leads or hours, so it needs more than the
+  // "update goal" right a member has: otherwise it's a side door into the money figures.
+  if (d.metricType !== "MANUAL") assertCan(user, "create", "goal", companyId || undefined);
   const goal = await db.goal.create({ data: { ...d, companyId: companyId || null, ownerId: user.id, members: { create: memberIds.map((userId) => ({ userId })) } } });
   await logActivity(db, { companyId: goal.companyId, actorId: user.id, verb: "created", entityType: "GOAL", entityId: goal.id, summary: `${user.name} created goal ${goal.title}` });
   await recomputeGoals(db, now(), { id: goal.id });

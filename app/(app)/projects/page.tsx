@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExternalLink, Filter, FileCheck, FileText, FolderOpen, Mail, MessageSquare, MoreHorizontal, Pencil, Phone, Clock, Target, Receipt, StickyNote, Activity as ActivityIcon, Plus } from "lucide-react";
 import { getRequestContext } from "@/lib/auth/context";
-import { can } from "@/lib/auth/permissions";
+import { can, isMemberOnly } from "@/lib/auth/permissions";
 import { db, type Prisma } from "@/lib/db";
 import { now } from "@/lib/clock";
 import { formatDate, formatDateTime, formatDaysLeft, formatDuration, formatINR, formatRelative, formatShortDate } from "@/lib/format";
@@ -37,7 +37,7 @@ async function Projects({ searchParams }: { searchParams: Promise<SP> }) {
   const p = readParams(sp);
   const q = p.str("q");
   const base: Prisma.ProjectWhereInput = { companyId: { in: ctx.companyIds }, clientId: { not: null }, ...(p.str("client") && { clientId: p.str("client")! }) };
-  if (ctx.user.memberships.length && !ctx.user.isOwner && ctx.user.memberships.every((m) => m.role === "MEMBER")) base.members = { some: { userId: ctx.user.id } };
+  if (isMemberOnly(ctx.user)) base.members = { some: { userId: ctx.user.id } };
   const tab = (p.str("list") ?? "all") as keyof typeof LIST_TABS;
   const statuses = LIST_TABS[tab] ?? null;
   const where: Prisma.ProjectWhereInput = { ...base, ...(statuses && { status: { in: [...statuses] as never } }), ...(q && { OR: [{ name: { contains: q, mode: "insensitive" } }, { client: { name: { contains: q, mode: "insensitive" } } }] }) };
@@ -134,7 +134,8 @@ const strParams = (sp: SP) => Object.fromEntries(Object.entries(sp).filter((e): 
 async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP }) {
   const ctx = await getRequestContext();
   const pr = await db.project.findFirst({
-    where: { id, companyId: { in: ctx.companyIds } },
+    // Same rule as the list: members only see projects they're on.
+    where: { id, companyId: { in: ctx.companyIds }, ...(isMemberOnly(ctx.user) && { members: { some: { userId: ctx.user.id } } }) },
     include: {
       client: { include: { contacts: { orderBy: { isPrimary: "desc" } } } },
       company: { select: { name: true, code: true } },

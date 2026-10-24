@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { CalendarDays } from "lucide-react";
 import { getRequestContext } from "@/lib/auth/context";
+import { can } from "@/lib/auth/permissions";
 import { now } from "@/lib/clock";
 import { firstName, formatLongDate } from "@/lib/format";
 import { dayKey, lastDay, resolvePeriod } from "@/lib/period";
@@ -60,7 +61,8 @@ function OwnerDashboard({ ctx, period }: { ctx: Ctx; period: P }) {
         }
       />
       <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 xl:grid-cols-4">
-        <K><RevenueKpi ctx={ctx} period={period} owner /></K>
+        {/* Revenue is invoice data: hidden from roles without invoice access. */}
+        {can(ctx.user, "view", "invoice") && <K><RevenueKpi ctx={ctx} period={period} owner /></K>}
         <K><ProjectsKpi ctx={ctx} period={period} owner /></K>
         <K><TasksKpi ctx={ctx} period={period} owner /></K>
         <K><LeadsKpi ctx={ctx} period={period} owner /></K>
@@ -96,7 +98,7 @@ function CompanyDashboard({ ctx, period }: { ctx: Ctx; period: P }) {
         actions={<DateRangePicker variant="card" preset={period.preset} from={dayKey(period.from)} to={dayKey(lastDay(period))} />}
       />
       <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 xl:grid-cols-4">
-        <K><RevenueKpi ctx={ctx} period={period} /></K>
+        {can(ctx.user, "view", "invoice") && <K><RevenueKpi ctx={ctx} period={period} /></K>}
         <K><ProjectsKpi ctx={ctx} period={period} /></K>
         <K><TasksKpi ctx={ctx} period={period} /></K>
         <K><LeadsKpi ctx={ctx} period={period} /></K>

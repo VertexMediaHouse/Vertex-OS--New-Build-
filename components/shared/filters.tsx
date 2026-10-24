@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, ChevronDown, Search } from "lucide-react";
@@ -18,15 +18,21 @@ export function SearchInput({ placeholder, param = "q", className, variant = "fi
   const params = useSearchParams();
   const router = useRouter();
   const hrefWith = useHrefWith();
-  const [value, setValue] = useState(params.get(param) ?? "");
+  const urlValue = params.get(param) ?? "";
+  const [value, setValue] = useState(urlValue);
   const [, startTransition] = useTransition();
-  const first = useRef(true);
+
+  // The URL can change without typing (a "Clear" link, a company switch): follow it, during
+  // render rather than in an effect.
+  const [prevUrlValue, setPrevUrlValue] = useState(urlValue);
+  if (prevUrlValue !== urlValue) {
+    setPrevUrlValue(urlValue);
+    setValue(urlValue);
+  }
 
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
+    // Already what the URL says (first render, or the URL changed on its own): nothing to push.
+    if (value.trim() === urlValue) return;
     const t = setTimeout(() => startTransition(() => router.replace(hrefWith({ [param]: value.trim() || null, page: null }), { scroll: false })), 300);
     return () => clearTimeout(t);
     // hrefWith changes every render; only typing should trigger navigation

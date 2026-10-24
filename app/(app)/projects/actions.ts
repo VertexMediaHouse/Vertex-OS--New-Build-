@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { getRequestContext } from "@/lib/auth/context";
 import { assertCan } from "@/lib/auth/permissions";
 import { logActivity, notify } from "@/lib/activity";
+import { canSeeFile } from "@/lib/files/access";
 import { auth } from "@/lib/auth/server";
 import { PROJECT_STATUS } from "@/lib/status";
 import { projectProgress, TEMPLATES } from "@/lib/projects/templates";
@@ -106,6 +107,11 @@ export async function addProjectNote(projectId: string, body: string) {
 export async function requestApproval(projectId: string, title: string, fileId?: string): Promise<ActionResult> {
   const { user, project } = await projectFor("update", projectId);
   const t = z.string().trim().min(1).max(160).parse(title);
+  // The file id comes from the browser: it must be one this user may see, on this project.
+  if (fileId) {
+    const f = await canSeeFile(user, id.parse(fileId));
+    if (!f || f.projectId !== project.id) return { ok: false, error: "That file isn't on this project." };
+  }
   await db.$transaction(async (tx) => {
     await tx.approval.create({ data: { projectId: project.id, title: t, fileId: fileId || null } });
     await logActivity(tx, { companyId: project.companyId, actorId: user.id, verb: "approval", entityType: "APPROVAL", entityId: project.id, summary: `${user.name} sent ${t} for client approval` });

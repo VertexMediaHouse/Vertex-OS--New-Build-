@@ -17,10 +17,12 @@ export function formatMoney(value: Money, currency = "INR"): string {
 /** Axis labels: ₹50K, ₹1.5L, ₹10L, ₹1.2Cr. */
 export function formatINRCompact(value: number): string {
   if (value === 0) return "0";
-  if (value >= 1e7) return `₹${trim(value / 1e7)}Cr`;
-  if (value >= 1e5) return `₹${trim(value / 1e5)}L`;
-  if (value >= 1e3) return `₹${trim(value / 1e3)}K`;
-  return `₹${value}`;
+  const sign = value < 0 ? "-" : "";
+  const n = Math.abs(value);
+  if (n >= 1e7) return `${sign}₹${trim(n / 1e7)}Cr`;
+  if (n >= 1e5) return `${sign}₹${trim(n / 1e5)}L`;
+  if (n >= 1e3) return `${sign}₹${trim(n / 1e3)}K`;
+  return `${sign}₹${n}`;
 }
 
 function trim(n: number): string {

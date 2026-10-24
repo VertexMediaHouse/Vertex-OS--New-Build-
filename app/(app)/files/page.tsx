@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronRight, Clock, Download, Folder, LayoutGrid, List, Share2, Star, Trash2, Users } from "lucide-react";
 import { getRequestContext } from "@/lib/auth/context";
 import { can, isMemberOnly } from "@/lib/auth/permissions";
+import { canSeeFile } from "@/lib/files/access";
 import { db, type Prisma } from "@/lib/db";
 import { formatDate, formatFileSize, formatFullDateTime, formatRelative } from "@/lib/format";
 import { now } from "@/lib/clock";
@@ -150,6 +151,8 @@ async function Files({ searchParams }: { searchParams: Promise<SP> }) {
 
 async function FilePanel({ id, closeHref, people, tab }: { id: string; closeHref: string; people: { id: string; name: string }[]; tab: string }) {
   const ctx = await getRequestContext();
+  // canSeeFile holds the real rule (members: own uploads, shares, their projects' files).
+  if (!(await canSeeFile(ctx.user, id))) return null;
   const f = await db.file.findFirst({ where: { id, OR: [{ companyId: { in: ctx.companyIds } }, { companyId: null }] }, include: { folder: { include: { parent: true } }, uploadedBy: { select: { name: true, image: true } }, shares: { include: { user: { select: { id: true, name: true, image: true } } } }, versions: { orderBy: { version: "desc" }, include: { uploadedBy: { select: { name: true } } } } } });
   if (!f) return null;
   const activity = await db.activity.findMany({ where: { entityType: "FILE", entityId: id }, orderBy: { createdAt: "desc" }, take: 10, include: { actor: { select: { name: true, image: true } } } });

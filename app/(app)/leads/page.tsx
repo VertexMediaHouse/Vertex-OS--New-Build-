@@ -55,14 +55,15 @@ async function Leads({ searchParams }: { searchParams: Promise<SP> }) {
   const prev = { gte: p.period.prevFrom, lt: p.period.prevTo };
   const all = { ...scopedWhere(scope), stage: { not: "LOST" as const } };
 
+  // The board hides leads won or lost over 30 days ago, so it doesn't grow without end.
+  // Search and the Lost toggle must still find them. AND, because `where` uses OR.
+  const recentOnly = !q && !p.str("lost");
   const [leads, counts, owners, kpi] = await Promise.all([
-    // Closed leads drop off the board after 30 days, so it doesn't grow without end.
     db.lead.findMany({
       where: {
         ...where,
         stage: p.str("lost") ? undefined : { not: "LOST" },
-        // AND, because `where` already uses OR for the search box.
-        AND: [{ OR: [{ stage: { notIn: ["WON", "LOST"] } }, { lastActivityAt: { gte: addDays(t, -30) } }] }],
+        ...(recentOnly && { AND: [{ OR: [{ stage: { notIn: ["WON", "LOST"] } }, { lastActivityAt: { gte: addDays(t, -30) } }] }] }),
       },
       orderBy: [{ position: "asc" }],
       include: { owner: { select: { name: true } } },

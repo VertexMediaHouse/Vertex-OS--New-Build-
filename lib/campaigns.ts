@@ -32,8 +32,12 @@ export async function resolveAudience(db: PrismaClient, a: Audience) {
 /** Every 10 minutes: send each active campaign's due step to recipients who haven't replied. */
 export async function sendDueCampaignSteps(db: PrismaClient, now: Date): Promise<number> {
   const campaigns = await db.emailCampaign.findMany({ where: { status: "ACTIVE", OR: [{ scheduledAt: null }, { scheduledAt: { lte: now } }] } });
+  // Stop well before the next run (every 10 minutes) so two runs can't overlap and send
+  // the same step twice. Recipients are ordered oldest-first, so the next run continues.
+  const until = Date.now() + 5 * 60_000;
   let sent = 0;
   for (const c of campaigns) {
+    if (Date.now() > until) break;
     const steps = z.array(stepSchema).catch([]).parse(c.steps);
     // Never-sent recipients first, so a list larger than one batch still goes out in order.
     const recipients = await db.campaignRecipient.findMany({
@@ -43,6 +47,7 @@ export async function sendDueCampaignSteps(db: PrismaClient, now: Date): Promise
       include: { lead: { select: { name: true } }, client: { select: { name: true } } },
     });
     for (const r of recipients) {
+      if (Date.now() > until) break;
       const step = steps[r.step]!;
       const dueAt = r.sentAt ? new Date(r.sentAt.getTime() + step.delayDays * 86_400_000) : now;
       if (r.step > 0 && dueAt > now) continue;

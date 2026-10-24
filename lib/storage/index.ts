@@ -26,23 +26,36 @@ const s3 =
     : null;
 
 const root = path.resolve(".data/files");
-const secret = () => process.env.BETTER_AUTH_SECRET ?? "dev-secret";
+const secret = () => {
+  const s = process.env.BETTER_AUTH_SECRET;
+  // Without it, anyone could sign their own file URL, so never fall back in production.
+  if (!s && process.env.NODE_ENV === "production") throw new Error("BETTER_AUTH_SECRET is required to sign file URLs");
+  return s ?? "dev-secret";
+};
 const safeKey = (key: string) => {
   const p = path.resolve(root, key);
   if (!p.startsWith(root + path.sep)) throw new Error("Bad storage key");
   return p;
 };
 
+const hmac = (data: string) => crypto.createHmac("sha256", secret()).update(data).digest("hex");
+const same = (a: string, b: string) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+
 export function signLocal(op: "put" | "get", key: string, expires = Math.floor(Date.now() / 1000) + TTL) {
-  const sig = crypto.createHmac("sha256", secret()).update(`${op}:${key}:${expires}`).digest("hex");
-  return `/api/storage?${new URLSearchParams({ op, key, expires: String(expires), sig })}`;
+  return `/api/storage?${new URLSearchParams({ op, key, expires: String(expires), sig: hmac(`${op}:${key}:${expires}`) })}`;
 }
 
 export function verifyLocal(op: string, key: string, expires: string, sig: string): boolean {
   if (Number(expires) < Date.now() / 1000) return false;
-  const expected = crypto.createHmac("sha256", secret()).update(`${op}:${key}:${expires}`).digest("hex");
-  return sig.length === expected.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+  return same(sig, hmac(`${op}:${key}:${expires}`));
 }
+
+/**
+ * Proof that a storage key came from requestUpload. The browser sends the key back when it
+ * records the file, so without this it could claim a key belonging to another company's file.
+ */
+export const signKey = (key: string) => hmac(`key:${key}`);
+export const verifyKeyOwner = (key: string, sig: string) => same(sig, signKey(key));
 
 /** New unique key for an upload. */
 export const newKey = (name: string) => `${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}/${name.replace(/[^\w.\- ]+/g, "_")}`;
@@ -90,5 +103,5 @@ export async function deleteObject(key: string) {
   await fs.rm(safeKey(key), { force: true });
 }
 
-export const MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024; // matches File.size (Int)
+export const MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024 - 1; // the largest value File.size (Int) holds
 export const storageDriver = driver;

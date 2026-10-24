@@ -81,7 +81,8 @@ async function Client({ params }: { params: Promise<{ id: string }> }) {
         </div>
         {editable && (
           <ClientFormDialog
-            companies={client.companies.map((c) => c.companyId as "vmh")}
+            // Every company the user may edit, so a company can be added here too.
+            companies={ctx.companyIds.filter((c): c is "vmh" | "vth" => can(ctx.user, "update", "client", c))}
             owners={owners}
             client={{ id: client.id, name: client.name, domain: client.domain ?? "", type: client.type ?? "", status: client.status as "ACTIVE", companies: client.companies.map((c) => c.companyId as "vmh"), ownerId: client.ownerId ?? "", tags: client.tags, notes: client.notes ?? "", address: client.address ?? "" }}
           />

@@ -48,11 +48,13 @@ async function Tasks({ searchParams }: { searchParams: Promise<SP> }) {
   };
   const open = { ...base, status: { not: "COMPLETED" as const } };
   const month = startOfMonthIST(t);
+  const view = p.str("view") ?? "kanban";
+  // The board hides tasks completed over 30 days ago, so it doesn't grow without end. Search,
+  // the status filter and the other views must still find them. AND, because `where` uses OR.
+  const recentOnly = view === "kanban" && !q && !p.str("status");
   const [tasks, projects, people, kpis, myTasks] = await Promise.all([
-    // Completed tasks drop off the board after 30 days, so it doesn't grow without end.
     db.task.findMany({
-      // AND, because `where` already uses OR for the search box.
-      where: { ...where, AND: [{ OR: [{ status: { not: "COMPLETED" } }, { completedAt: { gte: addDays(t, -30) } }] }] },
+      where: recentOnly ? { ...where, AND: [{ OR: [{ status: { not: "COMPLETED" } }, { completedAt: { gte: addDays(t, -30) } }] }] } : where,
       orderBy: [{ position: "asc" }, { dueDate: "asc" }],
       include: { project: { select: { name: true, client: { select: { name: true } } } }, assignee: { select: { name: true } } },
     }),
@@ -75,7 +77,6 @@ async function Tasks({ searchParams }: { searchParams: Promise<SP> }) {
   const by = (r: { companyId: string; _count: number }[], c: string) => r.find((x) => x.companyId === c)?._count ?? 0;
   const split = (r: { companyId: string; _count: number }[]) => (ctx.scope === "ALL" ? [{ value: by(r, "vmh"), label: "VMH" }, { value: by(r, "vth"), label: "VTH" }] : undefined);
 
-  const view = p.str("view") ?? "kanban";
   const board: Record<string, BoardTask[]> = { TODO: [], IN_PROGRESS: [], IN_REVIEW: [], CLIENT_REVIEW: [], COMPLETED: [] };
   for (const tk of tasks) board[tk.status]!.push({ id: tk.id, title: tk.title, co: companyCode(tk.companyId), client: tk.project?.client?.name ?? tk.project?.name ?? null, priority: tk.priority, due: tk.dueDate ? formatShortDate(tk.dueDate) : null, progress: tk.progress, assignee: tk.assignee?.name ?? null });
   // Workload % comes from the shared helper, so this table, the dashboard and Team agree.

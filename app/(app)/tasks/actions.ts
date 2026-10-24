@@ -59,7 +59,8 @@ export async function moveTask(taskId: string, status: string, beforeId: string 
   await db.$transaction(async (tx) => {
     // Make room with one update instead of renumbering the whole column; the board may be
     // filtered, so only the dropped-on card's own position can be trusted.
-    const col = { status: s, companyId: task.companyId };
+    // Order within the column only, like leads: the board mixes both companies at All scope.
+    const col = { status: s };
     const before = bId ? await tx.task.findUnique({ where: { id: bId }, select: { position: true } }) : null;
     let position: number;
     if (before) {

@@ -38,7 +38,7 @@ export function CompanyForm({ c }: { c: { id: string; name: string; address: str
     }}>
       <F label="Name"><Input name="name" defaultValue={c.name} /></F>
       <F label="GSTIN"><Input name="gstin" defaultValue={c.gstin ?? ""} /></F>
-      <F label="Default currency"><select name="currency" defaultValue={c.currency} className="h-9 w-full rounded-lg border bg-card px-2 text-sm"><option>INR</option><option>USD</option></select></F>
+      <F label="Default currency"><select name="currency" defaultValue={c.currency} className="h-9 w-full rounded-lg border bg-card px-2 text-sm"><option>INR</option></select></F>
       <F label="Address" className="md:col-span-3"><Input name="address" defaultValue={c.address ?? ""} /></F>
       <F label="Invoice prefix"><Input name="invoicePrefix" defaultValue={c.invoicePrefix} /></F>
       <F label="Next invoice number"><Input name="nextInvoiceNumber" type="number" defaultValue={c.nextInvoiceNumber} /></F>

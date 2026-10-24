@@ -18,8 +18,10 @@ describe("goal status", () => {
     expect(goalStatus({ progress: 20, ...oct, now })).toBe("OFF_TRACK");
     expect(goalStatus({ progress: 100, ...oct, now })).toBe("COMPLETED");
   });
-  it("is overdue after the end date", () => {
-    expect(goalStatus({ progress: 30, startDate: oct.startDate, endDate: ist("2026-10-20T23:59:00"), now })).toBe("OVERDUE");
+  it("is overdue only after the end date's own day", () => {
+    // Dates from the form are stored at midnight; the goal still has that whole day.
+    expect(goalStatus({ progress: 30, startDate: oct.startDate, endDate: ist("2026-10-22T00:00:00"), now })).toBe("OFF_TRACK");
+    expect(goalStatus({ progress: 30, startDate: oct.startDate, endDate: ist("2026-10-21T00:00:00"), now })).toBe("OVERDUE");
   });
   it("is on track before it starts", () => {
     expect(goalStatus({ progress: 0, startDate: ist("2026-11-01T00:00:00"), endDate: ist("2026-11-30T00:00:00"), now })).toBe("ON_TRACK");

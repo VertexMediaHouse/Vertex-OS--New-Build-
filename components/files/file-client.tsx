@@ -32,9 +32,9 @@ export function UploadButton({ folderId, fileId, label = "Upload File", projectI
     for (const file of Array.from(files)) {
       try {
         const m = { name: file.name, size: file.size, mime: file.type };
-        const { key, url } = await requestUpload(m);
+        const { key, keySig, url } = await requestUpload(m);
         await put(url, file, (p) => setProgress((x) => ({ ...x, [file.name]: p })));
-        const r = await completeUpload({ ...m, key, folderId, fileId, projectId, taskId });
+        const r = await completeUpload({ ...m, key, keySig, folderId, fileId, projectId, taskId });
         if (!r.ok) throw new Error(r.error);
         toast.success(`${file.name} uploaded.`);
       } catch (e) {

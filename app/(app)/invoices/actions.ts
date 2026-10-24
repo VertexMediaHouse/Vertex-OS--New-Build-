@@ -40,6 +40,8 @@ export async function createInvoice(input: z.input<typeof invoiceSchema>): Promi
   assertCan(user, "create", "invoice", d.companyId);
   if (d.dueDate < d.issueDate) return { ok: false, error: "Due date is before the issue date." };
   const totals = invoiceTotals(d.lines, d.taxRate, d.discount);
+  // Without this a discount over the subtotal silently saves a ₹0 invoice.
+  if (d.discount > totals.subtotal) return { ok: false, error: `The discount is more than the subtotal (${formatMoney(totals.subtotal, d.currency)}).` };
   const invoice = await db.$transaction(async (tx) => {
     const company = await tx.company.update({ where: { id: d.companyId }, data: { nextInvoiceNumber: { increment: 1 } } });
     const seq = company.nextInvoiceNumber - 1;
@@ -99,22 +101,23 @@ export async function recordPayment(invoiceId: string, input: z.input<typeof pay
 }
 
 export async function sendReminder(invoiceId: string): Promise<ActionResult> {
-  const { user } = await getRequestContext();
-  const inv = await db.invoice.findUniqueOrThrow({ where: { id: id.parse(invoiceId) }, include: { client: { include: { contacts: { where: { isPrimary: true } } } }, company: true } });
-  assertCan(user, "update", "invoice", inv.companyId);
+  const ctx = await getRequestContext();
+  // loadInvoice brings the contacts, company and line items the email and PDF both need.
+  const inv = await loadInvoice(id.parse(invoiceId), ctx.companyIds);
+  if (!inv) return { ok: false, error: "Invoice not found." };
+  assertCan(ctx.user, "update", "invoice", inv.companyId);
   const to = inv.client.contacts[0]?.email;
   if (!to) return { ok: false, error: "The client has no primary contact email." };
   const balance = Number(inv.total) - Number(inv.paidAmount);
   // Attached, not linked: the PDF route needs a login, which most client contacts don't have.
-  const full = await loadInvoice(inv.id, [inv.companyId]);
-  const pdf = full ? await renderInvoicePdf(pdfData(full)) : null;
+  const pdf = await renderInvoicePdf(pdfData(inv));
   await sendEmail({
     to,
     subject: `Reminder: invoice #${inv.number} from ${inv.company.name}`,
     html: `<p>Hi ${inv.client.contacts[0]!.name},</p><p>A friendly reminder that invoice <b>#${inv.number}</b> has <b>${formatMoney(balance, inv.currency)}</b> outstanding, due ${formatDate(inv.dueDate)}.</p><p>The invoice is attached.</p><p>Thank you,<br>${inv.company.name}</p>`,
-    ...(pdf && { attachments: [{ filename: `${inv.number}.pdf`, content: pdf }] }),
+    attachments: [{ filename: `${inv.number}.pdf`, content: pdf }],
   });
-  await logActivity(db, { companyId: inv.companyId, actorId: user.id, verb: "reminded", entityType: "INVOICE", entityId: inv.id, summary: `${user.name} sent a reminder for #${inv.number}` });
+  await logActivity(db, { companyId: inv.companyId, actorId: ctx.user.id, verb: "reminded", entityType: "INVOICE", entityId: inv.id, summary: `${ctx.user.name} sent a reminder for #${inv.number}` });
   refresh();
   return { ok: true };
 }

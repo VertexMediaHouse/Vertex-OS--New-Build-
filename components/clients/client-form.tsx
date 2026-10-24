@@ -65,8 +65,9 @@ export function ClientFormDialog({ companies, owners, client }: { companies: ("v
             </select>
           </L>
           <L label="Tags (comma-separated)"><Input name="tags" defaultValue={client?.tags.join(", ")} /></L>
-          <L label="Primary contact"><Input name="contactName" /></L>
-          <L label="Contact email"><Input name="contactEmail" type="email" /></L>
+          {/* Only on create: later, contacts are managed on the project's Client Access tab. */}
+          {!client && <L label="Primary contact"><Input name="contactName" /></L>}
+          {!client && <L label="Contact email"><Input name="contactEmail" type="email" /></L>}
           <L label="Billing address" className="col-span-2"><Input name="address" defaultValue={client?.address} /></L>
           <L label="Notes" className="col-span-2"><Textarea name="notes" rows={3} defaultValue={client?.notes} /></L>
           <DialogFooter className="col-span-2"><Button type="submit" disabled={pending}>{pending ? "Saving…" : client ? "Save changes" : "Add Client"}</Button></DialogFooter>
