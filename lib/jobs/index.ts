@@ -2,10 +2,12 @@ import { PgBoss } from "pg-boss";
 import { db } from "@/lib/db";
 import { now } from "@/lib/clock";
 import { markOverdueInvoices } from "./invoices";
+import { recomputeGoals } from "./goals";
 
 /** Background jobs on the same Postgres (pg-boss). Started once per server process. */
 export const JOBS = {
   "invoices.overdue": { cron: "0 6 * * *", run: () => markOverdueInvoices(db, now()) },
+  "goals.recompute": { cron: "0 * * * *", run: () => recomputeGoals(db, now()) },
 } as Record<string, { cron: string; run: () => Promise<unknown> }>;
 
 let started: Promise<PgBoss> | null = null;
