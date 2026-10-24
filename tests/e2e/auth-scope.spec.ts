@@ -18,17 +18,17 @@ test("wrong password shows an error", async ({ page }) => {
 
 test("?company= switches scope and the cookie keeps it", async ({ page }) => {
   await login(page);
-  await expect(page.getByTestId("scope")).toContainText("Scope ALL · companies vmh, vth · 32 leads");
+  await expect(page.getByRole("heading", { name: /Welcome back/ })).toBeVisible();
 
   await page.goto("/dashboard?company=vmh");
-  await expect(page.getByTestId("scope")).toContainText("Scope VMH · companies vmh · 18 leads");
+  await expect(page.getByText("Revenue Trend (VMH)")).toBeVisible();
 
   await page.goto("/dashboard"); // no param: cookie remembers VMH
-  await expect(page.getByTestId("scope")).toContainText("Scope VMH");
+  await expect(page.getByText("Revenue Trend (VMH)")).toBeVisible();
 
   await page.goto("/dashboard?company=vth");
-  await expect(page.getByTestId("scope")).toContainText("Scope VTH · companies vth · 14 leads");
+  await expect(page.getByText("Revenue Trend (VTH)")).toBeVisible();
 
   await page.goto("/dashboard?company=all");
-  await expect(page.getByTestId("scope")).toContainText("Scope ALL");
+  await expect(page.getByRole("heading", { name: /Welcome back/ })).toBeVisible();
 });

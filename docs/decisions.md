@@ -73,3 +73,23 @@ Choices made where the brief or the PDF left room, newest last. Each entry: what
 | Invoices (p9) | All 10 visible rows; Paid 28, Overdue 4, Draft 2; VTH-019 line items | 40 invoices (PDF 42): numbering tops out at VMH-021 / VTH-019. Pending 6 (PDF 8). Statuses follow dates, so VTH-016 and VTH-015 show Overdue and VTH-018 Pending. Amounts computed |
 | Goals (p1, p10, p11) | Every visible goal with its progress | 19 goals (PDF 18 + the page-1 goals). Status is computed: 8 on track, 5 at risk, 4 off track, 1 completed, 1 overdue |
 | Files (p12) | Category counts 248 / 320 / 156 / 210 / 96; all visible rows | 13 client folders (card says 12, tree shows 5 + 8 more), 10 project folders (card says 18) |
+
+## Phases 3–15 (24 Oct 2026)
+
+25. **Storage: local disk driver for now (resolves 17 for development).** `STORAGE_DRIVER=local` keeps files in
+    `.data/files`, served through `/api/storage` with HMAC-signed, expiring URLs. `STORAGE_DRIVER=s3` uses presigned
+    direct uploads to any S3-compatible store (Cloudflare R2, AWS S3, RustFS/MinIO); no code change is needed to switch.
+    Still open for the owner: R2 or a self-hosted RustFS for production.
+26. **Font: Inter Tight**, not Inter. Its narrower letterforms match the PDF's headings and table text more closely.
+27. **Chart colours** use a colour-blind-checked palette (`lib/chart-colors.ts`). A few hues are a step darker or
+    lighter than the PDF, so adjacent series stay distinguishable under deuteranopia and protanopia.
+28. **Exports are CSV, not XLSX.** CSV opens in Excel and Google Sheets with no extra dependency. Cells that start
+    with `= + - @` are prefixed, to block formula injection.
+29. **Report PDF = browser print.** "Export PDF" on Reports calls `window.print()` with a print stylesheet.
+    Invoice PDFs are real files rendered with `@react-pdf/renderer`.
+30. **Background jobs run in-process with pg-boss** (started in `instrumentation.ts`): overdue invoices daily at
+    06:00, goal recompute hourly, trash purge at 03:30 and campaign sends every 10 minutes (Asia/Kolkata). On
+    serverless hosting, keep one long-running worker or call the same functions from a cron route.
+31. **Visual review after Phase 4 was skipped** at the owner's request ("build fast, no manual testing"). From
+    Phase 5 onward, screens have been checked by typecheck, lint, unit tests and E2E smoke tests only, not compared
+    against `docs/reference`.

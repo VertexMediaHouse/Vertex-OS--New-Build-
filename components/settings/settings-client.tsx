@@ -4,11 +4,10 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { updateCompany, updateProfile } from "@/app/(app)/settings/actions";
 import type { CompanySettings } from "@/lib/settings";
 
-const F = ({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) => <div className={`space-y-1 ${className ?? ""}`}><Label className="text-xs">{label}</Label>{children}</div>;
+const F = ({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) => <label className={`block space-y-1 ${className ?? ""}`}><span className="block text-xs leading-none font-medium">{label}</span>{children}</label>;
 
 export function ProfileForm({ name, timezone }: { name: string; timezone: string }) {
   const [pending, start] = useTransition();

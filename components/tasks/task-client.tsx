@@ -11,7 +11,6 @@ import { useHrefWith } from "@/components/shared/nav";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { addChecklistItem, addTaskComment, createTask, moveTask, toggleChecklist, updateTask } from "@/app/(app)/tasks/actions";
 
@@ -103,7 +102,7 @@ export function NewTaskDialog({ companies, projects, people, open: initialOpen, 
 }
 
 function F({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
-  return <div className={`space-y-1 ${className ?? ""}`}><Label className="text-xs">{label}</Label>{children}</div>;
+  return <label className={`block space-y-1 ${className ?? ""}`}><span className="block text-xs leading-none font-medium">{label}</span>{children}</label>;
 }
 
 export function ChecklistControls({ taskId, items }: { taskId: string; items: { id: string; text: string; done: boolean; assignee: string | null }[] }) {

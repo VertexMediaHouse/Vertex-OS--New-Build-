@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { GOAL_CATEGORY_LABELS } from "@/lib/chart-colors";
 import { addGoalMilestone, createGoal, toggleGoalMilestone, updateGoalProgress } from "@/app/(app)/goals/actions";
@@ -54,7 +53,7 @@ export function GoalDialog({ label, companies, people }: { label: string; compan
 }
 
 function F({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
-  return <div className={`space-y-1 ${className ?? ""}`}><Label className="text-xs">{label}</Label>{children}</div>;
+  return <label className={`block space-y-1 ${className ?? ""}`}><span className="block text-xs leading-none font-medium">{label}</span>{children}</label>;
 }
 
 export function ProgressEditor({ goalId, value }: { goalId: string; value: number }) {

@@ -6,7 +6,6 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createCampaign, markRecipient, setCampaignStatus } from "@/app/(app)/campaigns/actions";
 
@@ -34,8 +33,8 @@ export function CampaignBuilder({ companies }: { companies: ("vmh" | "vth")[] })
     <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
       <div className="space-y-4 rounded-xl border bg-card p-5">
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="space-y-1"><Label className="text-xs">Campaign name</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
-          <div className="space-y-1"><Label className="text-xs">Company</Label><select className={sel} value={companyId} onChange={(e) => setCompany(e.target.value)}>{companies.length > 1 && <option value="">Both companies</option>}{companies.map((c) => <option key={c} value={c}>{c === "vmh" ? "Vertex Media House" : "Vertex Tech House"}</option>)}</select></div>
+          <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Campaign name</span><Input value={name} onChange={(e) => setName(e.target.value)} /></label>
+          <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Company</span><select className={sel} value={companyId} onChange={(e) => setCompany(e.target.value)}>{companies.length > 1 && <option value="">Both companies</option>}{companies.map((c) => <option key={c} value={c}>{c === "vmh" ? "Vertex Media House" : "Vertex Tech House"}</option>)}</select></label>
         </div>
         <h3 className="text-sm font-semibold text-ink">Sequence</h3>
         {steps.map((s, i) => (
@@ -60,7 +59,7 @@ export function CampaignBuilder({ companies }: { companies: ("vmh" | "vth")[] })
         ) : (
           <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Tags (comma-separated, optional)" />
         )}
-        <div className="space-y-1"><Label className="text-xs">Start sending at (optional)</Label><Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduled(e.target.value)} /></div>
+        <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Start sending at (optional)</span><Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduled(e.target.value)} /></label>
         <Button className="w-full" disabled={pending || !name || !steps[0]?.subject} onClick={() => submit(true)}>Start campaign</Button>
         <Button className="w-full" variant="outline" disabled={pending || !name} onClick={() => submit(false)}>Save draft</Button>
       </div>

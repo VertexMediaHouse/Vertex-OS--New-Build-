@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { EnumPill, StatusPill } from "@/components/shared/pills";
 import { PROJECT_STATUS } from "@/lib/status";
@@ -175,5 +174,5 @@ export function NewProjectDialog({ companies, clients, brandGreen }: { companies
 }
 
 function L({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
-  return <div className={`space-y-1 ${className ?? ""}`}><Label className="text-xs">{label}</Label>{children}</div>;
+  return <label className={`block space-y-1 ${className ?? ""}`}><span className="block text-xs leading-none font-medium">{label}</span>{children}</label>;
 }

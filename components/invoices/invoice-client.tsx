@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createInvoice, recordPayment, sendReminder, setInvoiceState } from "@/app/(app)/invoices/actions";
 import { invoiceTotals } from "@/lib/invoices/status";
@@ -41,10 +40,10 @@ export function InvoiceActions({ id, status, balance, currency }: { id: string; 
               toast.success("Payment recorded."); setOpen(false);
             });
           }}>
-            <div className="space-y-1"><Label className="text-xs">Amount ({currency}) · balance {formatMoney(balance, currency)}</Label><Input name="amount" type="number" step="0.01" min={0.01} max={balance} defaultValue={balance} required /></div>
-            <div className="space-y-1"><Label className="text-xs">Date</Label><Input name="date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
-            <div className="space-y-1"><Label className="text-xs">Method</Label><select name="method" className="h-9 w-full rounded-lg border bg-card px-2">{[["BANK_TRANSFER", "Bank transfer"], ["UPI", "UPI"], ["CARD", "Card"], ["PAYPAL", "PayPal"], ["WISE", "Wise"], ["CASH", "Cash"], ["OTHER", "Other"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
-            <div className="space-y-1"><Label className="text-xs">Reference</Label><Input name="reference" placeholder="UTR / transaction id" /></div>
+            <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Amount ({currency}) · balance {formatMoney(balance, currency)}</span><Input name="amount" type="number" step="0.01" min={0.01} max={balance} defaultValue={balance} required /></label>
+            <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Date</span><Input name="date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></label>
+            <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Method</span><select name="method" className="h-9 w-full rounded-lg border bg-card px-2">{[["BANK_TRANSFER", "Bank transfer"], ["UPI", "UPI"], ["CARD", "Card"], ["PAYPAL", "PayPal"], ["WISE", "Wise"], ["CASH", "Cash"], ["OTHER", "Other"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+            <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Reference</span><Input name="reference" placeholder="UTR / transaction id" /></label>
             <DialogFooter><Button type="submit" disabled={pending}>Save payment</Button></DialogFooter>
           </form>
         </DialogContent>
@@ -151,7 +150,7 @@ export function InvoiceBuilder({ companies, clients, projects, entries, defaults
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="space-y-1"><Label className="text-xs">{label}</Label>{children}</div>;
+  return <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">{label}</span>{children}</label>;
 }
 function Row({ k, v, bold }: { k: string; v: string; bold?: boolean }) {
   return <div className={`flex justify-between ${bold ? "font-bold text-ink" : "text-ink-2"}`}><span>{k}</span><span className="tabular">{v}</span></div>;
