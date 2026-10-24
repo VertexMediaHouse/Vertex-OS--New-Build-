@@ -239,3 +239,8 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+@media print {
+  aside, header { display: none !important; }
+  main { padding: 0 !important; }
+}
