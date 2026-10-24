@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   // Keeps the dev badge out of design-comparison screenshots.
   devIndicators: false,
+  serverExternalPackages: ["@react-pdf/renderer", "pg-boss"],
   partialPrefetching: true,
   turbopack: {
     rules: {
