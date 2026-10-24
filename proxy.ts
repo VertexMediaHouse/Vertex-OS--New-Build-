@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 import { parseScope, SCOPE_COOKIE, SCOPE_PARAM } from "@/lib/scope";
 
-const PUBLIC_PREFIXES = ["/login", "/forgot-password", "/reset-password", "/accept-invite", "/api/auth", "/api/track"];
+const PUBLIC_PREFIXES = ["/login", "/forgot-password", "/reset-password", "/api/auth", "/api/track"];
 
 export function proxy(request: NextRequest) {
   const { pathname, searchParams, search } = request.nextUrl;
