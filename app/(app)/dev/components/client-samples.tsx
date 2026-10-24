@@ -6,7 +6,7 @@ import { BarsChart, ChartLegend, DonutChart, DonutLegend, LinesChart, PieChart }
 import { CompanyBadge, StatusPill } from "@/components/shared/pills";
 import { Avatar } from "@/components/shared/primitives";
 import { COMPANY_COLORS, GOAL_LINE_COLORS, PROJECT_STATUS_COLORS, WORK_CATEGORY_COLORS, WORK_CATEGORY_LABELS } from "@/lib/chart-colors";
-import { formatINR, formatINRCompact } from "@/lib/format";
+import { formatINR } from "@/lib/format";
 
 type Lead = { id: string; name: string; service: string; value: number; co: "VMH" | "VTH"; owner: string };
 
@@ -75,7 +75,7 @@ export function ChartSamples() {
     <div className="grid grid-cols-3 gap-4">
       <div>
         <ChartLegend items={[{ label: "VMH", color: COMPANY_COLORS.VMH }, { label: "VTH", color: COMPANY_COLORS.VTH }, { label: "Total", color: COMPANY_COLORS.TOTAL, line: true }]} />
-        <BarsChart data={revenue} xKey="month" stacked series={[{ key: "VMH", label: "VMH", color: COMPANY_COLORS.VMH }, { key: "VTH", label: "VTH", color: COMPANY_COLORS.VTH }]} line={{ key: "total", label: "Total", color: COMPANY_COLORS.TOTAL }} yFormat={formatINRCompact} tooltipFormat={formatINR} />
+        <BarsChart data={revenue} xKey="month" stacked series={[{ key: "VMH", label: "VMH", color: COMPANY_COLORS.VMH }, { key: "VTH", label: "VTH", color: COMPANY_COLORS.VTH }]} line={{ key: "total", label: "Total", color: COMPANY_COLORS.TOTAL }} yFormat="inrCompact" tooltipFormat="inr" />
       </div>
       <div className="flex items-center gap-4">
         <DonutChart
@@ -92,7 +92,7 @@ export function ChartSamples() {
         <DonutLegend items={[{ label: "Not started", value: 8, color: PROJECT_STATUS_COLORS.notStarted }, { label: "In progress", value: 12, color: PROJECT_STATUS_COLORS.inProgress }]} />
       </div>
       <div className="flex items-center gap-4">
-        <PieChart data={Object.entries({ VIDEO_EDITING: 32, WEBSITE_DEVELOPMENT: 24, CRM_ERP: 18, AUTOMATION: 12, DESIGN: 8, OTHER: 6 }).map(([k, v]) => ({ label: WORK_CATEGORY_LABELS[k]!, value: v, color: WORK_CATEGORY_COLORS[k]! }))} format={(v) => `${v}%`} />
+        <PieChart data={Object.entries({ VIDEO_EDITING: 32, WEBSITE_DEVELOPMENT: 24, CRM_ERP: 18, AUTOMATION: 12, DESIGN: 8, OTHER: 6 }).map(([k, v]) => ({ label: WORK_CATEGORY_LABELS[k]!, value: v, color: WORK_CATEGORY_COLORS[k]! }))} format="percent" />
       </div>
       <div>
         <BarsChart
@@ -100,7 +100,7 @@ export function ChartSamples() {
           xKey="day"
           series={[{ key: "VMH", label: "VMH", color: COMPANY_COLORS.VMH }, { key: "VTH", label: "VTH", color: COMPANY_COLORS.VTH }]}
           xTickLines={{ Mon: "12 Oct", Tue: "13 Oct", Wed: "14 Oct" }}
-          yFormat={(v) => `${v}h`}
+          yFormat="hours"
         />
       </div>
       <div className="col-span-2">
@@ -108,7 +108,7 @@ export function ChartSamples() {
           data={[{ m: "Oct 2026", ALL: 22, VMH: 8, VTH: 15 }, { m: "Nov 2026", ALL: 52, VMH: 40, VTH: 47 }, { m: "Dec 2026", ALL: 78, VMH: 58, VTH: 65 }]}
           xKey="m"
           series={[{ key: "ALL", label: "All Goals", color: GOAL_LINE_COLORS.ALL }, { key: "VMH", label: "VMH Goals", color: GOAL_LINE_COLORS.VMH }, { key: "VTH", label: "VTH Goals", color: GOAL_LINE_COLORS.VTH }]}
-          yFormat={(v) => `${v}%`}
+          yFormat="percent"
         />
       </div>
     </div>

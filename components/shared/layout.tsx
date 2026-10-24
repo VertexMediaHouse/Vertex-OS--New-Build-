@@ -10,7 +10,7 @@ export function PageHeader({ title, subtitle, actions, className }: { title: Rea
   return (
     <div className={cn("flex flex-wrap items-start justify-between gap-4", className)}>
       <div className="min-w-0">
-        <h1 className="text-4xl font-bold tracking-tight text-ink">{title}</h1>
+        <h1 className="text-4xl font-bold text-ink">{title}</h1>
         {subtitle && <p className="mt-1 text-base text-ink-muted">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-3">{actions}</div>}

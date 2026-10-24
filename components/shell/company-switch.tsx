@@ -34,9 +34,9 @@ export function CompanyDropdown({ scope, allowed }: SwitchProps) {
   const { switchTo } = useSwitchCompany();
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="hidden h-9 w-[184px] items-center gap-2.5 rounded-lg border bg-card px-3 text-sm font-semibold text-ink outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/40 lg:inline-flex">
+      <DropdownMenuTrigger className="hidden h-9 min-w-[184px] items-center gap-2.5 rounded-lg border bg-card px-3 text-sm font-semibold text-ink outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/40 lg:inline-flex">
         {scope === "ALL" ? <Building2 className="size-[18px] text-[#6D5BD0]" aria-hidden /> : <CompanyBadge code={scope} />}
-        <span className="min-w-0 flex-1 truncate text-left">{nameOf(scope)}</span>
+        <span className="min-w-0 flex-1 text-left whitespace-nowrap">{nameOf(scope)}</span>
         <ChevronDown className="size-4 text-ink-2" aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">

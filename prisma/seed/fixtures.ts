@@ -313,6 +313,12 @@ export const TIME_BUCKETS: Record<TeamKey, { VMH_B: number; VMH_N: number; VTH_B
   dhruv: { VMH_B: 1100, VMH_N: 0, VTH_B: 0, VTH_N: 0 },
 };
 
+/** Minutes logged Mon 19 – Wed 21 Oct, so dashboard workload reads like page 1 (70% / Over / Idle / 60%). */
+export const WEEK_TARGET_MIN: Record<TeamKey, number> = { dhrumil: 600, rohan: 1680, priya: 1980, aman: 960, neha: 1320, dhruv: 720 };
+
+/** Planned minutes on open tasks due this week (adds to workload). */
+export const WEEK_PLANNED_MIN: Partial<Record<TeamKey, number>> = { priya: 900, neha: 120 };
+
 /** GreenBuild CRM: 42h 30m logged, 38h 15m billable (page 6 Time Tracking card). */
 export const GREENBUILD_MINUTES = { billable: 2295, nonBillable: 255 };
 

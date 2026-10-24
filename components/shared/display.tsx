@@ -144,7 +144,7 @@ export function MeterRow({ label, value, display, tone = "primary", barWidth = 7
 // ── Activity feed row ─────────────────────────────────────────────────
 export function ActivityRow({ person, icon: Icon, iconClass, text, detail, time, right }: { person?: AvatarPerson; icon?: LucideIcon; iconClass?: string; text: React.ReactNode; detail?: React.ReactNode; time: string; right?: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3 py-1.5">
+    <div className="flex items-start gap-3 py-1">
       {person ? (
         <Avatar person={person} size={28} />
       ) : Icon ? (

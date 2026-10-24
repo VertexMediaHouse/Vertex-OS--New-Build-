@@ -8,6 +8,7 @@ import { addDays, now, startOfDayIST, startOfWeekIST } from "../lib/clock";
 import { goalProgress, goalStatus } from "../lib/metrics/goals";
 import { invoiceStatus } from "../lib/invoices/status";
 import { companySettingsSchema } from "../lib/settings";
+import { runCrossSellRules } from "../lib/crosssell";
 import * as F from "./seed/fixtures";
 import { at, day, minutesAgo, rng, slug, splitInto, splitTotal, weekdays } from "./seed/util";
 
@@ -366,6 +367,12 @@ async function tasks() {
   }
   await db.task.createMany({ data: rows });
 
+  // Estimates on this week's open tasks feed the dashboard workload ("planned" hours).
+  for (const [who, total] of Object.entries(F.WEEK_PLANNED_MIN) as [F.TeamKey, number][]) {
+    const open = await db.task.findMany({ where: { assigneeId: uid(who), status: { not: "COMPLETED" }, dueDate: { gte: weekStart, lt: addDays(weekStart, 7) } }, select: { id: true } });
+    if (open.length) await db.task.updateMany({ where: { id: { in: open.map((t) => t.id) } }, data: { estimatedMinutes: Math.round(total / open.length) } });
+  }
+
   // Drawer task (page 7): checklist 3/5 → progress 60%, tags, description, comments, files.
   const drawer = taskIds.get(F.DRAWER_TASK.title)!;
   const doneItems = F.DRAWER_TASK.checklist.filter((c) => c[1]).length;
@@ -390,14 +397,21 @@ function shiftDate(pdfDate: string, days: number): string {
   return new Date(d.getTime() + days * 86_400_000).toISOString().slice(0, 10);
 }
 
+const WEEK_START = "2026-10-19";
+const weekUsed: Partial<Record<F.TeamKey, number>> = {};
+
 async function timeEntries() {
   const rows: Prisma.TimeEntryCreateManyInput[] = [];
   const left = structuredClone(F.TIME_BUCKETS);
-  const busy = new Map<string, Set<string>>(); // member → dates with visible rows
   const weekStart = startOfWeekIST(NOW);
 
+  const occ = new Map<string, [number, number][]>(); // who|date → busy minute ranges
+  const toMin = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3));
   const add = (who: F.TeamKey, project: string, date: string, start: string, minutes: number, billable: boolean, note: string, taskId?: string) => {
     const p = projectIds.get(project)!;
+    const k = `${who}|${date}`;
+    (occ.get(k) ?? occ.set(k, []).get(k)!).push([toMin(start), toMin(start) + minutes]);
+    if (date >= WEEK_START) weekUsed[who] = (weekUsed[who] ?? 0) + minutes;
     const s = at(date, start);
     const recent = s >= weekStart;
     rows.push({
@@ -414,32 +428,28 @@ async function timeEntries() {
     const [sh, sm] = t.start.split(":").map(Number);
     const [eh, em] = t.end.split(":").map(Number);
     add(t.who, t.project, t.date, t.start, eh! * 60 + em! - (sh! * 60 + sm!), t.billable, t.task, taskIds.get(t.task));
-    (busy.get(t.who) ?? busy.set(t.who, new Set()).get(t.who)!).add(t.date);
   }
 
   // The drawer task's "Time (2h 30m)".
   add("rohan", "bright_labs_shorts", "2026-10-19", "10:00", 90, true, "Rough cut + captions", taskIds.get(F.DRAWER_TASK.title));
   add("rohan", "bright_labs_shorts", "2026-10-21", "10:00", 60, true, "Music and brand pass", taskIds.get(F.DRAWER_TASK.title));
-  busy.get("rohan")!.add("2026-10-19").add("2026-10-21");
 
   // GreenBuild minutes come first out of the right buckets (page 6 Time Tracking card).
   const gbPlan: [F.TeamKey, boolean, number][] = [["priya", true, 800 - 90], ["rohan", true, 650], ["neha", true, 845], ["dhrumil", false, 255]];
+  // This week first, up to each person's target (dashboard Team Workload), then earlier days, latest first.
   const days = weekdays("2026-10-01", "2026-10-21");
-  const cursor = new Map<F.TeamKey, { day: number; minute: number }>();
   const place = (who: F.TeamKey, minutes: number) => {
-    const c = cursor.get(who) ?? { day: r.int(0, 2), minute: 9 * 60 + 30 };
-    for (;;) {
-      const date = days[c.day % days.length]!;
-      if (busy.get(who)?.has(date) || c.minute + minutes > 19 * 60) {
-        c.day++;
-        c.minute = 9 * 60 + 30 + r.int(0, 2) * 15;
-        continue;
+    const week = days.filter((d) => d >= WEEK_START);
+    const earlier = days.filter((d) => d < WEEK_START).reverse();
+    const order = (weekUsed[who] ?? 0) + minutes <= F.WEEK_TARGET_MIN[who] ? [...week, ...earlier] : earlier;
+    for (const date of order) {
+      const busy = occ.get(`${who}|${date}`) ?? [];
+      for (let m = 8 * 60 + 30; m + minutes <= 20 * 60 + 30; m += 15) {
+        if (busy.some(([a, b]) => m < b + 15 && a < m + minutes + 15)) continue;
+        return { date, start: `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}` };
       }
-      const start = `${String(Math.floor(c.minute / 60)).padStart(2, "0")}:${String(c.minute % 60).padStart(2, "0")}`;
-      c.minute += minutes + 15;
-      cursor.set(who, c);
-      return { date, start };
     }
+    throw new Error(`No room for ${minutes}m of ${who}'s time`);
   };
   for (const [who, billable, minutes] of gbPlan) {
     for (const chunk of splitTotal(minutes, 60, 180, 15, r)) {
@@ -677,13 +687,8 @@ async function campaignsAgendaActivity() {
     ],
   });
 
-  // Cross-sell alerts (page 1). Phase 4's rules engine owns these; same rule keys.
-  await db.crossSellAlert.createMany({
-    data: [
-      { clientId: "client_alex_johnson", fromCompanyId: "vmh", toCompanyId: "vth", rule: "vmh-keywords-to-vth", reason: "Might need a website or CRM based on recent conversations.", createdAt: day(-1) },
-      { clientId: "client_bright_labs", fromCompanyId: "vth", toCompanyId: "vmh", rule: "vth-launch-to-vmh", reason: "Might need video content for product launch.", createdAt: day(-2) },
-    ],
-  });
+  // Cross-sell alerts (page 1) come from the rules engine.
+  await runCrossSellRules(db);
 
   await db.tag.createMany({
     data: [["Editing", "#7C3AED"], ["Shorts", "#64748B"], ["YouTube", "#64748B"], ["Brief", "#2563EB"], ["Client", "#2563EB"], ["Website", "#2563EB"], ["retainer", "#047857"], ["product-launch", "#EA580C"], ["website", "#2563EB"], ["crm", "#2563EB"]].map(([name, color]) => ({ name: name!, color: color! })),

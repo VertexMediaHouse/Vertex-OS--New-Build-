@@ -18,13 +18,17 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { AXIS } from "@/lib/chart-colors";
+import { formatINR, formatINRCompact } from "@/lib/format";
 
 // Mark specs (dataviz skill): bars ≤ 24px with 4px rounded data-ends, 2px lines,
 // ≥ 8px markers with a 2px surface ring, hairline solid grid, 2px surface gaps.
 
 export type Series = { key: string; label: string; color: string };
 type Formatter = (v: number) => string;
-const plain: Formatter = (v) => String(v);
+/** Formatters by name, so Server Components can choose one (functions can't cross to the client). */
+export type FormatName = "plain" | "inr" | "inrCompact" | "hours" | "percent";
+const FORMATS: Record<FormatName, Formatter> = { plain: (v) => String(v), inr: formatINR, inrCompact: formatINRCompact, hours: (v) => `${Math.round(v)}h`, percent: (v) => `${Math.round(v)}%` };
+const plain = FORMATS.plain;
 
 /** Legend row above a chart: "● VMH ● VTH —●— Total". */
 export function ChartLegend({ items, className }: { items: { label: string; color: string; line?: boolean }[]; className?: string }) {
@@ -75,8 +79,8 @@ export function BarsChart({
   stacked = false,
   line,
   height = 180,
-  yFormat = plain,
-  tooltipFormat,
+  yFormat: yName = "plain",
+  tooltipFormat: tipName,
   barSize,
   topLabels,
   xTickLines,
@@ -87,14 +91,16 @@ export function BarsChart({
   stacked?: boolean;
   line?: Series;
   height?: number;
-  yFormat?: Formatter;
-  tooltipFormat?: Formatter;
+  yFormat?: FormatName;
+  tooltipFormat?: FormatName;
   barSize?: number;
   /** Show the stack total above each column (Leads by Source). */
   topLabels?: boolean;
   /** Second x-tick line, e.g. "12 Oct" under "Mon". */
   xTickLines?: Record<string, string>;
 }) {
+  const yFormat = FORMATS[yName];
+  const tooltipFormat = tipName ? FORMATS[tipName] : undefined;
   const size = barSize ?? (stacked || series.length === 1 ? 20 : 14);
   const withTotals = topLabels ? data.map((d) => ({ ...d, __total: series.reduce((s, x) => s + Number(d[x.key] ?? 0), 0) })) : data;
   return (
@@ -152,15 +158,16 @@ export function DonutChart({
   centerLabel,
   size = 120,
   thickness = 16,
-  format = plain,
+  format: fName = "plain",
 }: {
   data: { label: string; value: number; color: string }[];
   center: React.ReactNode;
   centerLabel?: string;
   size?: number;
   thickness?: number;
-  format?: Formatter;
+  format?: FormatName;
 }) {
+  const format = FORMATS[fName];
   const shown = data.filter((d) => d.value > 0);
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }} role="img" aria-label={data.map((d) => `${d.label} ${format(d.value)}`).join(", ")}>
@@ -183,7 +190,8 @@ export function DonutChart({
 }
 
 /** Full pie (Reports "Project Type"). */
-export function PieChart({ data, size = 140, format = plain }: { data: { label: string; value: number; color: string }[]; size?: number; format?: Formatter }) {
+export function PieChart({ data, size = 140, format: fName = "plain" }: { data: { label: string; value: number; color: string }[]; size?: number; format?: FormatName }) {
+  const format = FORMATS[fName];
   return (
     <div style={{ width: size, height: size }} className="shrink-0" role="img" aria-label={data.map((d) => `${d.label} ${format(d.value)}`).join(", ")}>
       <ResponsiveContainer width="100%" height="100%">
@@ -201,7 +209,8 @@ export function PieChart({ data, size = 140, format = plain }: { data: { label: 
 }
 
 /** Lines with end-value chips (Goal Progress Overview). */
-export function LinesChart({ data, xKey, series, height = 200, yFormat = plain, endLabels = true }: { data: Record<string, string | number | null>[]; xKey: string; series: Series[]; height?: number; yFormat?: Formatter; endLabels?: boolean }) {
+export function LinesChart({ data, xKey, series, height = 200, yFormat: yName = "plain", endLabels = true }: { data: Record<string, string | number | null>[]; xKey: string; series: Series[]; height?: number; yFormat?: FormatName; endLabels?: boolean }) {
+  const yFormat = FORMATS[yName];
   const last = data.length - 1;
   return (
     <div style={{ height }} role="img" aria-label={`Chart: ${series.map((s) => s.label).join(", ")}`}>

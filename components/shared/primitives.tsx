@@ -201,7 +201,7 @@ export function SectionCard({
         {action}
         {href && !action && <ViewAll href={href} />}
       </div>
-      <div className={cn("mt-3 flex-1", bodyClassName)}>{children}</div>
+      <div className={cn("mt-2.5 flex-1", bodyClassName)}>{children}</div>
     </Card>
   );
 }
