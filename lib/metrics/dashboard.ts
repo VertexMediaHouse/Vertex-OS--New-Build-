@@ -5,6 +5,7 @@ import { addDays, addMonthsIST, now, startOfDayIST, startOfMonthIST, startOfWeek
 import { pctChange, type Period } from "@/lib/period";
 import { avgTurnaroundHours, workloadPercent } from "./workload";
 import { goalProgress } from "./goals";
+import { parseCompanySettings } from "@/lib/settings";
 
 const num = (v: unknown) => Number(v ?? 0);
 const ACTIVE_PROJECT = { notIn: ["COMPLETED", "CANCELLED"] as ("COMPLETED" | "CANCELLED")[] };
@@ -19,10 +20,14 @@ export async function revenueSummary(s: ScopeFilter, p: Period) {
     db.invoice.aggregate({ _sum: { total: true, paidAmount: true }, where: { ...scopedWhere(s), status: { in: ["PENDING", "OVERDUE"] } } }),
     db.invoice.groupBy({ by: ["companyId"], _sum: { total: true }, where: { ...scopedWhere(s), issueDate: { gte: p.from, lt: p.to }, status: { notIn: ["DRAFT", "CANCELLED"] } } }),
   ]);
-  const total = num(cur._sum.total);
+  // Settings → "Revenue on dashboard": invoiced (default) or collected in the period.
+  const companies = await db.company.findMany({ where: { id: { in: s.companyIds } }, select: { settings: true } });
+  const collectedBasis = companies.length > 0 && companies.every((c) => parseCompanySettings(c.settings).revenueBasis === "COLLECTED");
+  const prevCollected = collectedBasis ? num((await db.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: p.prevFrom, lt: p.prevTo }, invoice: scopedWhere(s) } }))._sum.amount) : 0;
+  const total = collectedBasis ? num(collected._sum.amount) : num(cur._sum.total);
   return {
     total,
-    trend: pctChange(total, num(prev._sum.total)),
+    trend: pctChange(total, collectedBasis ? prevCollected : num(prev._sum.total)),
     collected: num(collected._sum.amount),
     outstanding: num(open._sum.total) - num(open._sum.paidAmount),
     vmh: num(byCompany.find((r) => r.companyId === "vmh")?._sum.total),

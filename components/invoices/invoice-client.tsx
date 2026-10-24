@@ -71,9 +71,8 @@ export function InvoiceBuilder({ companies, clients, projects, entries, defaults
   const co = companies.find((c) => c.id === companyId)!;
   const [clientId, setClient] = useState(firstProject?.clientId ?? "");
   const [projectId, setProject] = useState(firstProject?.id ?? "");
-  const today = new Date().toISOString().slice(0, 10);
-  const [issue, setIssue] = useState(today);
-  const [due, setDue] = useState(new Date(Date.now() + co.terms * 86_400_000).toISOString().slice(0, 10));
+  const [issue, setIssue] = useState(() => new Date().toISOString().slice(0, 10));
+  const [due, setDue] = useState(() => new Date(Date.now() + co.terms * 86_400_000).toISOString().slice(0, 10));
   const [currency, setCurrency] = useState<"INR" | "USD">("INR");
   const [taxRate, setTax] = useState(co.taxRate);
   const [discount, setDiscount] = useState(0);

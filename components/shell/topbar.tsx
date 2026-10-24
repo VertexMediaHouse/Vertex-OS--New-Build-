@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, ChevronDown, LogOut, Menu, Search, Settings } from "lucide-react";
+import { Bell, ChevronDown, LogOut, Menu, Settings } from "lucide-react";
 import { Avatar } from "@/components/shared/primitives";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -12,6 +12,7 @@ import { markAllNotificationsRead } from "@/app/(app)/actions/notifications";
 import { CompanyDropdown, CompanyPills, type SwitchProps } from "./company-switch";
 import { SidebarContent } from "./sidebar";
 import { MiniTimer } from "@/components/time/time-client";
+import { GlobalSearch } from "./global-search";
 
 const SEARCH_PLACEHOLDER: [string, string][] = [
   ["/leads", "Search leads, clients, projects..."],
@@ -57,11 +58,7 @@ export function Topbar({
 
       <div className="ml-auto flex items-center gap-4">
         {timer && <MiniTimer startedAt={timer.startedAt} label={timer.label} />}
-        {/* Global search opens the command palette (Phase 14); the field shows the page's scope. */}
-        <label className="relative hidden h-9 w-[204px] items-center lg:flex">
-          <Search className="pointer-events-none absolute left-3 size-4 text-ink-muted" aria-hidden />
-          <input type="search" placeholder={placeholder} aria-label="Search" className="h-full w-full rounded-lg bg-[#F4F6F9] pr-3 pl-9 text-xs text-ink outline-none placeholder:text-ink-muted focus-visible:ring-2 focus-visible:ring-ring/40" />
-        </label>
+        <GlobalSearch placeholder={placeholder} />
 
         <DropdownMenu>
           <DropdownMenuTrigger className="relative rounded-md p-1.5 text-ink-2 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/40" aria-label={`Notifications, ${unread} unread`}>
@@ -70,7 +67,7 @@ export function Topbar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
             <div className="flex items-center justify-between px-2 py-1.5">
-              <DropdownMenuLabel className="p-0 text-sm">Notifications</DropdownMenuLabel>
+              <DropdownMenuLabel className="p-0 text-sm"><Link href="/notifications" className="hover:underline">Notifications</Link></DropdownMenuLabel>
               {unread > 0 && (
                 <button type="button" onClick={() => markAllNotificationsRead()} className="text-xs font-medium text-blue hover:underline">
                   Mark all read
