@@ -55,6 +55,23 @@ export async function createProject(input: z.input<typeof projectSchema>): Promi
   return { ok: true, id: project.id };
 }
 
+/** The company and template are fixed at creation; everything else on the form can change. */
+export async function updateProject(projectId: string, input: z.input<typeof projectSchema>): Promise<ActionResult> {
+  const { user, project } = await projectFor("update", projectId);
+  const parsed = projectSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
+  const { companyId, ...d } = parsed.data;
+  void companyId;
+  await db.$transaction(async (tx) => {
+    await tx.project.update({ where: { id: project.id }, data: d });
+    // Moving the project to another client has to link that client to the company, as create does.
+    await tx.clientCompany.upsert({ where: { clientId_companyId: { clientId: d.clientId, companyId: project.companyId } }, create: { clientId: d.clientId, companyId: project.companyId }, update: {} });
+    await logActivity(tx, { companyId: project.companyId, actorId: user.id, verb: "updated", entityType: "PROJECT", entityId: project.id, summary: `${user.name} updated project ${d.name}` });
+  });
+  refresh();
+  return { ok: true, id: project.id };
+}
+
 export async function setProjectStatus(projectId: string, status: string) {
   const { user, project } = await projectFor("update", projectId);
   const allowed = TEMPLATES[project.template].statuses as readonly string[];

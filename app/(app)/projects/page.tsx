@@ -2,11 +2,12 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ExternalLink, Filter, FileCheck, FileText, FolderOpen, Mail, MessageSquare, MoreHorizontal, Pencil, Phone, Clock, Target, Receipt, StickyNote, Activity as ActivityIcon, Plus } from "lucide-react";
+import { ExternalLink, Filter, FileCheck, FileText, FolderOpen, Mail, MessageSquare, Pencil, Phone, Clock, Target, Receipt, StickyNote, Activity as ActivityIcon, Plus } from "lucide-react";
 import { getRequestContext } from "@/lib/auth/context";
 import { can, isMemberOnly } from "@/lib/auth/permissions";
 import { db, type Prisma } from "@/lib/db";
 import { now } from "@/lib/clock";
+import { dayKey } from "@/lib/period";
 import { formatDate, formatDateTime, formatDaysLeft, formatDuration, formatINR, formatRelative, formatShortDate } from "@/lib/format";
 import { readParams, type SP } from "@/lib/search-params";
 import { logoColor } from "@/lib/clients";
@@ -150,7 +151,7 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
   if (!pr) notFound();
   const vth = pr.template === "VTH";
   const t = now();
-  const [tasks, taskCount, doneCount, files, time, notes, activity] = await Promise.all([
+  const [tasks, taskCount, doneCount, files, time, notes, activity, clients] = await Promise.all([
     db.task.findMany({ where: { projectId: id }, orderBy: [{ dueDate: "asc" }], take: tab === "tasks" ? 100 : 5, include: { assignee: { select: { name: true, image: true } } } }),
     db.task.count({ where: { projectId: id } }),
     db.task.count({ where: { projectId: id, status: "COMPLETED" } }),
@@ -158,6 +159,7 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
     db.timeEntry.groupBy({ by: ["billable"], _sum: { durationMin: true }, where: { projectId: id } }),
     db.comment.findMany({ where: { entityType: "PROJECT", entityId: id }, orderBy: { createdAt: "desc" }, take: tab === "notes" ? 100 : 3, include: { author: { select: { name: true, image: true } } } }),
     db.activity.findMany({ where: { entityId: id }, orderBy: { createdAt: "desc" }, take: 20, include: { actor: { select: { name: true } } } }),
+    db.client.findMany({ where: { archivedAt: null, companies: { some: { companyId: pr.companyId } } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
   const billable = Number(time.find((x) => x.billable)?._sum.durationMin ?? 0);
   const nonBillable = Number(time.find((x) => !x.billable)?._sum.durationMin ?? 0);
@@ -168,6 +170,8 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
   const dueRed = due ? due.getTime() - t.getTime() < 7 * 86_400_000 : false;
   const color = logoColor(pr.client?.name ?? "?");
   const editable = can(ctx.user, "update", "project", pr.companyId);
+  const formValues = { id: pr.id, companyId: pr.companyId as "vmh" | "vth", clientId: pr.clientId ?? "", name: pr.name, typeLabel: pr.typeLabel, category: pr.category, billingType: pr.billingType, value: Number(pr.value), retainerHours: pr.retainerHours, startDate: dayKey(pr.startDate), dueDate: pr.dueDate ? dayKey(pr.dueDate) : "", priority: pr.priority, summary: pr.summary ?? "", description: pr.description ?? "" };
+  const editDialog = (trigger: React.ReactNode) => <NewProjectDialog companies={[pr.companyId as "vmh"]} clients={clients} project={formValues} trigger={trigger} />;
   const accent = vth ? "text-vth-text" : "text-blue";
   const dueText = due && <span className={dueRed ? "text-danger-text" : undefined}>{formatDate(due)} ({daysLeft})</span>;
   const timeline: TimelinePoint[] = (pr.phases.length ? pr.phases : pr.milestones.map((m) => ({ label: m.title, date: m.dueDate, status: m.status }))).map((ph, i, arr) => {
@@ -218,8 +222,7 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
       <div className="flex items-center justify-between">
         <p className="text-xs text-ink-muted"><Link href="/projects" className="hover:underline">Projects</Link> › {pr.client?.name} › {pr.name}</p>
         <div className="flex gap-2">
-          {editable && <Link href={`/projects/${pr.id}/edit`} className="inline-flex h-9 items-center gap-2 rounded-lg border bg-card px-3 text-xs font-medium"><Pencil className="size-3.5" /> Edit Project</Link>}
-          <span className="inline-flex size-9 items-center justify-center rounded-lg border bg-card"><MoreHorizontal className="size-4" /></span>
+          {editable && editDialog(<button type="button" className="inline-flex h-9 items-center gap-2 rounded-lg border bg-card px-3 text-xs font-medium hover:bg-accent"><Pencil className="size-3.5" /> Edit Project</button>)}
         </div>
       </div>
       <div className="flex flex-wrap items-start gap-4">
@@ -246,7 +249,7 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
       {tab === "overview" && (
         <>
           <div className="grid gap-3.5 xl:grid-cols-[1fr_1.15fr_0.85fr]">
-            <SectionCard title="Project Details" action={editable ? <Link href={`/projects/${pr.id}/edit`} className={cn("text-xs", accent)}>Edit</Link> : undefined}>
+            <SectionCard title="Project Details" action={editable ? editDialog(<button type="button" className={cn("text-xs hover:underline", accent)}>Edit</button>) : undefined}>
               <KeyValue labelWidth={100} rows={[
                 ["Client", pr.client?.name],
                 ["Company", <span key="c" className="flex items-center gap-1.5"><CompanyBadge code={pr.template} />{pr.company.name} ({pr.company.code})</span>],

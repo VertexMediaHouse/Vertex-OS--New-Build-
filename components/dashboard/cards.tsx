@@ -4,7 +4,7 @@ import {
   Activity, AlertCircle, Bug, CalendarDays, CircleCheck, Clock, Code2, Folder, Headphones, Lightbulb, Play, ReceiptIndianRupee, Send, Target, Users, UsersRound, Video,
 } from "lucide-react";
 import { KpiCard } from "@/components/shared/kpi-card";
-import { Card, IconTile, Inset, ProgressBar, SectionCard, SegmentedBar, type TileTone } from "@/components/shared/primitives";
+import { Card, IconTile, Inset, ProgressBar, SectionCard, SegmentedBar, ViewAll, type TileTone } from "@/components/shared/primitives";
 import { Avatar } from "@/components/shared/primitives";
 import { Chip, CompanyBadge, StatusPill, companyCode } from "@/components/shared/pills";
 import { ActivityRow } from "@/components/shared/display";
@@ -28,6 +28,7 @@ export async function RevenueKpi({ ctx, period, owner }: { ctx: Ctx; period: Per
   const r = await M.revenueSummary(ctx, period);
   return (
     <KpiCard
+      href="/invoices"
       icon={ReceiptIndianRupee}
       tone="green"
       label="Total Revenue"
@@ -50,7 +51,7 @@ export async function ProjectsKpi({ ctx, period, owner }: { ctx: Ctx; period: Pe
     { label: "Delivered", value: p.delivered, color: "#0E7C66" },
   ];
   return (
-    <KpiCard icon={Folder} tone="blue" label="Active Projects" value={p.active} trend={p.delta} trendUnit="" split={owner || ctx.scope !== "ALL" ? undefined : [{ value: p.vmh, label: "VMH" }, { value: p.vth, label: "VTH" }]}>
+    <KpiCard href="/projects" icon={Folder} tone="blue" label="Active Projects" value={p.active} trend={p.delta} trendUnit="" split={owner || ctx.scope !== "ALL" ? undefined : [{ value: p.vmh, label: "VMH" }, { value: p.vth, label: "VTH" }]}>
       {owner && (
         <div className="mt-5 space-y-3">
           <SegmentedBar segments={[legend[1]!, legend[0]!, legend[2]!, legend[3]!, legend[4]!]} />
@@ -78,7 +79,7 @@ export async function TasksKpi({ ctx, period, owner }: { ctx: Ctx; period: Perio
     { label: "Upcoming", value: t.upcoming, color: "#60A5FA" },
   ];
   return (
-    <KpiCard icon={CircleCheck} tone="purple" label="Open Tasks" value={t.total} trend={owner ? undefined : t.delta} trendUnit="" split={owner || ctx.scope !== "ALL" ? undefined : [{ value: t.vmh, label: "VMH" }, { value: t.vth, label: "VTH" }]}>
+    <KpiCard href="/tasks" icon={CircleCheck} tone="purple" label="Open Tasks" value={t.total} trend={owner ? undefined : t.delta} trendUnit="" split={owner || ctx.scope !== "ALL" ? undefined : [{ value: t.vmh, label: "VMH" }, { value: t.vth, label: "VTH" }]}>
       {owner && (
         <ul className="mt-4 space-y-1 text-xs text-ink-2">
           {rows.map((r) => (
@@ -100,7 +101,7 @@ const STAGE_LABEL: Record<string, string> = { NEW: "New", CONTACTED: "Contacted"
 export async function LeadsKpi({ ctx, period, owner }: { ctx: Ctx; period: Period; owner?: boolean }) {
   const l = await M.leadSummary(ctx, period);
   return (
-    <KpiCard icon={Users} tone="pink" label="Ongoing Leads" value={l.total} trend={l.delta} trendUnit="" split={owner || ctx.scope !== "ALL" ? undefined : [{ value: l.vmh, label: "VMH" }, { value: l.vth, label: "VTH" }]}>
+    <KpiCard href="/leads" icon={Users} tone="pink" label="Ongoing Leads" value={l.total} trend={l.delta} trendUnit="" split={owner || ctx.scope !== "ALL" ? undefined : [{ value: l.vmh, label: "VMH" }, { value: l.vth, label: "VTH" }]}>
       {owner && (
         <div className="mt-3 flex gap-4">
           <ul className="flex-1 space-y-1 text-xs text-ink-2">
@@ -130,7 +131,7 @@ export async function CampaignsCard({ ctx }: { ctx: Ctx }) {
     <SectionCard title="Email Campaigns" icon={Send} tone="blue" subtitle={`${list.length} Active Campaigns`} href="/campaigns">
       <div className="space-y-1.5">
         {list.map((c) => (
-          <div key={c.id} className="grid grid-cols-[minmax(0,1fr)_48px_48px_60px_auto] items-center gap-2 rounded-lg border px-3 py-1.5">
+          <Link key={c.id} href={`/campaigns?id=${c.id}`} className="grid grid-cols-[minmax(0,1fr)_48px_48px_60px_auto] items-center gap-2 rounded-lg border px-3 py-1.5 hover:bg-[#F8FAFC]">
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold text-ink">{c.name}</p>
               <p className="text-2xs text-ink-muted">{c.sentCount.toLocaleString("en-IN")} sent</p>
@@ -139,7 +140,7 @@ export async function CampaignsCard({ ctx }: { ctx: Ctx }) {
             <Metric value={`${pct(c.replyCount, c.sentCount)}%`} label="reply" className="text-danger-text" />
             <Metric value={String(c.meetingsCount)} label="meetings" className="text-ink" />
             <CompanyBadge code={companyCode(c.companyId)} />
-          </div>
+          </Link>
         ))}
       </div>
     </SectionCard>
@@ -162,7 +163,7 @@ export async function GoalsCard({ ctx }: { ctx: Ctx }) {
     <SectionCard title="Goals Progress" icon={Target} tone="green" href="/goals">
       <div className="space-y-2">
         {goals.map((g) => (
-          <div key={g.id} className="grid grid-cols-[minmax(0,1fr)_110px_36px_auto] items-center gap-3">
+          <Link key={g.id} href={`/goals?view=detailed&id=${g.id}`} className="grid grid-cols-[minmax(0,1fr)_110px_36px_auto] items-center gap-3 rounded-lg hover:bg-[#F8FAFC]">
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold text-ink">{g.title}</p>
               <p className="text-2xs text-ink-muted">{g.subtitle}</p>
@@ -175,7 +176,7 @@ export async function GoalsCard({ ctx }: { ctx: Ctx }) {
             </div>
             <span className="text-xs font-semibold text-ink tabular">{Math.round(g.progress)}%</span>
             <CompanyBadge code={companyCode(g.companyId)} />
-          </div>
+          </Link>
         ))}
       </div>
     </SectionCard>
@@ -191,7 +192,7 @@ export async function WorkloadCard({ ctx, compact }: { ctx: Ctx; compact?: boole
         {team.map((u) => {
           const st = workloadState(u.pct);
           return (
-            <div key={u.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_40px_36px] items-center gap-3">
+            <Link key={u.id} href={`/team/${u.id}`} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_40px_36px] items-center gap-3 rounded-lg hover:bg-[#F8FAFC]">
               <div className="flex min-w-0 items-center gap-2.5">
                 <Avatar person={u} size={compact ? 28 : 32} />
                 <div className="min-w-0">
@@ -202,7 +203,7 @@ export async function WorkloadCard({ ctx, compact }: { ctx: Ctx; compact?: boole
               <ProgressBar value={u.pct} tone={tone[st]} />
               <span className={`text-right text-xs font-semibold tabular ${st === "over" ? "text-danger-text" : "text-ink"}`}>{Math.round(u.pct)}%</span>
               <span>{st === "over" ? <Chip tone="danger">Over</Chip> : st === "idle" ? <Chip tone="warning">Idle</Chip> : null}</span>
-            </div>
+            </Link>
           );
         })}
       </div>
@@ -214,7 +215,7 @@ export async function ApprovalsCard({ ctx }: { ctx: Ctx }) {
   const list = await M.approvalsWaiting(ctx);
   const t = now();
   return (
-    <SectionCard title="Client Approvals Waiting" icon={Clock} tone="orange" href="/projects?tab=approvals">
+    <SectionCard title="Client Approvals Waiting" icon={Clock} tone="orange" href="/projects?list=review">
       <table className="w-full text-2xs">
         <thead>
           <tr className="text-left text-ink-2">
@@ -257,7 +258,7 @@ export async function ProductionCard({ period }: { period: Period }) {
       icon={Play}
       tone="red"
       subtitle={<>Avg. Turnaround: <span className="font-semibold text-ink">{b.avgTurnaround === null ? "–" : `${Math.round(b.avgTurnaround)} hours`}</span></>}
-      action={<StatusPill dot={false} tone={onTrack ? "success" : "danger"} label={onTrack ? "On Track" : "Delayed"} />}
+      action={<span className="flex items-center gap-2"><StatusPill dot={false} tone={onTrack ? "success" : "danger"} label={onTrack ? "On Track" : "Delayed"} /><ViewAll href="/projects?list=active" /></span>}
     >
       <div className="grid grid-cols-5 divide-x">
         {STAGES.map(([k, label]) => (
@@ -286,7 +287,7 @@ export async function DeliveryCard() {
     </div>
   );
   return (
-    <SectionCard title="VTH Delivery Board" icon={Code2} tone="blue" href="/projects?company=vth">
+    <SectionCard title="VTH Delivery Board" icon={Code2} tone="blue" href="/projects?list=active">
       {row(CalendarDays, "bg-info-soft text-info-text", "Milestones Due This Week", d.milestones)}
       {row(Bug, "bg-danger-soft text-danger-text", "Open Bugs", d.bugs)}
       {row(Headphones, "bg-success-soft text-success-text", "Support Tickets", d.tickets)}
@@ -355,7 +356,7 @@ export async function ActivityCard({ ctx, compact }: { ctx: Ctx; compact?: boole
 export async function CrossSellCard({ ctx }: { ctx: Ctx }) {
   const alerts = await M.crossSellAlerts(ctx);
   return (
-    <SectionCard title="Cross-Sell Alerts" icon={Lightbulb} tone="amber" href="/clients?view=cross-sell">
+    <SectionCard title="Cross-Sell Alerts" icon={Lightbulb} tone="amber" href="/clients">
       <div className="space-y-4">
         {alerts.length === 0 && <p className="py-4 text-center text-xs text-ink-muted">No cross-sell ideas right now.</p>}
         {alerts.map((a) => (

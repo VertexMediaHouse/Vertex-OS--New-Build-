@@ -122,7 +122,7 @@ async function RevenueTrend({ ctx }: { ctx: Ctx }) {
   const code = ctx.scope as "VMH" | "VTH";
   const data = await M.revenueTrend(ctx);
   return (
-    <SectionCard title={`Revenue Trend (${code})`}>
+    <SectionCard title={`Revenue Trend (${code})`} href="/reports">
       <BarsChart data={data} xKey="month" series={[{ key: code, label: code, color: COMPANY_COLORS[code] }]} yFormat="inrCompact" tooltipFormat="inr" height={170} />
     </SectionCard>
   );
@@ -132,7 +132,7 @@ async function ProjectStatus({ ctx, period }: { ctx: Ctx; period: P }) {
   const p = await M.projectSummary(ctx, period);
   const data = donutData(p);
   return (
-    <SectionCard title={`Project Status (${ctx.scope})`}>
+    <SectionCard title={`Project Status (${ctx.scope})`} href="/projects">
       <div className="flex items-center gap-4">
         <DonutChart data={data} center={p.active} centerLabel="Total" size={110} />
         <DonutLegend items={data.map((d) => ({ ...d, value: d.value }))} />
@@ -145,7 +145,7 @@ async function TasksOverview({ ctx, period }: { ctx: Ctx; period: P }) {
   const t = await M.taskSummary(ctx, period);
   const data = taskDonutData(t);
   return (
-    <SectionCard title={`Tasks (${ctx.scope})`}>
+    <SectionCard title={`Tasks (${ctx.scope})`} href="/tasks">
       <div className="flex items-center gap-4">
         <DonutChart data={data} center={t.total} centerLabel="Total" size={110} />
         <DonutLegend items={data} />

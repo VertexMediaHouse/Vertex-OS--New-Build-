@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, IconTile, TrendChip, type TileTone } from "./primitives";
@@ -12,6 +13,7 @@ export function KpiCard({
   icon,
   tone,
   label,
+  href,
   suffix,
   value,
   trend,
@@ -25,6 +27,7 @@ export function KpiCard({
   icon: LucideIcon;
   tone: TileTone;
   label: string;
+  href?: string;
   suffix?: string;
   value: React.ReactNode;
   trend?: number | null;
@@ -35,8 +38,8 @@ export function KpiCard({
   className?: string;
   children?: React.ReactNode;
 }) {
-  return (
-    <Card className={cn("flex flex-col px-4 pt-4 pb-3.5", className)}>
+  const card = (
+    <Card className={cn("flex flex-col px-4 pt-4 pb-3.5", href && "h-full hover:bg-[#F8FAFC]", className)}>
       <div className="flex items-start gap-3.5">
         <IconTile icon={icon} tone={tone} size="lg" />
         <div className="min-w-0">
@@ -63,6 +66,7 @@ export function KpiCard({
       )}
     </Card>
   );
+  return href ? <Link href={href} className="block h-full">{card}</Link> : card;
 }
 
 /** Page 11 simple tile: big icon, number, label, no trend. */
