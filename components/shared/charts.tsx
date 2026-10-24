@@ -85,7 +85,7 @@ export function BarsChart({
   topLabels,
   xTickLines,
 }: {
-  data: Record<string, string | number>[];
+  data: Record<string, unknown>[];
   xKey: string;
   series: Series[];
   stacked?: boolean;
