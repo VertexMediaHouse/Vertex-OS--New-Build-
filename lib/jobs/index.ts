@@ -4,12 +4,14 @@ import { now } from "@/lib/clock";
 import { markOverdueInvoices } from "./invoices";
 import { recomputeGoals } from "./goals";
 import { purgeTrash } from "./files";
+import { sendDueCampaignSteps } from "@/lib/campaigns";
 
 /** Background jobs on the same Postgres (pg-boss). Started once per server process. */
 export const JOBS = {
   "invoices.overdue": { cron: "0 6 * * *", run: () => markOverdueInvoices(db, now()) },
   "goals.recompute": { cron: "0 * * * *", run: () => recomputeGoals(db, now()) },
   "files.purge": { cron: "30 3 * * *", run: () => purgeTrash(db, now()) },
+  "campaigns.send": { cron: "*/10 * * * *", run: () => sendDueCampaignSteps(db, now()) },
 } as Record<string, { cron: string; run: () => Promise<unknown> }>;
 
 let started: Promise<PgBoss> | null = null;
