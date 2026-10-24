@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter_Tight } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+// Inter Tight: the closest match to the PDF lettering (docs/decisions.md).
+const font = Inter_Tight({ variable: "--font-app", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: { default: "Vertex Command Center", template: "%s · Vertex Command Center" },
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html lang="en" className={`${font.variable} h-full antialiased`}>
       <body className="min-h-full">
         <TooltipProvider>{children}</TooltipProvider>
         <Toaster position="bottom-right" />

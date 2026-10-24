@@ -4,7 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Design tokens: docs/design-spec.md §1 (sampled from the PDF). */
+/* Design tokens: docs/design-spec.md §1 (sampled from the PDF). Font: Inter Tight via --font-app. */
 :root {
   /* surfaces */
   --sidebar-bg: #181c25;
@@ -104,7 +104,7 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-app), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-sans);
 
