@@ -40,6 +40,9 @@ Dashboard · Leads · Clients · Projects (VMH video and VTH software templates)
 Files · Reports · Email Campaigns · Team · Settings · Calendar · Notifications · Activity · Client portal (`/portal`).
 Global search: **Ctrl/⌘ K**. The company switch (All / VMH / VTH) in the topbar or sidebar scopes every module.
 
+Invoices are in INR only. Revenue totals add invoice amounts up without converting currency, so billing in another
+currency needs a stored exchange rate first (decision 32).
+
 ## Environment
 
 All variables are documented in [`.env.example`](.env.example). The ones that matter in production:
@@ -69,10 +72,10 @@ Background jobs (overdue invoices, goal recompute, trash purge, campaign sends) 
    browser uploads).
 3. **Resend:** verify your sending domain and set `RESEND_API_KEY` and `EMAIL_FROM`.
 4. **Vercel:** import the repo and add the env vars above. Build command: `npm run build`. Then run
-   `npx prisma migrate deploy` once against the Neon URL. Run `npm run db:seed` only if you want demo data; it wipes
-   the database.
+   `npx prisma migrate deploy` once against the Neon URL. Do not run `npm run db:seed` against it: the seed wipes the
+   database and refuses any non-local host unless `--force` is passed.
 5. **Jobs:** pg-boss needs a long-running process. On Vercel, run the workers elsewhere (e.g. a small Railway or Fly
-   instance running `npm start`), or move the four job functions in `lib/jobs/` behind Vercel Cron routes.
+   instance running `npm start`), or move the five job functions in `lib/jobs/` behind Vercel Cron routes.
 6. Create real users and remove the seeded demo accounts, or change `SEED_PASSWORD` before seeding.
 
 ## Tests

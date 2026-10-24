@@ -36,8 +36,12 @@ type Props<T extends { id: string }> = {
   columns: KanbanColumn[];
   items: Record<string, T[]>;
   renderCard: (item: T) => React.ReactNode;
-  /** Persist a move; throw to roll back. Called after the board already shows the move. */
-  onMove: (itemId: string, toColumn: string, toIndex: number) => Promise<void>;
+  /**
+   * Persist a move; throw to roll back. Called after the board already shows the move.
+   * `beforeId` is the card the item was dropped above, or null for the end of the column.
+   * An id, not an index: the board may be filtered, so indexes don't match the stored order.
+   */
+  onMove: (itemId: string, toColumn: string, beforeId: string | null) => Promise<void>;
   /** Cards shown before "+ N more …". */
   limit?: number;
   moreLabel?: (n: number) => string;
@@ -75,12 +79,13 @@ export function KanbanBoard<T extends { id: string }>({ columns, items, renderCa
     const overIndex = target.findIndex((i) => i.id === e.over!.id);
     const index = overIndex === -1 ? target.length : overIndex;
     if (from === to && board[from]!.findIndex((i) => i.id === moving.id) === index) return;
+    const beforeId = target[index]?.id ?? null;
     target.splice(index, 0, moving);
     const next = { ...board, [from]: board[from]!.filter((i) => i.id !== moving.id), [to]: target };
     setBoard(next);
     startTransition(async () => {
       try {
-        await onMove(moving.id, to, index);
+        await onMove(moving.id, to, beforeId);
       } catch (err) {
         setBoard(before);
         toast.error(err instanceof Error ? err.message : "Couldn't move the card. Try again.");

@@ -27,21 +27,28 @@ export async function createLead(input: z.input<typeof leadSchema>): Promise<Act
   return { ok: true, id: lead.id };
 }
 
-const moveSchema = z.object({ id: z.string().max(64), stage: z.enum(STAGES), index: z.number().int().min(0).max(10_000) });
+const moveSchema = z.object({ id: z.string().max(64), stage: z.enum(STAGES), beforeId: z.string().max(64).nullable() });
 
-/** Kanban drop: change stage and position. Positions in the target column are renumbered. */
-export async function moveLead(id: string, stage: string, index: number): Promise<void> {
+/** Kanban drop: change stage, and slot the lead in just above the card it was dropped on. */
+export async function moveLead(id: string, stage: string, beforeId: string | null): Promise<void> {
   const { user } = await getRequestContext();
-  const m = moveSchema.parse({ id, stage, index });
+  const m = moveSchema.parse({ id, stage, beforeId });
   const lead = await db.lead.findUniqueOrThrow({ where: { id: m.id } });
   assertCan(user, "update", "lead", lead.companyId);
   await db.$transaction(async (tx) => {
-    const column = await tx.lead.findMany({ where: { stage: m.stage, id: { not: m.id } }, orderBy: { position: "asc" }, select: { id: true } });
-    column.splice(Math.min(m.index, column.length), 0, { id: m.id });
-    await Promise.all(column.map((c, i) => tx.lead.update({ where: { id: c.id }, data: { position: i } })));
+    // Make room with one update instead of renumbering the whole column; the board may be
+    // filtered, so only the dropped-on card's own position can be trusted.
+    const before = m.beforeId ? await tx.lead.findUnique({ where: { id: m.beforeId }, select: { position: true } }) : null;
+    let position: number;
+    if (before) {
+      await tx.lead.updateMany({ where: { stage: m.stage, position: { gte: before.position } }, data: { position: { increment: 1 } } });
+      position = before.position;
+    } else {
+      position = Number((await tx.lead.aggregate({ _max: { position: true }, where: { stage: m.stage } }))._max.position ?? -1) + 1;
+    }
     await tx.lead.update({
       where: { id: m.id },
-      data: { stage: m.stage, lastActivityAt: new Date(), wonAt: m.stage === "WON" ? (lead.wonAt ?? new Date()) : null, lostAt: m.stage === "LOST" ? new Date() : null },
+      data: { stage: m.stage, position, lastActivityAt: new Date(), wonAt: m.stage === "WON" ? (lead.wonAt ?? new Date()) : null, lostAt: m.stage === "LOST" ? new Date() : null },
     });
     if (lead.stage !== m.stage) {
       await logActivity(tx, { companyId: lead.companyId, actorId: user.id, verb: "moved", entityType: "LEAD", entityId: lead.id, summary: `${user.name} moved ${lead.name} to ${LEAD_STAGE[m.stage]!.label}` });
@@ -58,9 +65,11 @@ export async function updateLead(id: string, input: z.input<typeof leadSchema>):
   const lead = await db.lead.findUniqueOrThrow({ where: { id: z.string().max(64).parse(id) } });
   assertCan(user, "update", "lead", lead.companyId);
   assertCan(user, "update", "lead", parsed.data.companyId);
+  const ownerId = parsed.data.ownerId || lead.ownerId;
   await db.$transaction(async (tx) => {
-    await tx.lead.update({ where: { id }, data: { ...parsed.data, ownerId: parsed.data.ownerId || lead.ownerId, email: parsed.data.email || null, lastActivityAt: new Date() } });
+    await tx.lead.update({ where: { id }, data: { ...parsed.data, ownerId, email: parsed.data.email || null, lastActivityAt: new Date() } });
     await logActivity(tx, { companyId: lead.companyId, actorId: user.id, verb: "updated", entityType: "LEAD", entityId: id, summary: `${user.name} updated ${lead.name}` });
+    if (ownerId && ownerId !== lead.ownerId) await notify(tx, { userIds: [ownerId], exceptUserId: user.id, type: "lead_assigned", title: `You own a new lead: ${parsed.data.name}`, link: `/leads?id=${id}` });
   });
   refresh();
   return { ok: true };
@@ -71,6 +80,7 @@ export async function convertLead(id: string, withProject: boolean): Promise<Act
   const { user } = await getRequestContext();
   const lead = await db.lead.findUniqueOrThrow({ where: { id: z.string().max(64).parse(id) } });
   assertCan(user, "create", "client", lead.companyId);
+  if (lead.stage === "WON" && lead.clientId) return { ok: false, error: "This lead was already converted to a client." };
   const clientId = await db.$transaction(async (tx) => {
     const client =
       (lead.clientId && (await tx.client.findUnique({ where: { id: lead.clientId } }))) ||
@@ -80,7 +90,7 @@ export async function convertLead(id: string, withProject: boolean): Promise<Act
       const has = await tx.clientContact.count({ where: { clientId: client.id } });
       if (!has) await tx.clientContact.create({ data: { clientId: client.id, name: lead.contactName ?? lead.name, email: lead.email, phone: lead.phone, isPrimary: true } });
     }
-    await tx.folder.create({ data: { name: client.name, category: "CLIENT_FILES", parentId: "folder_client_files", clientId: client.id } }).catch(() => undefined);
+    if (!lead.clientId) await tx.folder.create({ data: { name: client.name, category: "CLIENT_FILES", parentId: "folder_client_files", clientId: client.id } });
     if (withProject) {
       const vmh = lead.companyId === "vmh";
       await tx.project.create({

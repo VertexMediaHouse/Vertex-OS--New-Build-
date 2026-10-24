@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CalendarDays, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { KanbanBoard, KanbanCard } from "@/components/shared/kanban";
-import { CompanyBadge, PriorityPill } from "@/components/shared/pills";
+import { CompanyBadge, PriorityPill, type CompanyBadgeCode } from "@/components/shared/pills";
 import { Avatar, ProgressBar } from "@/components/shared/primitives";
 import { useHrefWith } from "@/components/shared/nav";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { addChecklistItem, addTaskComment, createTask, moveTask, toggleChecklist, updateTask } from "@/app/(app)/tasks/actions";
+import { Field as F } from "@/components/shared/layout";
 
-export type BoardTask = { id: string; title: string; co: "VMH" | "VTH"; client: string | null; priority: string; due: string | null; progress: number; assignee: string | null };
+export type BoardTask = { id: string; title: string; co: CompanyBadgeCode; client: string | null; priority: string; due: string | null; progress: number; assignee: string | null };
 
 const COLS = [
   { id: "TODO", title: "To Do", headerClass: "bg-[#ECF0F8]", bodyClass: "bg-[#F7F8FB]", accentClass: "text-ink", dot: null },
@@ -101,9 +102,6 @@ export function NewTaskDialog({ companies, projects, people, open: initialOpen, 
   );
 }
 
-function F({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
-  return <label className={`block space-y-1 ${className ?? ""}`}><span className="block text-xs leading-none font-medium">{label}</span>{children}</label>;
-}
 
 export function ChecklistControls({ taskId, items }: { taskId: string; items: { id: string; text: string; done: boolean; assignee: string | null }[] }) {
   const [pending, start] = useTransition();
@@ -150,7 +148,7 @@ export function TaskFieldSelect({ taskId, field, value, options }: { taskId: str
 export function TaskStatusSelect({ taskId, value }: { taskId: string; value: string }) {
   const [pending, start] = useTransition();
   return (
-    <select aria-label="Status" disabled={pending} defaultValue={value} onChange={(e) => start(() => moveTask(taskId, e.target.value, 0))} className="h-7 rounded-full bg-info-soft px-2 text-xs font-medium text-info-text">
+    <select aria-label="Status" disabled={pending} defaultValue={value} onChange={(e) => start(() => moveTask(taskId, e.target.value, null))} className="h-7 rounded-full bg-info-soft px-2 text-xs font-medium text-info-text">
       {COLS.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
     </select>
   );

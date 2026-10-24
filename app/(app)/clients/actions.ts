@@ -58,12 +58,37 @@ export async function setClientStatus(ids: string[], status: string): Promise<vo
   refresh();
 }
 
-export async function archiveClients(ids: string[]): Promise<void> {
+/** Edit the client's own details. Adds a primary contact when the client has none yet. */
+export async function updateClient(id: string, input: z.input<typeof clientSchema>): Promise<ActionResult> {
+  const parsed = clientSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
+  const { user, client } = await assertClient("update", id);
+  const { companies, contactName, contactEmail, ...d } = parsed.data;
+  companies.forEach((c) => assertCan(user, "update", "client", c));
+  await db.$transaction(async (tx) => {
+    await tx.client.update({ where: { id: client.id }, data: { ...d, ownerId: d.ownerId || client.ownerId, tags: d.tags ?? [], lastActivityAt: new Date() } });
+    const removed = client.companies.filter((c) => !companies.includes(c.companyId as "vmh")).map((c) => c.companyId);
+    if (removed.length) await tx.clientCompany.deleteMany({ where: { clientId: client.id, companyId: { in: removed } } });
+    for (const companyId of companies) {
+      await tx.clientCompany.upsert({ where: { clientId_companyId: { clientId: client.id, companyId } }, create: { clientId: client.id, companyId }, update: {} });
+    }
+    if (contactName && (await tx.clientContact.count({ where: { clientId: client.id } })) === 0) {
+      await tx.clientContact.create({ data: { clientId: client.id, name: contactName, email: contactEmail || null, isPrimary: true } });
+    }
+    await logActivity(tx, { companyId: companies.length === 1 ? companies[0]! : null, actorId: user.id, verb: "updated", entityType: "CLIENT", entityId: client.id, summary: `${user.name} updated ${d.name}` });
+  });
+  refresh();
+  return { ok: true, id: client.id };
+}
+
+/** Archive hides the client everywhere; restore brings it back (nothing is deleted). */
+export async function archiveClients(ids: string[], restore = false): Promise<void> {
+  const back = z.boolean().parse(restore);
   for (const id of z.array(z.string().max(64)).max(200).parse(ids)) {
     const { user, client } = await assertClient("delete", id);
     await db.$transaction([
-      db.client.update({ where: { id }, data: { archivedAt: new Date() } }),
-      db.activity.create({ data: { actorId: user.id, verb: "archived", entityType: "CLIENT", entityId: id, summary: `${user.name} archived ${client.name}` } }),
+      db.client.update({ where: { id }, data: { archivedAt: back ? null : new Date() } }),
+      db.activity.create({ data: { actorId: user.id, verb: back ? "restored" : "archived", entityType: "CLIENT", entityId: id, summary: `${user.name} ${back ? "restored" : "archived"} ${client.name}` } }),
     ]);
   }
   refresh();

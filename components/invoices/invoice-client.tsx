@@ -10,7 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createInvoice, recordPayment, sendReminder, setInvoiceState } from "@/app/(app)/invoices/actions";
 import { invoiceTotals } from "@/lib/invoices/status";
+import { addDays } from "@/lib/clock";
+import { dayKey } from "@/lib/period";
 import { formatMoney } from "@/lib/format";
+import { Field } from "@/components/shared/layout";
 
 export function InvoiceActions({ id, status, balance, currency }: { id: string; status: string; balance: number; currency: string }) {
   const [pending, start] = useTransition();
@@ -40,10 +43,10 @@ export function InvoiceActions({ id, status, balance, currency }: { id: string; 
               toast.success("Payment recorded."); setOpen(false);
             });
           }}>
-            <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Amount ({currency}) · balance {formatMoney(balance, currency)}</span><Input name="amount" type="number" step="0.01" min={0.01} max={balance} defaultValue={balance} required /></label>
-            <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Date</span><Input name="date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></label>
-            <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Method</span><select name="method" className="h-9 w-full rounded-lg border bg-card px-2">{[["BANK_TRANSFER", "Bank transfer"], ["UPI", "UPI"], ["CARD", "Card"], ["PAYPAL", "PayPal"], ["WISE", "Wise"], ["CASH", "Cash"], ["OTHER", "Other"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
-            <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Reference</span><Input name="reference" placeholder="UTR / transaction id" /></label>
+            <Field label={<>Amount ({currency}) · balance {formatMoney(balance, currency)}</>} className="space-y-1"><Input name="amount" type="number" step="0.01" min={0.01} max={balance} defaultValue={balance} required /></Field>
+            <Field label="Date" className="space-y-1"><Input name="date" type="date" defaultValue={dayKey(new Date())} required /></Field>
+            <Field label="Method" className="space-y-1"><select name="method" className="h-9 w-full rounded-lg border bg-card px-2">{[["BANK_TRANSFER", "Bank transfer"], ["UPI", "UPI"], ["CARD", "Card"], ["PAYPAL", "PayPal"], ["WISE", "Wise"], ["CASH", "Cash"], ["OTHER", "Other"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></Field>
+            <Field label="Reference" className="space-y-1"><Input name="reference" placeholder="UTR / transaction id" /></Field>
             <DialogFooter><Button type="submit" disabled={pending}>Save payment</Button></DialogFooter>
           </form>
         </DialogContent>
@@ -70,9 +73,11 @@ export function InvoiceBuilder({ companies, clients, projects, entries, defaults
   const co = companies.find((c) => c.id === companyId)!;
   const [clientId, setClient] = useState(firstProject?.clientId ?? "");
   const [projectId, setProject] = useState(firstProject?.id ?? "");
-  const [issue, setIssue] = useState(() => new Date().toISOString().slice(0, 10));
-  const [due, setDue] = useState(() => new Date(Date.now() + co.terms * 86_400_000).toISOString().slice(0, 10));
-  const [currency, setCurrency] = useState<"INR" | "USD">("INR");
+  const [issue, setIssue] = useState(() => dayKey(new Date()));
+  const [due, setDue] = useState(() => dayKey(addDays(new Date(), co.terms)));
+  // shortcut: INR only. Every revenue total sums invoice amounts without converting, so a
+  // USD invoice would be counted as rupees. Add a stored exchange rate before billing in USD.
+  const currency = "INR";
   const [taxRate, setTax] = useState(co.taxRate);
   const [discount, setDiscount] = useState(0);
   const [notes, setNotes] = useState("");
@@ -104,7 +109,7 @@ export function InvoiceBuilder({ companies, clients, projects, entries, defaults
           <Field label="Project"><select className={sel} value={projectId} onChange={(e) => setProject(e.target.value)}><option value="">None</option>{projects.filter((p) => p.clientId === clientId && p.companyId === companyId).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
           <Field label="Issue date"><Input type="date" value={issue} onChange={(e) => setIssue(e.target.value)} /></Field>
           <Field label="Due date"><Input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></Field>
-          <Field label="Currency"><select className={sel} value={currency} onChange={(e) => setCurrency(e.target.value as "INR")}><option>INR</option><option>USD</option></select></Field>
+          <Field label="Currency"><Input value="INR" readOnly /></Field>
         </div>
         <table className="w-full text-xs">
           <thead><tr className="text-left text-ink-2">{["Description", "Qty", "Rate", "Amount", ""].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium">{h}</th>)}</tr></thead>
@@ -149,9 +154,6 @@ export function InvoiceBuilder({ companies, clients, projects, entries, defaults
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">{label}</span>{children}</label>;
-}
 function Row({ k, v, bold }: { k: string; v: string; bold?: boolean }) {
   return <div className={`flex justify-between ${bold ? "font-bold text-ink" : "text-ink-2"}`}><span>{k}</span><span className="tabular">{v}</span></div>;
 }

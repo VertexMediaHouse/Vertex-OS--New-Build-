@@ -5,6 +5,7 @@ import { markOverdueInvoices } from "./invoices";
 import { recomputeGoals } from "./goals";
 import { purgeTrash } from "./files";
 import { sendDueCampaignSteps } from "@/lib/campaigns";
+import { runCrossSellRules } from "@/lib/crosssell";
 
 /** Background jobs on the same Postgres (pg-boss). Started once per server process. */
 export const JOBS = {
@@ -12,6 +13,7 @@ export const JOBS = {
   "goals.recompute": { cron: "0 * * * *", run: () => recomputeGoals(db, now()) },
   "files.purge": { cron: "30 3 * * *", run: () => purgeTrash(db, now()) },
   "campaigns.send": { cron: "*/10 * * * *", run: () => sendDueCampaignSteps(db, now()) },
+  "crosssell.run": { cron: "15 * * * *", run: () => runCrossSellRules(db) },
 } as Record<string, { cron: string; run: () => Promise<unknown> }>;
 
 let started: Promise<PgBoss> | null = null;

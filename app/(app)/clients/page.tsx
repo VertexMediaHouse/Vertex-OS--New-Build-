@@ -37,7 +37,8 @@ async function Clients({ searchParams }: { searchParams: Promise<SP> }) {
   const [ctx, sp] = await Promise.all([getRequestContext(), searchParams]);
   const p = readParams(sp);
   const all = await listClients({ companyIds: ctx.companyIds });
-  const filtered = await listClients({ companyIds: subScope(ctx.companyIds, p.str("co")), q: p.str("q"), status: p.str("status"), tag: p.str("tag"), owner: p.str("owner") });
+  const archived = p.str("archived") === "1";
+  const filtered = await listClients({ companyIds: subScope(ctx.companyIds, p.str("co")), q: p.str("q"), status: p.str("status"), tag: p.str("tag"), owner: p.str("owner"), archived });
   const { field, dir } = p.sort(["name", "revenue", "lastActivity"], "lastActivity");
   const key = (c: (typeof filtered)[number]) => (field === "name" ? c.name.toLowerCase() : field === "revenue" ? c.revenue : c.lastActivityAt.getTime());
   filtered.sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0) * (dir === "asc" ? 1 : -1));
@@ -83,9 +84,10 @@ async function Clients({ searchParams }: { searchParams: Promise<SP> }) {
             <FilterSelect param="status" placeholder="All Status" options={Object.entries(CLIENT_STATUS).map(([value, m]) => ({ value, label: m.label }))} />
             <FilterSelect param="tag" placeholder="All Tags" options={tags.map((tg) => ({ value: tg.name, label: tg.name }))} />
             <FilterSelect param="owner" placeholder="All Owners" options={owners.map((o) => ({ value: o.id, label: o.name }))} />
+            <Link href={archived ? "/clients" : "/clients?archived=1"} className="inline-flex h-9 items-center rounded-lg border bg-card px-3 text-xs font-medium text-ink-2 hover:bg-accent">{archived ? "Active clients" : "Archived"}</Link>
             <a href={exportHref} className="inline-flex h-9 items-center gap-2 rounded-lg border bg-card px-3 text-xs font-medium text-ink-2 hover:bg-accent"><Download className="size-4" /> Export</a>
           </div>
-          <ClientsTable rows={pageRows.map(({ createdAt, lastActivityAt, tags: _t, ...r }) => (void createdAt, void lastActivityAt, void _t, r))} />
+          <ClientsTable archived={archived} rows={pageRows.map(({ createdAt, lastActivityAt, tags: _t, ...r }) => (void createdAt, void lastActivityAt, void _t, r))} />
           <Pagination className="mt-4" page={p.page} pageSize={PAGE} total={filtered.length} noun="clients" />
         </Card>
         <div className="space-y-3.5">

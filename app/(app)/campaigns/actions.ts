@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getRequestContext } from "@/lib/auth/context";
-import { assertCan } from "@/lib/auth/permissions";
+import { allowedCompanyIds, assertCan, can } from "@/lib/auth/permissions";
 import { logActivity } from "@/lib/activity";
 import { audienceSchema, resolveAudience, stepSchema } from "@/lib/campaigns";
 import type { ActionResult } from "@/lib/validation/result";
@@ -16,11 +16,15 @@ export async function createCampaign(input: { name: string; companyId: string; a
   const d = z.object({ name: z.string().trim().min(1).max(160), companyId: z.enum(["vmh", "vth", ""]), audience: audienceSchema, steps: z.array(stepSchema).min(1).max(10), scheduledAt: z.string().optional(), activate: z.boolean() }).safeParse(input);
   if (!d.success) return { ok: false, error: d.error.issues[0]!.message };
   assertCan(user, "create", "campaign", d.data.companyId || undefined);
-  const recipients = await resolveAudience(db, d.data.audience);
+  // The audience companies come from the form, so they are clamped to the companies this
+  // user may campaign for: a VMH-only manager can never reach VTH contacts.
+  const allowed = (d.data.companyId ? [d.data.companyId] : allowedCompanyIds(user)).filter((c) => can(user, "create", "campaign", c));
+  const audience = { ...d.data.audience, companies: allowed.map((c) => c.toUpperCase() as "VMH" | "VTH") };
+  const recipients = await resolveAudience(db, audience);
   if (!recipients.length) return { ok: false, error: "No contacts with an email match that audience." };
   const c = await db.emailCampaign.create({
     data: {
-      name: d.data.name, companyId: d.data.companyId || null, subject: d.data.steps[0]!.subject, audienceFilter: d.data.audience, steps: d.data.steps, status: d.data.activate ? "ACTIVE" : "DRAFT",
+      name: d.data.name, companyId: d.data.companyId || null, subject: d.data.steps[0]!.subject, audienceFilter: audience, steps: d.data.steps, status: d.data.activate ? "ACTIVE" : "DRAFT",
       scheduledAt: d.data.scheduledAt ? new Date(d.data.scheduledAt) : null,
       recipients: { createMany: { data: recipients.map((r) => ({ email: r.email, name: r.name, leadId: r.leadId, clientId: r.clientId })), skipDuplicates: true } },
     },

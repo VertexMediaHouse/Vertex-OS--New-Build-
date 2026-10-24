@@ -12,8 +12,11 @@ import { runCrossSellRules } from "../lib/crosssell";
 import * as F from "./seed/fixtures";
 import { at, day, minutesAgo, rng, slug, splitInto, splitTotal, weekdays } from "./seed/util";
 
-if (process.env.NODE_ENV === "production" && !process.argv.includes("--force")) {
-  throw new Error("Refusing to wipe a production database. Pass --force if you really mean it.");
+// The seed deletes everything first, so it only runs against a local database. NODE_ENV is
+// usually unset in a terminal, so the host is what decides.
+const dbHost = new URL(process.env.DATABASE_URL ?? "postgres://nowhere").hostname;
+if (!["localhost", "127.0.0.1", "::1"].includes(dbHost) && !process.argv.includes("--force")) {
+  throw new Error(`Refusing to wipe the database at ${dbHost}: it isn't local. Pass --force if you really mean it.`);
 }
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });

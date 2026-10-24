@@ -6,7 +6,7 @@ import {
 import { KpiCard } from "@/components/shared/kpi-card";
 import { Card, IconTile, Inset, ProgressBar, SectionCard, SegmentedBar, type TileTone } from "@/components/shared/primitives";
 import { Avatar } from "@/components/shared/primitives";
-import { Chip, CompanyBadge, StatusPill } from "@/components/shared/pills";
+import { Chip, CompanyBadge, StatusPill, companyCode } from "@/components/shared/pills";
 import { ActivityRow } from "@/components/shared/display";
 import { DonutLegend } from "@/components/shared/charts";
 import { formatINR, formatRelative, formatTimePadded } from "@/lib/format";
@@ -21,7 +21,6 @@ import { PRODUCTION_STAGE_COLORS, PROJECT_STATUS_COLORS, TASK_OVERVIEW_COLORS } 
 import { CrossSellActions } from "./cross-sell-actions";
 
 type Ctx = ScopeFilter & { scope: "ALL" | "VMH" | "VTH" };
-const code = (companyId: string | null) => (companyId === "vmh" ? "VMH" : companyId === "vth" ? "VTH" : "ALL");
 const suffix = (s: Ctx) => (s.scope === "ALL" ? "" : ` (${s.scope})`);
 
 // ── KPI row ─────────────────────────────────────────────────────────────
@@ -139,7 +138,7 @@ export async function CampaignsCard({ ctx }: { ctx: Ctx }) {
             <Metric value={`${pct(c.openCount, c.sentCount)}%`} label="open" className="text-success-text" />
             <Metric value={`${pct(c.replyCount, c.sentCount)}%`} label="reply" className="text-danger-text" />
             <Metric value={String(c.meetingsCount)} label="meetings" className="text-ink" />
-            <CompanyBadge code={code(c.companyId)} />
+            <CompanyBadge code={companyCode(c.companyId)} />
           </div>
         ))}
       </div>
@@ -175,7 +174,7 @@ export async function GoalsCard({ ctx }: { ctx: Ctx }) {
               </p>
             </div>
             <span className="text-xs font-semibold text-ink tabular">{Math.round(g.progress)}%</span>
-            <CompanyBadge code={code(g.companyId)} />
+            <CompanyBadge code={companyCode(g.companyId)} />
           </div>
         ))}
       </div>
@@ -317,7 +316,7 @@ export async function AgendaCard({ ctx, compact }: { ctx: Ctx; compact?: boolean
               <Video className="size-3" aria-hidden />
             </span>
             <span className="min-w-0 flex-1 truncate text-ink">{e.title}</span>
-            <CompanyBadge code={code(e.companyId)} />
+            <CompanyBadge code={companyCode(e.companyId)} />
           </li>
         ))}
       </ul>
@@ -345,7 +344,7 @@ export async function ActivityCard({ ctx, compact }: { ctx: Ctx; compact?: boole
             iconClass={icon?.cls}
             text={a.summary}
             time={formatRelative(a.createdAt, t)}
-            right={<CompanyBadge code={code(a.companyId)} />}
+            right={<CompanyBadge code={companyCode(a.companyId)} />}
           />
         );
       })}

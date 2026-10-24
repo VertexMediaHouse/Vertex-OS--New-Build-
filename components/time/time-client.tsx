@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Field } from "@/components/shared/layout";
 import { addManualEntry, deleteEntry, reviewEntries, setBillable, startTimer, stopTimer } from "@/app/(app)/time/actions";
 
 type Project = { id: string; label: string; tasks: { id: string; title: string }[] };
@@ -26,12 +27,12 @@ export function StartTimerPanel({ projects }: { projects: Project[] }) {
         <ManualEntryDialog projects={projects} />
       </div>
       <div className="space-y-3 p-4 text-xs">
-        <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Select Project</span>
+        <Field label="Select Project" className="space-y-1">
           <select value={projectId} onChange={(e) => { setProjectId(e.target.value); setTaskId(""); }} className="h-9 w-full rounded-lg border bg-card px-2"><option value="">Choose a project...</option>{projects.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}</select>
-        </label>
-        <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Select Task (Optional)</span>
+        </Field>
+        <Field label="Select Task (Optional)" className="space-y-1">
           <select value={taskId} onChange={(e) => setTaskId(e.target.value)} disabled={!tasks.length} className="h-9 w-full rounded-lg border bg-card px-2"><option value="">Choose a task...</option>{tasks.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}</select>
-        </label>
+        </Field>
         <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Add a note (what are you working on?)" aria-label="Note" />
         <Button className="w-full bg-blue hover:bg-blue/90" disabled={!projectId || pending} onClick={() => start(async () => { const r = await startTimer({ projectId, taskId, note }); if (r.ok) { toast.success("Timer started."); setNote(""); } })}>
           <Play className="size-4" /> Start Tracking
@@ -60,12 +61,12 @@ function ManualEntryDialog({ projects }: { projects: Project[] }) {
             toast.success("Entry added for approval."); setOpen(false);
           });
         }}>
-          <label className="col-span-3 space-y-1 block"><span className="block text-xs leading-none font-medium">Project</span><select required value={projectId} onChange={(e) => setProjectId(e.target.value)} className="h-9 w-full rounded-lg border bg-card px-2"><option value="">Choose…</option>{projects.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}</select></label>
-          <label className="col-span-3 space-y-1 block"><span className="block text-xs leading-none font-medium">Task</span><select name="taskId" className="h-9 w-full rounded-lg border bg-card px-2"><option value="">None</option>{(projects.find((p) => p.id === projectId)?.tasks ?? []).map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}</select></label>
-          <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Date</span><Input name="date" type="date" required /></label>
-          <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Start</span><Input name="start" type="time" required /></label>
-          <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">End</span><Input name="end" type="time" required /></label>
-          <label className="col-span-3 space-y-1 block"><span className="block text-xs leading-none font-medium">What did you work on?</span><Input name="note" required /></label>
+          <Field label="Project" className="col-span-3 space-y-1"><select required value={projectId} onChange={(e) => setProjectId(e.target.value)} className="h-9 w-full rounded-lg border bg-card px-2"><option value="">Choose…</option>{projects.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}</select></Field>
+          <Field label="Task" className="col-span-3 space-y-1"><select name="taskId" className="h-9 w-full rounded-lg border bg-card px-2"><option value="">None</option>{(projects.find((p) => p.id === projectId)?.tasks ?? []).map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}</select></Field>
+          <Field label="Date" className="space-y-1"><Input name="date" type="date" required /></Field>
+          <Field label="Start" className="space-y-1"><Input name="start" type="time" required /></Field>
+          <Field label="End" className="space-y-1"><Input name="end" type="time" required /></Field>
+          <Field label="What did you work on?" className="col-span-3 space-y-1"><Input name="note" required /></Field>
           <label className="col-span-3 flex items-center gap-2 text-xs"><Switch checked={billable} onCheckedChange={setBill} /> Billable</label>
           <DialogFooter className="col-span-3"><Button type="submit" disabled={pending}>Add entry</Button></DialogFooter>
         </form>

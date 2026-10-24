@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Mail, Phone, Globe } from "lucide-react";
 import { getRequestContext } from "@/lib/auth/context";
+import { can, isMemberOnly } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { scopedClientWhere } from "@/lib/db/scope";
 import { now } from "@/lib/clock";
@@ -13,6 +14,7 @@ import { Card, ProgressBar, SectionCard, Avatar } from "@/components/shared/prim
 import { CardSkeleton, EmptyState, KeyValue } from "@/components/shared/layout";
 import { CompanyBadges, EnumPill } from "@/components/shared/pills";
 import { ActivityRow, FileIcon } from "@/components/shared/display";
+import { ClientFormDialog } from "@/components/clients/client-form";
 
 export default function ClientPage({ params }: PageProps<"/clients/[id]">) {
   return (
@@ -32,19 +34,32 @@ async function Client({ params }: { params: Promise<{ id: string }> }) {
       contacts: { orderBy: { isPrimary: "desc" } },
       projects: { where: { companyId: { in: ctx.companyIds } }, orderBy: { startDate: "desc" } },
       invoices: { where: { companyId: { in: ctx.companyIds } }, orderBy: { issueDate: "desc" }, take: 10 },
-      files: { where: { deletedAt: null }, orderBy: { updatedAt: "desc" }, take: 8 },
+      files: {
+        where: {
+          deletedAt: null,
+          companyId: { in: ctx.companyIds },
+          // Same rule as the Files page: members see their own uploads, shares and project files.
+          ...(isMemberOnly(ctx.user) && { OR: [{ uploadedById: ctx.user.id }, { shares: { some: { userId: ctx.user.id } } }, { project: { members: { some: { userId: ctx.user.id } } } }] }),
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 8,
+      },
     },
   });
   if (!client) notFound();
-  const [activity, notes] = await Promise.all([
+  const [activity, notes, invoiced, owners] = await Promise.all([
     db.activity.findMany({ where: { OR: [{ entityType: "CLIENT", entityId: id }, { entityId: { in: client.projects.map((p) => p.id) } }] }, orderBy: { createdAt: "desc" }, take: 8, include: { actor: { select: { name: true } } } }),
     db.comment.findMany({ where: { entityType: "CLIENT", entityId: id }, orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } }),
+    // Every invoice, not just the 10 shown below.
+    db.invoice.aggregate({ _sum: { total: true }, where: { clientId: id, companyId: { in: ctx.companyIds }, status: { notIn: ["DRAFT", "CANCELLED"] } } }),
+    db.user.findMany({ where: { kind: "STAFF", memberships: { some: { companyId: { in: ctx.companyIds } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ]);
   const t = now();
   const color = logoColor(client.name);
   const codes = client.companies.map((c) => (c.companyId === "vmh" ? "VMH" : "VTH") as "VMH" | "VTH").sort();
   const revenue = client.projects.reduce((a, p) => a + Number(p.value), 0);
-  const billed = client.invoices.reduce((a, i) => a + Number(i.total), 0);
+  const billed = Number(invoiced._sum.total ?? 0);
+  const editable = client.companies.every((c) => can(ctx.user, "update", "client", c.companyId));
 
   return (
     <div className="space-y-3.5">
@@ -64,6 +79,13 @@ async function Client({ params }: { params: Promise<{ id: string }> }) {
           <div><p className="text-xl font-bold text-ink">{formatINR(revenue)}</p><p className="text-2xs text-ink-muted">Project value</p></div>
           <div><p className="text-xl font-bold text-ink">{formatINR(billed)}</p><p className="text-2xs text-ink-muted">Invoiced</p></div>
         </div>
+        {editable && (
+          <ClientFormDialog
+            companies={client.companies.map((c) => c.companyId as "vmh")}
+            owners={owners}
+            client={{ id: client.id, name: client.name, domain: client.domain ?? "", type: client.type ?? "", status: client.status as "ACTIVE", companies: client.companies.map((c) => c.companyId as "vmh"), ownerId: client.ownerId ?? "", tags: client.tags, notes: client.notes ?? "", address: client.address ?? "" }}
+          />
+        )}
       </Card>
 
       <div className="grid gap-3.5 xl:grid-cols-3">

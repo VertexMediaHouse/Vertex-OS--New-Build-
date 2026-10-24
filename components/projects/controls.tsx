@@ -13,6 +13,7 @@ import { EnumPill, StatusPill } from "@/components/shared/pills";
 import { PROJECT_STATUS } from "@/lib/status";
 import { addProjectNote, createProject, inviteContact, requestApproval, revokeContact, setMilestoneStatus, setProjectStatus, updateDeliverable } from "@/app/(app)/projects/actions";
 import type { ActionResult } from "@/lib/validation/result";
+import { Field as L } from "@/components/shared/layout";
 
 function useAction() {
   const [pending, start] = useTransition();
@@ -173,6 +174,3 @@ export function NewProjectDialog({ companies, clients, brandGreen }: { companies
   );
 }
 
-function L({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
-  return <label className={`block space-y-1 ${className ?? ""}`}><span className="block text-xs leading-none font-medium">{label}</span>{children}</label>;
-}

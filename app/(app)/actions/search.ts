@@ -21,7 +21,16 @@ export async function globalSearch(query: string): Promise<SearchHit[]> {
     db.project.findMany({ where: { ...co, ...(member && { members: { some: { userId: ctx.user.id } } }), OR: [{ name: has }, { client: { name: has } }] }, take: 5, include: { client: { select: { name: true } } } }),
     db.task.findMany({ where: { ...co, ...(member && { assigneeId: ctx.user.id }), title: has }, take: 5, include: { project: { select: { name: true } } } }),
     can(ctx.user, "view", "invoice") ? db.invoice.findMany({ where: { ...co, OR: [{ number: has }, { client: { name: has } }] }, take: 5, include: { client: { select: { name: true } } } }) : [],
-    db.file.findMany({ where: { deletedAt: null, OR: [{ companyId: { in: ctx.companyIds } }, { companyId: null }], name: has, ...(member && { OR: [{ uploadedById: ctx.user.id }, { shares: { some: { userId: ctx.user.id } } }] }) }, take: 5 }),
+    db.file.findMany({
+      where: {
+        deletedAt: null,
+        name: has,
+        OR: [{ companyId: { in: ctx.companyIds } }, { companyId: null }],
+        // Same rule as the Files page: members see their own uploads, shares and project files.
+        ...(member && { AND: [{ OR: [{ uploadedById: ctx.user.id }, { shares: { some: { userId: ctx.user.id } } }, { project: { members: { some: { userId: ctx.user.id } } } }] }] }),
+      },
+      take: 5,
+    }),
   ]);
   return [
     ...leads.map((l) => ({ group: "Leads", label: l.name, sub: l.service, href: `/leads?id=${l.id}` })),

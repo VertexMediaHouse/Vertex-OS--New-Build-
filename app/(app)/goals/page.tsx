@@ -18,7 +18,7 @@ import { CardSkeleton, EmptyState, KeyValue, PageHeader } from "@/components/sha
 import { FilterTabs, SegmentedControl, UnderlineTabs } from "@/components/shared/nav";
 import { DateRangePicker, FilterSelect, SearchInput } from "@/components/shared/filters";
 import { DonutChart, DonutLegend, LinesChart, ChartLegend } from "@/components/shared/charts";
-import { CompanyBadge, EnumPill } from "@/components/shared/pills";
+import { CompanyBadge, EnumPill, companyCode } from "@/components/shared/pills";
 import { ActivityRow } from "@/components/shared/display";
 import { AddMilestone, GoalDialog, MilestoneCheck, ProgressEditor } from "@/components/goals/goal-client";
 
@@ -27,7 +27,6 @@ const ICONS: Record<string, [LucideIcon, TileTone]> = {
   target: [Target, "red"], users: [Users, "purple"], "folder-check": [FolderCheck, "purple"], rocket: [Rocket, "blue"], "user-plus": [UserPlus, "pink"], workflow: [Workflow, "red"],
   youtube: [MonitorPlay, "red"], smile: [Smile, "blue"], "graduation-cap": [GraduationCap, "blue"], "bar-chart": [BarChart3, "green"], "file-text": [FileText, "orange"], video: [Video, "purple"],
 };
-const code = (id: string | null) => (id === "vmh" ? "VMH" : id === "vth" ? "VTH" : "ALL") as "VMH" | "VTH" | "ALL";
 
 export default function GoalsPage({ searchParams }: PageProps<"/goals">) {
   return <Suspense fallback={<CardSkeleton className="h-96" />}><Goals searchParams={searchParams} /></Suspense>;
@@ -116,7 +115,7 @@ function Detailed({ ctx, rows, sp, range, people, companies, toggle, t }: Props 
                 {filtered.map((g) => { const [Icon] = ICONS[g.icon ?? "target"] ?? [Target]; return (
                   <tr key={g.id} className={`border-b ${selected?.id === g.id ? "bg-[#EAF4FC]" : "hover:bg-[#F8FAFC]"}`}>
                     <td className="px-2 py-2"><Link href={`?${new URLSearchParams({ ...Object.fromEntries(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string")), id: g.id })}`} scroll={false} className="flex items-center gap-2 font-semibold text-ink hover:underline"><Icon className="size-4 text-danger-text" />{g.title}</Link></td>
-                    <td className="px-2 py-2"><CompanyBadge code={code(g.companyId)} /></td>
+                    <td className="px-2 py-2"><CompanyBadge code={companyCode(g.companyId)} /></td>
                     <td className="px-2 py-2 text-ink-2">{GOAL_CATEGORY_LABELS[g.category]}</td>
                     <td className="px-2 py-2">{formatDate(g.startDate)}</td>
                     <td className="px-2 py-2">{formatDate(g.endDate)}</td>
@@ -144,13 +143,13 @@ async function GoalPanel({ goal, t, canEdit }: { goal: Row; t: Date; canEdit: bo
   return (
     <div className="space-y-3.5">
       <Card className="p-4">
-        <div className="flex items-start justify-between gap-2"><h2 className="text-base font-bold text-ink">{goal.title}{goal.companyId && ` - ${code(goal.companyId)}`}</h2><EnumPill map={GOAL_STATUS} value={goal.status} /></div>
+        <div className="flex items-start justify-between gap-2"><h2 className="text-base font-bold text-ink">{goal.title}{goal.companyId && ` - ${companyCode(goal.companyId)}`}</h2><EnumPill map={GOAL_STATUS} value={goal.status} /></div>
         {goal.subtitle && <p className="mt-1 text-xs text-ink-muted">{goal.subtitle}</p>}
         <div className="mt-3 flex items-center gap-3"><ProgressBar value={goal.progress} tone={barTone(goal)} height={8} /><span className="text-sm font-semibold">{Math.round(goal.progress)}%</span></div>
         <div className="mt-3 grid grid-cols-2 text-xs"><div><p className="text-ink-muted">Current</p><p className="text-lg font-bold text-ink">{valueText(goal, goal.currentValue)}</p></div><div><p className="text-ink-muted">Target</p><p className="text-lg font-bold text-ink">{valueText(goal, goal.targetValue)}</p></div></div>
         {canEdit && goal.metricType === "MANUAL" && <div className="mt-3"><ProgressEditor goalId={goal.id} value={Number(goal.currentValue)} /></div>}
         {goal.metricType !== "MANUAL" && <p className="mt-2 text-2xs text-ink-muted">Tracked automatically from live data.</p>}
-        <KeyValue className="mt-4" labelWidth={100} rows={[["Company", <span key="c" className="flex items-center gap-1.5"><CompanyBadge code={code(goal.companyId)} />{goal.companyId === "vth" ? "Vertex Tech House" : goal.companyId === "vmh" ? "Vertex Media House" : "Both companies"}</span>], ["Category", GOAL_CATEGORY_LABELS[goal.category]], ["Start Date", formatDate(goal.startDate)], ["End Date", formatDate(goal.endDate)], ["Owner", <span key="o" className="flex items-center gap-2"><Avatar person={goal.owner} size={22} />{goal.owner.name}</span>], ["Team Members", <AvatarStack key="m" people={goal.members.map((m) => m.user)} />]]} />
+        <KeyValue className="mt-4" labelWidth={100} rows={[["Company", <span key="c" className="flex items-center gap-1.5"><CompanyBadge code={companyCode(goal.companyId)} />{goal.companyId === "vth" ? "Vertex Tech House" : goal.companyId === "vmh" ? "Vertex Media House" : "Both companies"}</span>], ["Category", GOAL_CATEGORY_LABELS[goal.category]], ["Start Date", formatDate(goal.startDate)], ["End Date", formatDate(goal.endDate)], ["Owner", <span key="o" className="flex items-center gap-2"><Avatar person={goal.owner} size={22} />{goal.owner.name}</span>], ["Team Members", <AvatarStack key="m" people={goal.members.map((m) => m.user)} />]]} />
         {goal.description && <><h3 className="mt-4 text-sm font-bold text-ink">Description</h3><p className="mt-1 text-xs leading-5 text-ink-2">{goal.description}</p></>}
       </Card>
       <SectionCard title={`Milestones (${milestones.filter((m) => m.done).length}/${milestones.length} completed)`} action={canEdit ? <AddMilestone goalId={goal.id} /> : undefined}>

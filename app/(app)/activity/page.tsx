@@ -7,11 +7,10 @@ import { now } from "@/lib/clock";
 import { formatDateTime, formatRelative } from "@/lib/format";
 import { Card } from "@/components/shared/primitives";
 import { CardSkeleton, EmptyState, PageHeader } from "@/components/shared/layout";
-import { CompanyBadge } from "@/components/shared/pills";
+import { CompanyBadge, companyCode } from "@/components/shared/pills";
 import { ActivityRow } from "@/components/shared/display";
 
 export const metadata: Metadata = { title: "Activity" };
-const code = (id: string | null) => (id === "vmh" ? "VMH" : id === "vth" ? "VTH" : "ALL") as "VMH";
 
 export default function ActivityPage() {
   return <Suspense fallback={<CardSkeleton className="h-96" />}><Activity /></Suspense>;
@@ -27,7 +26,7 @@ async function Activity() {
       <PageHeader title="Activity" subtitle="Every create, update, status change and payment, across the selected companies." />
       <Card className="p-4">
         {items.length === 0 && <EmptyState title="No activity yet" />}
-        {items.map((a) => <ActivityRow key={a.id} person={a.actor ?? undefined} text={a.summary} time={`${formatRelative(a.createdAt, t)} · ${formatDateTime(a.createdAt)}`} right={<CompanyBadge code={code(a.companyId)} />} />)}
+        {items.map((a) => <ActivityRow key={a.id} person={a.actor ?? undefined} text={a.summary} time={`${formatRelative(a.createdAt, t)} · ${formatDateTime(a.createdAt)}`} right={<CompanyBadge code={companyCode(a.companyId)} />} />)}
       </Card>
     </div>
   );

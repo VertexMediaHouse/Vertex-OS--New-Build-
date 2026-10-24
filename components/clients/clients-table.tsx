@@ -67,8 +67,7 @@ const columns = col.columns([
       <DropdownMenu>
         <DropdownMenuTrigger className="rounded-md p-1 hover:bg-accent" aria-label="Actions"><MoreVertical className="size-4" /></DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem asChild><Link href={`/clients/${c.row.original.id}`}>View</Link></DropdownMenuItem>
-          <DropdownMenuItem asChild><Link href={`/clients/${c.row.original.id}?edit=1`}>Edit</Link></DropdownMenuItem>
+          <DropdownMenuItem asChild><Link href={`/clients/${c.row.original.id}`}>View or edit</Link></DropdownMenuItem>
           <DropdownMenuItem onSelect={async () => { await archiveClients([c.row.original.id]); toast.success("Client archived."); }}>Archive</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -76,7 +75,7 @@ const columns = col.columns([
   }),
 ]);
 
-export function ClientsTable({ rows }: { rows: ClientRow[] }) {
+export function ClientsTable({ rows, archived = false }: { rows: ClientRow[]; archived?: boolean }) {
   return (
     <DataTable
       rows={rows}
@@ -85,14 +84,18 @@ export function ClientsTable({ rows }: { rows: ClientRow[] }) {
       sortable={["name", "revenue", "lastActivity"]}
       rowHeight="md"
       columnClass={{ actions: "w-14 text-center", activeProjects: "text-center" }}
-      bulkActions={(ids, clear) => (
-        <>
-          {(["ACTIVE", "ON_HOLD", "INACTIVE"] as const).map((s) => (
-            <button key={s} className="font-medium underline" onClick={async () => { await setClientStatus(ids, s); clear(); toast.success("Updated."); }}>Mark {CLIENT_STATUS[s]!.label}</button>
-          ))}
-          <button className="font-medium underline" onClick={async () => { await archiveClients(ids); clear(); toast.success("Archived."); }}>Archive</button>
-        </>
-      )}
+      bulkActions={(ids, clear) =>
+        archived ? (
+          <button className="font-medium underline" onClick={async () => { await archiveClients(ids, true); clear(); toast.success("Restored."); }}>Restore</button>
+        ) : (
+          <>
+            {(["ACTIVE", "ON_HOLD", "INACTIVE"] as const).map((s) => (
+              <button key={s} className="font-medium underline" onClick={async () => { await setClientStatus(ids, s); clear(); toast.success("Updated."); }}>Mark {CLIENT_STATUS[s]!.label}</button>
+            ))}
+            <button className="font-medium underline" onClick={async () => { await archiveClients(ids); clear(); toast.success("Archived."); }}>Archive</button>
+          </>
+        )
+      }
     />
   );
 }

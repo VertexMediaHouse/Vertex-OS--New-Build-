@@ -15,14 +15,14 @@ import { Card, ProgressBar, SectionCard, Avatar } from "@/components/shared/prim
 import { CardSkeleton, EmptyState, KeyValue, PageHeader } from "@/components/shared/layout";
 import { SegmentedControl } from "@/components/shared/nav";
 import { ClearFilters, FilterSelect, SearchInput } from "@/components/shared/filters";
-import { CompanyBadge, EnumPill } from "@/components/shared/pills";
+import { CompanyBadge, EnumPill, companyCode } from "@/components/shared/pills";
 import { UrlSheet } from "@/components/shared/url-sheet";
 import { FileIcon } from "@/components/shared/display";
 import { ChecklistControls, CommentBox, NewTaskDialog, TaskBoard, TaskFieldSelect, TaskStatusSelect, type BoardTask } from "@/components/tasks/task-client";
+import * as M from "@/lib/metrics/dashboard";
 import { workloadState } from "@/lib/metrics/workload";
 
 export const metadata: Metadata = { title: "Tasks" };
-const code = (id: string) => (id === "vmh" ? "VMH" : "VTH") as "VMH" | "VTH";
 
 export default function TasksPage({ searchParams }: PageProps<"/tasks">) {
   return <Suspense fallback={<CardSkeleton className="h-96" />}><Tasks searchParams={searchParams} /></Suspense>;
@@ -49,7 +49,13 @@ async function Tasks({ searchParams }: { searchParams: Promise<SP> }) {
   const open = { ...base, status: { not: "COMPLETED" as const } };
   const month = startOfMonthIST(t);
   const [tasks, projects, people, kpis, myTasks] = await Promise.all([
-    db.task.findMany({ where, orderBy: [{ position: "asc" }, { dueDate: "asc" }], include: { project: { select: { name: true, client: { select: { name: true } } } }, assignee: { select: { name: true } } } }),
+    // Completed tasks drop off the board after 30 days, so it doesn't grow without end.
+    db.task.findMany({
+      // AND, because `where` already uses OR for the search box.
+      where: { ...where, AND: [{ OR: [{ status: { not: "COMPLETED" } }, { completedAt: { gte: addDays(t, -30) } }] }] },
+      orderBy: [{ position: "asc" }, { dueDate: "asc" }],
+      include: { project: { select: { name: true, client: { select: { name: true } } } }, assignee: { select: { name: true } } },
+    }),
     db.project.findMany({ where: { companyId: { in: ctx.companyIds }, status: { not: "COMPLETED" } }, select: { id: true, name: true, companyId: true, client: { select: { name: true } } }, orderBy: { name: "asc" } }),
     db.user.findMany({ where: { kind: "STAFF", isOwner: false, memberships: { some: { companyId: { in: ctx.companyIds } } } }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
     Promise.all([
@@ -71,12 +77,16 @@ async function Tasks({ searchParams }: { searchParams: Promise<SP> }) {
 
   const view = p.str("view") ?? "kanban";
   const board: Record<string, BoardTask[]> = { TODO: [], IN_PROGRESS: [], IN_REVIEW: [], CLIENT_REVIEW: [], COMPLETED: [] };
-  for (const tk of tasks) board[tk.status]!.push({ id: tk.id, title: tk.title, co: code(tk.companyId), client: tk.project?.client?.name ?? tk.project?.name ?? null, priority: tk.priority, due: tk.dueDate ? formatShortDate(tk.dueDate) : null, progress: tk.progress, assignee: tk.assignee?.name ?? null });
-  const allTasks = await db.task.findMany({ where: { ...base, assigneeId: { in: people.map((x) => x.id) } }, select: { assigneeId: true, status: true, dueDate: true, estimatedMinutes: true } });
+  for (const tk of tasks) board[tk.status]!.push({ id: tk.id, title: tk.title, co: companyCode(tk.companyId), client: tk.project?.client?.name ?? tk.project?.name ?? null, priority: tk.priority, due: tk.dueDate ? formatShortDate(tk.dueDate) : null, progress: tk.progress, assignee: tk.assignee?.name ?? null });
+  // Workload % comes from the shared helper, so this table, the dashboard and Team agree.
+  const [allTasks, hours] = await Promise.all([
+    db.task.findMany({ where: { ...base, assigneeId: { in: people.map((x) => x.id) } }, select: { assigneeId: true, status: true, dueDate: true, estimatedMinutes: true } }),
+    M.teamWorkload({ companyIds: ctx.companyIds }),
+  ]);
   const workload = people.map((u) => {
     const own = allTasks.filter((x) => x.assigneeId === u.id);
     const openOwn = own.filter((x) => x.status !== "COMPLETED");
-    return { ...u, assigned: own.length, completed: own.length - openOwn.length, inProgress: own.filter((x) => x.status === "IN_PROGRESS").length, overdue: openOwn.filter((x) => x.dueDate && x.dueDate < today).length, pct: own.length ? (openOwn.length / Math.max(...people.map((pp) => allTasks.filter((x) => x.assigneeId === pp.id && x.status !== "COMPLETED").length), 1)) * 100 : 0 };
+    return { ...u, assigned: own.length, completed: own.length - openOwn.length, inProgress: own.filter((x) => x.status === "IN_PROGRESS").length, overdue: openOwn.filter((x) => x.dueDate && x.dueDate < today).length, pct: hours.find((h) => h.id === u.id)?.pct ?? 0 };
   });
   const companies = ctx.companyIds.filter((c): c is "vmh" | "vth" => can(ctx.user, "create", "task", c));
   const addHref = `?${new URLSearchParams({ ...Object.fromEntries(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string")), new: "1" })}`;
@@ -119,7 +129,7 @@ async function Tasks({ searchParams }: { searchParams: Promise<SP> }) {
               {tasks.map((tk) => (
                 <tr key={tk.id} className="border-b hover:bg-[#F8FAFC]">
                   <td className="px-2 py-2"><Link href={`?id=${tk.id}&view=list`} className="font-semibold text-ink hover:underline">{tk.title}</Link></td>
-                  <td className="px-2 py-2"><CompanyBadge code={code(tk.companyId)} /></td>
+                  <td className="px-2 py-2"><CompanyBadge code={companyCode(tk.companyId)} /></td>
                   <td className="px-2 py-2 text-ink-2">{tk.project?.client?.name}</td>
                   <td className="px-2 py-2"><EnumPill map={PRIORITY} value={tk.priority} size="xs" /></td>
                   <td className={`px-2 py-2 ${tk.dueDate && tk.dueDate < today && tk.status !== "COMPLETED" ? "text-danger-text" : "text-ink-2"}`}>{tk.dueDate && formatDate(tk.dueDate)}</td>
@@ -147,7 +157,7 @@ async function Tasks({ searchParams }: { searchParams: Promise<SP> }) {
             <thead><tr className="text-left text-ink-2">{["Team Member", "Assigned", "Completed", "In Progress", "Overdue", "Workload"].map((h) => <th key={h} className="bg-surface-muted px-2 py-1.5 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
             <tbody>{workload.map((u) => { const st = workloadState(u.pct); return <tr key={u.id} className="border-b last:border-0"><td className="px-2 py-1.5"><span className="flex items-center gap-2"><Avatar person={u} size={22} />{u.name}</span></td><td className="px-2 py-1.5">{u.assigned}</td><td className="px-2 py-1.5">{u.completed}</td><td className="px-2 py-1.5">{u.inProgress}</td><td className={`px-2 py-1.5 ${u.overdue ? "text-danger-text" : ""}`}>{u.overdue}</td><td className="px-2 py-1.5"><span className="flex items-center gap-2"><ProgressBar value={u.pct} tone={st === "over" ? "danger" : st === "idle" ? "warning" : "success"} className="w-24" />{Math.round(u.pct)}%</span></td></tr>; })}</tbody>
           </table>
-          <p className="mt-2 text-[10.5px] text-ink-muted">Workload = open tasks relative to the busiest team member.</p>
+          <p className="mt-2 text-[10.5px] text-ink-muted">Workload = hours logged and planned this week ÷ weekly capacity.</p>
         </SectionCard>
       </div>
 
@@ -208,7 +218,7 @@ async function TaskDrawer({ id, people }: { id: string; people: { id: string; na
         <div>
           <h2 className="text-lg font-bold text-ink">{tk.title}</h2>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <CompanyBadge code={code(tk.companyId)} />
+            <CompanyBadge code={companyCode(tk.companyId)} />
             <TaskStatusSelect taskId={tk.id} value={tk.status} />
             <TaskFieldSelect taskId={tk.id} field="priority" value={tk.priority} options={Object.entries(PRIORITY).map(([value, m]) => ({ value, label: m.label }))} />
           </div>

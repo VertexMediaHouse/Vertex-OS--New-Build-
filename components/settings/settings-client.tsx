@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { updateCompany, updateProfile } from "@/app/(app)/settings/actions";
 import type { CompanySettings } from "@/lib/settings";
+import { Field as F } from "@/components/shared/layout";
 
-const F = ({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) => <label className={`block space-y-1 ${className ?? ""}`}><span className="block text-xs leading-none font-medium">{label}</span>{children}</label>;
 
 export function ProfileForm({ name, timezone }: { name: string; timezone: string }) {
   const [pending, start] = useTransition();
@@ -48,7 +48,7 @@ export function CompanyForm({ c }: { c: { id: string; name: string; address: str
       <F label="Revenue on dashboard"><select name="revenueBasis" defaultValue={s.revenueBasis} className="h-9 w-full rounded-lg border bg-card px-2 text-sm"><option value="INVOICED">Invoiced in period</option><option value="COLLECTED">Collected in period</option></select></F>
       <F label="UPI ID"><Input name="upi" defaultValue={c.bank.upi ?? ""} /></F>
       <F label="Account name"><Input name="accountName" defaultValue={c.bank.accountName ?? ""} /></F>
-      <F label="Account no. / IFSC"><div className="flex gap-2"><Input name="accountNumber" defaultValue={c.bank.accountNumber ?? ""} /><Input name="ifsc" defaultValue={c.bank.ifsc ?? ""} className="w-28" /></div></F>
+      <F label="Account no. / IFSC"><div className="flex gap-2"><Input name="accountNumber" defaultValue={c.bank.accountNumber ?? ""} /><Input name="ifsc" aria-label="IFSC" defaultValue={c.bank.ifsc ?? ""} className="w-28" /></div></F>
       <F label="Goal on track at ≥ % of expected"><Input name="onTrack" type="number" defaultValue={Math.round(s.goalThresholds.onTrack * 100)} /></F>
       <F label="Goal at risk at ≥ % of expected"><Input name="atRisk" type="number" defaultValue={Math.round(s.goalThresholds.atRisk * 100)} /></F>
       <F label="Default weekly capacity (h)"><Input name="capacity" type="number" defaultValue={s.defaultWeeklyCapacityHours} /></F>

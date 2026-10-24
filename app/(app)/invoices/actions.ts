@@ -7,6 +7,8 @@ import { getRequestContext } from "@/lib/auth/context";
 import { assertCan } from "@/lib/auth/permissions";
 import { logActivity, notify } from "@/lib/activity";
 import { invoiceStatus, invoiceTotals } from "@/lib/invoices/status";
+import { loadInvoice, pdfData } from "@/lib/invoices/load";
+import { renderInvoicePdf } from "@/lib/invoices/pdf";
 import { sendEmail } from "@/lib/email";
 import { formatDate, formatMoney } from "@/lib/format";
 import { now } from "@/lib/clock";
@@ -76,19 +78,24 @@ export async function recordPayment(invoiceId: string, input: z.input<typeof pay
   const inv = await db.invoice.findUniqueOrThrow({ where: { id: id.parse(invoiceId) }, include: { client: true, project: { include: { members: true } } } });
   assertCan(user, "update", "invoice", inv.companyId);
   if (inv.status === "CANCELLED" || inv.status === "DRAFT") return { ok: false, error: "Send the invoice before recording payments." };
-  const balance = new Prisma.Decimal(inv.total).minus(inv.paidAmount);
-  if (balance.lessThan(p.amount)) return { ok: false, error: `That's more than the balance (${formatMoney(balance, inv.currency)}).` };
-  await db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx) => {
+    // Lock the invoice row: two people recording a payment at once must not both pass the
+    // balance check, and the paid total must count both payments.
+    await tx.$executeRaw`SELECT 1 FROM "Invoice" WHERE id = ${inv.id} FOR UPDATE`;
+    const fresh = await tx.invoice.findUniqueOrThrow({ where: { id: inv.id }, select: { total: true, paidAmount: true, status: true, dueDate: true } });
+    const balance = new Prisma.Decimal(fresh.total).minus(fresh.paidAmount);
+    if (balance.lessThan(p.amount)) return { ok: false as const, error: `That's more than the balance (${formatMoney(balance, inv.currency)}).` };
     await tx.payment.create({ data: { invoiceId: inv.id, ...p, createdById: user.id } });
-    const paid = new Prisma.Decimal(inv.paidAmount).plus(p.amount);
-    const status = invoiceStatus({ current: inv.status, total: Number(inv.total), paid: Number(paid), dueDate: inv.dueDate, now: now() });
+    const paid = new Prisma.Decimal(fresh.paidAmount).plus(p.amount);
+    const status = invoiceStatus({ current: fresh.status, total: Number(fresh.total), paid: Number(paid), dueDate: fresh.dueDate, now: now() });
     await tx.invoice.update({ where: { id: inv.id }, data: { paidAmount: paid, status } });
     // Financial changes always land in the audit trail.
     await logActivity(tx, { companyId: inv.companyId, actorId: user.id, verb: "paid", entityType: "PAYMENT", entityId: inv.id, summary: `Payment received from ${inv.client.name} (${formatMoney(p.amount, inv.currency)})`, meta: { amount: p.amount, method: p.method, reference: p.reference ?? null } });
     if (status === "PAID") await notify(tx, { userIds: inv.project?.members.map((m) => m.userId) ?? [], exceptUserId: user.id, type: "invoice_paid", title: `#${inv.number} is fully paid`, link: `/invoices?id=${inv.id}` });
+    return { ok: true as const };
   });
   refresh();
-  return { ok: true };
+  return result;
 }
 
 export async function sendReminder(invoiceId: string): Promise<ActionResult> {
@@ -98,11 +105,14 @@ export async function sendReminder(invoiceId: string): Promise<ActionResult> {
   const to = inv.client.contacts[0]?.email;
   if (!to) return { ok: false, error: "The client has no primary contact email." };
   const balance = Number(inv.total) - Number(inv.paidAmount);
-  const link = `${process.env.BETTER_AUTH_URL ?? ""}/api/invoices/${inv.id}/pdf`;
+  // Attached, not linked: the PDF route needs a login, which most client contacts don't have.
+  const full = await loadInvoice(inv.id, [inv.companyId]);
+  const pdf = full ? await renderInvoicePdf(pdfData(full)) : null;
   await sendEmail({
     to,
     subject: `Reminder: invoice #${inv.number} from ${inv.company.name}`,
-    html: `<p>Hi ${inv.client.contacts[0]!.name},</p><p>A friendly reminder that invoice <b>#${inv.number}</b> has <b>${formatMoney(balance, inv.currency)}</b> outstanding, due ${formatDate(inv.dueDate)}.</p><p><a href="${link}">View the invoice (PDF)</a></p><p>Thank you,<br>${inv.company.name}</p>`,
+    html: `<p>Hi ${inv.client.contacts[0]!.name},</p><p>A friendly reminder that invoice <b>#${inv.number}</b> has <b>${formatMoney(balance, inv.currency)}</b> outstanding, due ${formatDate(inv.dueDate)}.</p><p>The invoice is attached.</p><p>Thank you,<br>${inv.company.name}</p>`,
+    ...(pdf && { attachments: [{ filename: `${inv.number}.pdf`, content: pdf }] }),
   });
   await logActivity(db, { companyId: inv.companyId, actorId: user.id, verb: "reminded", entityType: "INVOICE", entityId: inv.id, summary: `${user.name} sent a reminder for #${inv.number}` });
   refresh();

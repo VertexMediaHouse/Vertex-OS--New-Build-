@@ -1,4 +1,5 @@
 import { getRequestContext, getCurrentUser } from "@/lib/auth/context";
+import { can } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { loadInvoice, pdfData } from "@/lib/invoices/load";
 import { renderInvoicePdf } from "@/lib/invoices/pdf";
@@ -18,6 +19,7 @@ export async function GET(_req: Request, { params }: RouteContext<"/api/invoices
   }
   const inv = await loadInvoice(id, companyIds);
   if (!inv) return new Response("Not found", { status: 404 });
+  if (user.kind !== "CLIENT" && !can(user, "view", "invoice", inv.companyId)) return new Response("Not found", { status: 404 });
   const pdf = await renderInvoicePdf(pdfData(inv));
   return new Response(new Uint8Array(pdf), { headers: { "content-type": "application/pdf", "content-disposition": `inline; filename="${inv.number}.pdf"` } });
 }

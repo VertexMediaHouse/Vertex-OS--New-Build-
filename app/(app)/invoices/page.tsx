@@ -16,14 +16,13 @@ import { Card, ProgressBar } from "@/components/shared/primitives";
 import { CardSkeleton, EmptyState, KeyValue, PageHeader, SidePanel } from "@/components/shared/layout";
 import { FilterTabs, Pagination, UnderlineTabs } from "@/components/shared/nav";
 import { ClearFilters, FilterSelect, SearchInput } from "@/components/shared/filters";
-import { CompanyBadge, EnumPill } from "@/components/shared/pills";
+import { CompanyBadge, EnumPill, companyCode } from "@/components/shared/pills";
 import { ActivityRow } from "@/components/shared/display";
 import { Logo } from "@/components/shared/logo";
 import { InvoiceActions } from "@/components/invoices/invoice-client";
 
 export const metadata: Metadata = { title: "Invoices" };
 const PAGE = 10;
-const code = (id: string) => (id === "vmh" ? "VMH" : "VTH") as "VMH" | "VTH";
 const strParams = (sp: SP) => Object.fromEntries(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string"));
 
 export default function InvoicesPage({ searchParams }: PageProps<"/invoices">) {
@@ -91,7 +90,7 @@ async function Invoices({ searchParams }: { searchParams: Promise<SP> }) {
                       <tr key={i.id} className={`border-b ${i.id === openId ? "bg-[#EAF4FC]" : "hover:bg-[#F8FAFC]"}`}>
                         <td className="px-2 py-2.5"><Link href={`?${new URLSearchParams({ ...strParams(sp), id: i.id })}`} scroll={false} className="font-medium text-ink hover:underline">#{i.number}</Link></td>
                         <td className="px-2 py-2.5"><span className="flex items-center gap-2"><span className="inline-flex size-6 items-center justify-center rounded-md text-xs font-bold" style={{ background: `${color}1F`, color }}>{i.client.name[0]}</span><span className="font-semibold text-ink">{i.client.name}</span></span></td>
-                        <td className="px-2 py-2.5"><CompanyBadge code={code(i.companyId)} /></td>
+                        <td className="px-2 py-2.5"><CompanyBadge code={companyCode(i.companyId)} /></td>
                         <td className="px-2 py-2.5 text-ink-2">{i.project?.name}</td>
                         <td className="px-2 py-2.5">{formatDate(i.issueDate)}</td>
                         <td className="px-2 py-2.5">{formatDate(i.dueDate)}</td>
@@ -140,7 +139,7 @@ async function InvoicePanel({ id, tab, sp }: { id: string; tab: string; sp: SP }
             </div>
             <KeyValue labelWidth={90} rows={[
               ["Project", inv.project ? <Link key="p" href={`/projects?id=${inv.project.id}`} className="inline-flex items-center gap-1 text-blue hover:underline">{inv.project.name}<ExternalLink className="size-3" /></Link> : "–"],
-              ["Company", <span key="c" className="flex items-center gap-1.5"><CompanyBadge code={code(inv.companyId)} />{inv.company.name}</span>],
+              ["Company", <span key="c" className="flex items-center gap-1.5"><CompanyBadge code={companyCode(inv.companyId)} />{inv.company.name}</span>],
               ["Issue Date", formatDate(inv.issueDate)],
               ["Due Date", <span key="d" className={balance > 0 ? "text-danger-text" : ""}>{formatDate(inv.dueDate)}{balance > 0 && ` (${formatDaysLeft(inv.dueDate, t)})`}</span>],
               ["Amount", formatMoney(inv.total, inv.currency)],

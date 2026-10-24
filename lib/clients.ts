@@ -7,7 +7,7 @@ import { now } from "@/lib/clock";
 const LOGO_COLORS = ["#2563EB", "#10B981", "#0F172A", "#7C3AED", "#DB2777", "#F59E0B", "#0EA5E9", "#EF4444"];
 export const logoColor = (name: string) => LOGO_COLORS[[...name].reduce((a, c) => a + c.charCodeAt(0), 0) % LOGO_COLORS.length]!;
 
-export type ClientFilters = { companyIds: string[]; q?: string | null; status?: string | null; tag?: string | null; owner?: string | null };
+export type ClientFilters = { companyIds: string[]; q?: string | null; status?: string | null; tag?: string | null; owner?: string | null; archived?: boolean };
 
 /**
  * Clients with computed Active Projects and Total Revenue (sum of project values, decision 23).
@@ -15,7 +15,7 @@ export type ClientFilters = { companyIds: string[]; q?: string | null; status?: 
  */
 export async function listClients(f: ClientFilters) {
   const where: Prisma.ClientWhereInput = {
-    archivedAt: null,
+    archivedAt: f.archived ? { not: null } : null,
     ...scopedClientWhere(f),
     ...(f.status && { status: f.status as Prisma.ClientWhereInput["status"] }),
     ...(f.tag && { tags: { has: f.tag } }),

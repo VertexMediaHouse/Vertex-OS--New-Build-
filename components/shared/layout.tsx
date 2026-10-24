@@ -18,6 +18,16 @@ export function PageHeader({ title, subtitle, actions, className }: { title: Rea
   );
 }
 
+/** A form field: the label wraps its control, so clicking the text focuses it. */
+export function Field({ label, children, className }: { label: React.ReactNode; children: React.ReactNode; className?: string }) {
+  return (
+    <label className={cn("block space-y-1", className)}>
+      <span className="block text-xs leading-none font-medium">{label}</span>
+      {children}
+    </label>
+  );
+}
+
 /** Label / value rows (Project Details, Invoice drawer, File details). */
 export function KeyValue({ rows, labelWidth = 110, className }: { rows: [React.ReactNode, React.ReactNode][]; labelWidth?: number; className?: string }) {
   return (

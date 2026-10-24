@@ -51,15 +51,24 @@ export async function createTask(input: z.input<typeof taskSchema>): Promise<Act
   return { ok: true, id: task.id };
 }
 
-export async function moveTask(taskId: string, status: string, index: number) {
+/** Board drop (or the status dropdown, which passes no card): slot the task in above `beforeId`. */
+export async function moveTask(taskId: string, status: string, beforeId: string | null) {
   const { user, task } = await taskFor(taskId);
   const s = z.enum(STATUSES).parse(status);
-  const i = z.number().int().min(0).max(10_000).parse(index);
+  const bId = z.string().max(64).nullable().parse(beforeId);
   await db.$transaction(async (tx) => {
-    const col = await tx.task.findMany({ where: { status: s, companyId: task.companyId, id: { not: task.id } }, orderBy: { position: "asc" }, select: { id: true } });
-    col.splice(Math.min(i, col.length), 0, { id: task.id });
-    await Promise.all(col.map((c, n) => tx.task.update({ where: { id: c.id }, data: { position: n } })));
-    await tx.task.update({ where: { id: task.id }, data: { status: s, completedAt: s === "COMPLETED" ? (task.completedAt ?? new Date()) : null, ...(s === "COMPLETED" && { progress: 100 }) } });
+    // Make room with one update instead of renumbering the whole column; the board may be
+    // filtered, so only the dropped-on card's own position can be trusted.
+    const col = { status: s, companyId: task.companyId };
+    const before = bId ? await tx.task.findUnique({ where: { id: bId }, select: { position: true } }) : null;
+    let position: number;
+    if (before) {
+      await tx.task.updateMany({ where: { ...col, position: { gte: before.position } }, data: { position: { increment: 1 } } });
+      position = before.position;
+    } else {
+      position = Number((await tx.task.aggregate({ _max: { position: true }, where: col }))._max.position ?? -1) + 1;
+    }
+    await tx.task.update({ where: { id: task.id }, data: { status: s, position, completedAt: s === "COMPLETED" ? (task.completedAt ?? new Date()) : null, ...(s === "COMPLETED" && { progress: 100 }) } });
     if (task.status !== s) {
       await logActivity(tx, { companyId: task.companyId, actorId: user.id, verb: s === "COMPLETED" ? "completed" : "moved", entityType: "TASK", entityId: task.id, summary: s === "COMPLETED" ? `${user.name} marked task as completed` : `${user.name} moved ${task.title} to ${TASK_STATUS[s]!.label}` });
       if (task.assigneeId) await notify(tx, { userIds: [task.assigneeId], exceptUserId: user.id, type: "task_status", title: `${task.title} → ${TASK_STATUS[s]!.label}`, link: `/tasks?id=${task.id}` });

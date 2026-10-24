@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Field } from "@/components/shared/layout";
 import { inviteMember, updateMember } from "@/app/(app)/team/actions";
 
 type Membership = { companyId: string; role: string };
@@ -35,10 +36,10 @@ export function InviteDialog({ companies }: { companies: string[] }) {
       <DialogTrigger asChild><Button className="h-10 px-4 text-md font-semibold"><UserPlus className="size-4" /> Invite Member</Button></DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>Invite team member</DialogTitle></DialogHeader>
-        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>; start(async () => { const r = await inviteMember({ name: f.name!, email: f.email!, title: f.title, capacity: Number(f.capacity || 40), memberships: ms }); if (!r.ok) return void toast.error(r.error); toast.success("Invite sent."); setOpen(false); }); }}>
-          <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Name</span><Input name="name" required /></label>
-          <label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Email</span><Input name="email" type="email" required /></label>
-          <div className="grid grid-cols-2 gap-3"><label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Title</span><Input name="title" placeholder="Video Editor" /></label><label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Weekly capacity (h)</span><Input name="capacity" type="number" min={1} max={80} defaultValue={40} /></label></div>
+        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>; start(async () => { const r = await inviteMember({ name: f.name!, email: f.email!, title: f.title, capacity: Number(f.capacity || 40), memberships: ms }); if (!r.ok) return void toast.error(r.error); toast.success("Invite sent. If no email arrives, ask them to use Forgot password on the login page."); setOpen(false); }); }}>
+          <Field label="Name" className="space-y-1"><Input name="name" required /></Field>
+          <Field label="Email" className="space-y-1"><Input name="email" type="email" required /></Field>
+          <div className="grid grid-cols-2 gap-3"><Field label="Title" className="space-y-1"><Input name="title" placeholder="Video Editor" /></Field><Field label="Weekly capacity (h)" className="space-y-1"><Input name="capacity" type="number" min={1} max={80} defaultValue={40} /></Field></div>
           <MembershipPicker companies={companies} value={ms} onChange={setMs} />
           <DialogFooter><Button type="submit" disabled={pending}>Send invite</Button></DialogFooter>
         </form>
@@ -52,7 +53,7 @@ export function EditMember({ userId, title, capacity, active, memberships, compa
   const [ms, setMs] = useState(memberships);
   return (
     <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>; start(async () => { try { await updateMember(userId, { title: f.title, capacity: Number(f.capacity), active: f.active === "on", memberships: ms }); toast.success("Saved."); } catch (err) { toast.error(err instanceof Error ? err.message : "Failed"); } }); }}>
-      <div className="grid grid-cols-2 gap-3"><label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Title</span><Input name="title" defaultValue={title} /></label><label className="space-y-1 block"><span className="block text-xs leading-none font-medium">Weekly capacity (h)</span><Input name="capacity" type="number" min={1} max={80} defaultValue={capacity} /></label></div>
+      <div className="grid grid-cols-2 gap-3"><Field label="Title" className="space-y-1"><Input name="title" defaultValue={title} /></Field><Field label="Weekly capacity (h)" className="space-y-1"><Input name="capacity" type="number" min={1} max={80} defaultValue={capacity} /></Field></div>
       <MembershipPicker companies={companies} value={ms} onChange={setMs} />
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="active" defaultChecked={active} /> Active (can log in)</label>
       <Button type="submit" disabled={pending}>Save</Button>

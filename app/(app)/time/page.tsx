@@ -16,11 +16,10 @@ import { CardSkeleton, EmptyState, PageHeader } from "@/components/shared/layout
 import { FilterTabs, SegmentedControl } from "@/components/shared/nav";
 import { DateRangePicker, FilterSelect, SearchInput } from "@/components/shared/filters";
 import { BarsChart, ChartLegend, DonutChart, DonutLegend } from "@/components/shared/charts";
-import { CompanyBadge, EnumPill } from "@/components/shared/pills";
+import { CompanyBadge, EnumPill, companyCode } from "@/components/shared/pills";
 import { BillableToggle, EntryActions, StartTimerPanel } from "@/components/time/time-client";
 
 export const metadata: Metadata = { title: "Time Tracking" };
-const code = (id: string) => (id === "vmh" ? "VMH" : "VTH") as "VMH" | "VTH";
 
 export default function TimePage({ searchParams }: PageProps<"/time">) {
   return <Suspense fallback={<CardSkeleton className="h-96" />}><Time searchParams={searchParams} /></Suspense>;
@@ -128,9 +127,9 @@ async function Time({ searchParams }: { searchParams: Promise<SP> }) {
                     <tr key={e.id} className="border-b">
                       <td className="px-2 py-2">{formatDate(e.start)}</td>
                       <td className="px-2 py-2"><span className="flex items-center gap-2"><Avatar person={e.user} size={24} />{e.user.name}</span></td>
-                      <td className="px-2 py-2"><p className="font-semibold text-ink">{e.project?.client?.name ?? `${code(e.companyId)} Internal`}</p><p className="text-ink-muted">{e.project?.name}</p></td>
+                      <td className="px-2 py-2"><p className="font-semibold text-ink">{e.project?.client?.name ?? `${companyCode(e.companyId)} Internal`}</p><p className="text-ink-muted">{e.project?.name}</p></td>
                       <td className="px-2 py-2">{e.task?.title ?? e.note}</td>
-                      <td className="px-2 py-2"><CompanyBadge code={code(e.companyId)} /></td>
+                      <td className="px-2 py-2"><CompanyBadge code={companyCode(e.companyId)} /></td>
                       <td className="px-2 py-2">{formatTime(e.start)}</td>
                       <td className="px-2 py-2">{e.end && formatTime(e.end)}</td>
                       <td className="px-2 py-2 tabular">{formatDuration(e.durationMin ?? 0)}</td>

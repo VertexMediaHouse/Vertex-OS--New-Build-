@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { GOAL_CATEGORY_LABELS } from "@/lib/chart-colors";
 import { addGoalMilestone, createGoal, toggleGoalMilestone, updateGoalProgress } from "@/app/(app)/goals/actions";
+import { Field as F } from "@/components/shared/layout";
 
 const METRICS = [["MANUAL", "Manual (I update it)"], ["REVENUE", "Revenue collected"], ["NEW_CLIENTS", "New clients"], ["PROJECTS_COMPLETED", "Projects completed"], ["VIDEOS_DELIVERED", "Videos delivered"], ["LEADS_WON", "Leads won"], ["BILLABLE_HOURS", "Billable hours"]];
 const UNIT_FOR: Record<string, string> = { REVENUE: "CURRENCY", BILLABLE_HOURS: "HOURS" };
@@ -52,9 +53,6 @@ export function GoalDialog({ label, companies, people }: { label: string; compan
   );
 }
 
-function F({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
-  return <label className={`block space-y-1 ${className ?? ""}`}><span className="block text-xs leading-none font-medium">{label}</span>{children}</label>;
-}
 
 export function ProgressEditor({ goalId, value }: { goalId: string; value: number }) {
   const [pending, start] = useTransition();

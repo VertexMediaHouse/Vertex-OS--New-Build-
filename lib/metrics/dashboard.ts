@@ -23,15 +23,22 @@ export async function revenueSummary(s: ScopeFilter, p: Period) {
   // Settings → "Revenue on dashboard": invoiced (default) or collected in the period.
   const companies = await db.company.findMany({ where: { id: { in: s.companyIds } }, select: { settings: true } });
   const collectedBasis = companies.length > 0 && companies.every((c) => parseCompanySettings(c.settings).revenueBasis === "COLLECTED");
-  const prevCollected = collectedBasis ? num((await db.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: p.prevFrom, lt: p.prevTo }, invoice: scopedWhere(s) } }))._sum.amount) : 0;
+  const paidIn = async (from: Date, to: Date, companyId?: string) =>
+    companyId && !s.companyIds.includes(companyId)
+      ? 0
+      : num((await db.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: from, lt: to }, invoice: companyId ? { companyId } : scopedWhere(s) } }))._sum.amount);
+  // The VMH/VTH split has to use the same basis as the total, or they don't add up.
+  const [prevCollected, collectedVmh, collectedVth] = collectedBasis
+    ? await Promise.all([paidIn(p.prevFrom, p.prevTo), paidIn(p.from, p.to, "vmh"), paidIn(p.from, p.to, "vth")])
+    : [0, 0, 0];
   const total = collectedBasis ? num(collected._sum.amount) : num(cur._sum.total);
   return {
     total,
     trend: pctChange(total, collectedBasis ? prevCollected : num(prev._sum.total)),
     collected: num(collected._sum.amount),
     outstanding: num(open._sum.total) - num(open._sum.paidAmount),
-    vmh: num(byCompany.find((r) => r.companyId === "vmh")?._sum.total),
-    vth: num(byCompany.find((r) => r.companyId === "vth")?._sum.total),
+    vmh: collectedBasis ? collectedVmh : num(byCompany.find((r) => r.companyId === "vmh")?._sum.total),
+    vth: collectedBasis ? collectedVth : num(byCompany.find((r) => r.companyId === "vth")?._sum.total),
   };
 }
 

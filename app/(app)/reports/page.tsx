@@ -17,11 +17,10 @@ import { CardSkeleton, PageHeader } from "@/components/shared/layout";
 import { UnderlineTabs } from "@/components/shared/nav";
 import { DateRangePicker } from "@/components/shared/filters";
 import { BarList, BarsChart, ChartLegend, DonutChart, DonutLegend, PieChart } from "@/components/shared/charts";
-import { CompanyBadge, EnumPill } from "@/components/shared/pills";
+import { CompanyBadge, EnumPill, companyCode } from "@/components/shared/pills";
 import { PrintButton } from "./print-button";
 
 export const metadata: Metadata = { title: "Reports" };
-const code = (id: string) => (id === "vmh" ? "VMH" : "VTH") as "VMH" | "VTH";
 
 export default function ReportsPage({ searchParams }: PageProps<"/reports">) {
   return <Suspense fallback={<CardSkeleton className="h-96" />}><Reports searchParams={searchParams} /></Suspense>;
@@ -68,7 +67,7 @@ async function Reports({ searchParams }: { searchParams: Promise<SP> }) {
           <div className="grid gap-3.5 xl:grid-cols-[1fr_250px]">
             <SectionCard title="Recent Projects Report" href="/reports?tab=projects">
               <table className="w-full text-2xs"><thead><tr className="text-left text-ink-2">{["Project Name", "Client", "Company", "Start Date", "End Date", "Revenue", "Hours", "Status"].map((h) => <th key={h} className="bg-surface-muted px-2 py-1.5 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
-                <tbody>{d.recentProjects.map((x) => <tr key={x.id} className="border-b last:border-0"><td className="px-2 py-2 font-medium text-ink">{x.name}</td><td className="px-2 py-2">{x.client?.name}</td><td className="px-2 py-2"><CompanyBadge code={code(x.companyId)} /></td><td className="px-2 py-2">{formatDate(x.startDate)}</td><td className="px-2 py-2">{x.dueDate && formatDate(x.dueDate)}</td><td className="px-2 py-2 tabular">{formatINR(x.revenue)}</td><td className="px-2 py-2">{formatDuration(x.minutes)}</td><td className="px-2 py-2"><EnumPill map={PROJECT_STATUS} value={x.status} size="xs" /></td></tr>)}</tbody>
+                <tbody>{d.recentProjects.map((x) => <tr key={x.id} className="border-b last:border-0"><td className="px-2 py-2 font-medium text-ink">{x.name}</td><td className="px-2 py-2">{x.client?.name}</td><td className="px-2 py-2"><CompanyBadge code={companyCode(x.companyId)} /></td><td className="px-2 py-2">{formatDate(x.startDate)}</td><td className="px-2 py-2">{x.dueDate && formatDate(x.dueDate)}</td><td className="px-2 py-2 tabular">{formatINR(x.revenue)}</td><td className="px-2 py-2">{formatDuration(x.minutes)}</td><td className="px-2 py-2"><EnumPill map={PROJECT_STATUS} value={x.status} size="xs" /></td></tr>)}</tbody>
               </table>
             </SectionCard>
             <SectionCard title="Quick Insights" icon={Lightbulb} tone="amber">
@@ -102,7 +101,7 @@ async function ProjectsTab({ ctx }: { ctx: Awaited<ReturnType<typeof getRequestC
       <h2 className="mb-1 text-lg font-bold text-ink">Project profitability</h2>
       <p className="mb-3 text-xs text-ink-muted">Revenue collected ÷ hours logged.</p>
       <table className="w-full text-xs"><thead><tr className="text-left text-ink-2">{["Project", "Client", "Company", "Collected", "Hours", "₹ / hour"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium">{h}</th>)}</tr></thead>
-        <tbody>{rows.map((x) => <tr key={x.id} className="border-b"><td className="px-2 py-2">{x.name}</td><td className="px-2 py-2">{x.client?.name}</td><td className="px-2 py-2"><CompanyBadge code={code(x.companyId)} /></td><td className="px-2 py-2">{formatINR(x.collected)}</td><td className="px-2 py-2">{formatDuration(x.mins)}</td><td className="px-2 py-2 font-semibold">{x.perHour === null ? "–" : formatINR(x.perHour)}</td></tr>)}</tbody>
+        <tbody>{rows.map((x) => <tr key={x.id} className="border-b"><td className="px-2 py-2">{x.name}</td><td className="px-2 py-2">{x.client?.name}</td><td className="px-2 py-2"><CompanyBadge code={companyCode(x.companyId)} /></td><td className="px-2 py-2">{formatINR(x.collected)}</td><td className="px-2 py-2">{formatDuration(x.mins)}</td><td className="px-2 py-2 font-semibold">{x.perHour === null ? "–" : formatINR(x.perHour)}</td></tr>)}</tbody>
       </table>
     </Card>
   );

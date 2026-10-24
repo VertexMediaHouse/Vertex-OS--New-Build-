@@ -10,11 +10,10 @@ import { readParams, type SP } from "@/lib/search-params";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { Card } from "@/components/shared/primitives";
 import { CardSkeleton, EmptyState, PageHeader, SidePanel } from "@/components/shared/layout";
-import { CompanyBadge, StatusPill } from "@/components/shared/pills";
+import { CompanyBadge, StatusPill, companyCode } from "@/components/shared/pills";
 import { CampaignStatusButtons, RecipientButtons } from "@/components/campaigns/campaign-client";
 
 export const metadata: Metadata = { title: "Email Campaigns" };
-const code = (id: string | null) => (id === "vmh" ? "VMH" : id === "vth" ? "VTH" : "ALL") as "VMH";
 const TONE = { DRAFT: "neutral", SCHEDULED: "info", ACTIVE: "success", PAUSED: "warning", COMPLETED: "info" } as const;
 
 export default function CampaignsPage({ searchParams }: PageProps<"/campaigns">) {
@@ -45,7 +44,7 @@ async function Campaigns({ searchParams }: { searchParams: Promise<SP> }) {
         <Card className="p-4">
           <table className="w-full text-xs">
             <thead><tr className="text-left text-2xs text-ink-2">{["Name", "Company", "Status", "Sent", "Open %", "Reply %", "Meetings", "Created"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
-            <tbody>{list.map((c) => <tr key={c.id} className={`border-b ${c.id === openId ? "bg-[#EAF4FC]" : "hover:bg-[#F8FAFC]"}`}><td className="px-2 py-2.5"><Link href={`?id=${c.id}`} scroll={false} className="font-semibold text-ink hover:underline">{c.name}</Link></td><td className="px-2"><CompanyBadge code={code(c.companyId)} /></td><td className="px-2"><StatusPill label={c.status[0] + c.status.slice(1).toLowerCase()} tone={TONE[c.status]} /></td><td className="px-2 tabular">{c.sentCount.toLocaleString("en-IN")}</td><td className="px-2 text-success-text">{pct(c.openCount, c.sentCount)}%</td><td className="px-2 text-danger-text">{pct(c.replyCount, c.sentCount)}%</td><td className="px-2">{c.meetingsCount}</td><td className="px-2">{formatDate(c.createdAt)}</td></tr>)}</tbody>
+            <tbody>{list.map((c) => <tr key={c.id} className={`border-b ${c.id === openId ? "bg-[#EAF4FC]" : "hover:bg-[#F8FAFC]"}`}><td className="px-2 py-2.5"><Link href={`?id=${c.id}`} scroll={false} className="font-semibold text-ink hover:underline">{c.name}</Link></td><td className="px-2"><CompanyBadge code={companyCode(c.companyId)} /></td><td className="px-2"><StatusPill label={c.status[0] + c.status.slice(1).toLowerCase()} tone={TONE[c.status]} /></td><td className="px-2 tabular">{c.sentCount.toLocaleString("en-IN")}</td><td className="px-2 text-success-text">{pct(c.openCount, c.sentCount)}%</td><td className="px-2 text-danger-text">{pct(c.replyCount, c.sentCount)}%</td><td className="px-2">{c.meetingsCount}</td><td className="px-2">{formatDate(c.createdAt)}</td></tr>)}</tbody>
           </table>
           {list.length === 0 && <EmptyState title="No campaigns yet" action={<Link href="/campaigns/new" className="text-blue">Create one</Link>} />}
         </Card>
@@ -59,7 +58,7 @@ async function CampaignPanel({ id }: { id: string }) {
   const c = await db.emailCampaign.findUnique({ where: { id }, include: { recipients: { orderBy: { sentAt: "desc" }, take: 100 } } });
   if (!c) return null;
   return (
-    <SidePanel title={c.name} closeHref="/campaigns" header={<><CompanyBadge code={code(c.companyId)} /><StatusPill label={c.status} tone={TONE[c.status]} /></>}>
+    <SidePanel title={c.name} closeHref="/campaigns" header={<><CompanyBadge code={companyCode(c.companyId)} /><StatusPill label={c.status} tone={TONE[c.status]} /></>}>
       <CampaignStatusButtons id={c.id} status={c.status} />
       <p className="mt-3 text-xs text-ink-muted">Subject: {c.subject}</p>
       <h3 className="mt-4 mb-1 text-sm font-semibold text-ink">Recipients ({c.recipients.length})</h3>

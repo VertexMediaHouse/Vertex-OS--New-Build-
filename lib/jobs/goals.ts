@@ -1,4 +1,5 @@
 import type { PrismaClient, Prisma } from "@/lib/db/generated/client";
+import { addDays, startOfDayIST } from "@/lib/clock";
 import { goalProgress, goalStatus } from "@/lib/metrics/goals";
 import { parseCompanySettings } from "@/lib/settings";
 
@@ -6,7 +7,9 @@ type GoalRow = Awaited<ReturnType<PrismaClient["goal"]["findMany"]>>[number];
 
 /** Live value for an auto-tracked goal, over the goal's own dates and company. */
 export async function metricValue(db: PrismaClient, g: GoalRow): Promise<number | null> {
-  const range = { gte: g.startDate, lte: g.endDate };
+  // Whole IST days: the end date is stored at midnight, so "lte endDate" would drop
+  // everything that happened on the goal's last day.
+  const range = { gte: startOfDayIST(g.startDate), lt: addDays(startOfDayIST(g.endDate), 1) };
   const co = g.companyId ? { companyId: g.companyId } : {};
   switch (g.metricType) {
     case "REVENUE":

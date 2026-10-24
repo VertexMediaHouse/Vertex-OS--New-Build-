@@ -9,11 +9,10 @@ import { dayKey, parseDay } from "@/lib/period";
 import { readParams, type SP } from "@/lib/search-params";
 import { Card } from "@/components/shared/primitives";
 import { CardSkeleton, PageHeader } from "@/components/shared/layout";
-import { CompanyBadge } from "@/components/shared/pills";
+import { CompanyBadge, companyCode } from "@/components/shared/pills";
 import { EventForm } from "./event-form";
 
 export const metadata: Metadata = { title: "Calendar" };
-const code = (id: string | null) => (id === "vmh" ? "VMH" : id === "vth" ? "VTH" : "ALL") as "VMH";
 
 export default function CalendarPage({ searchParams }: PageProps<"/calendar">) {
   return <Suspense fallback={<CardSkeleton className="h-96" />}><Calendar searchParams={searchParams} /></Suspense>;
@@ -45,7 +44,7 @@ async function Calendar({ searchParams }: { searchParams: Promise<SP> }) {
               <p className="mb-2 text-xs font-semibold text-ink">{formatLongDate(d).split(" ").slice(0, 3).join(" ")}</p>
               {items.map((e) => (
                 <div key={e.id} className="mb-2 rounded-lg bg-surface-muted p-2 text-2xs">
-                  <p className="flex justify-between"><span className="text-ink-muted">{formatTimePadded(e.start)}</span><CompanyBadge code={code(e.companyId)} /></p>
+                  <p className="flex justify-between"><span className="text-ink-muted">{formatTimePadded(e.start)}</span><CompanyBadge code={companyCode(e.companyId)} /></p>
                   <p className="font-semibold text-ink">{e.title}</p>
                   {(e.client || e.project) && <p className="text-ink-muted">{e.client?.name ?? e.project?.name}</p>}
                 </div>

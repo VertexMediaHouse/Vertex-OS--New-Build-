@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Field } from "@/components/shared/layout";
 import { leadSchema, SOURCES, type LeadInput } from "@/lib/validation/lead";
 import { createLead, updateLead } from "@/app/(app)/leads/actions";
 
@@ -80,11 +81,10 @@ export function LeadFormDialog({ owners, companies, lead, trigger }: { owners: {
 
 function F({ label, error, className, children }: { label: string; error?: string; className?: string; children: React.ReactNode }) {
   return (
-    <label className={`block space-y-1 ${className ?? ""}`}>
-      <span className="block text-xs leading-none font-medium">{label}</span>
+    <Field label={label} className={`space-y-1 ${className ?? ""}`}>
       {children}
       {error && <span className="block text-2xs text-danger-text">{error}</span>}
-    </label>
+    </Field>
   );
 }
 

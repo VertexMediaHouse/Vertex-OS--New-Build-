@@ -93,3 +93,28 @@ Choices made where the brief or the PDF left room, newest last. Each entry: what
 31. **Visual review after Phase 4 was skipped** at the owner's request ("build fast, no manual testing"). From
     Phase 5 onward, screens have been checked by typecheck, lint, unit tests and E2E smoke tests only, not compared
     against `docs/reference`.
+
+## Review fixes (24 Oct 2026)
+
+32. **INR only for now.** Every revenue total sums invoice amounts without converting, so a USD invoice would be
+    counted as rupees. The invoice builder is fixed to INR; billing in USD needs a stored exchange rate first
+    (`shortcut:` comment in `components/invoices/invoice-client.tsx`).
+33. **Board order is sent as "before this card", not an index.** The board can be filtered, so an index means
+    nothing to the server. A drop now shifts positions with one `updateMany` instead of renumbering the column,
+    and the Leads/Tasks boards only load cards closed in the last 30 days.
+34. **Payments are serialized on the invoice row** (`SELECT … FOR UPDATE` inside the transaction), so two people
+    recording a payment at once can't both pass the balance check.
+35. **One running timer per user is enforced by the database**, not only by application code
+    (partial unique index, migration `20261024120000`).
+36. **The six top-level file folders are created by a migration**, not only by the seed. "Add Client" and
+    "Convert lead" create a folder under Client Files, so on a migrated-only database they used to fail.
+37. **Campaign audiences are clamped to the sender's own companies**, whatever the form submits.
+38. **A failed campaign send is retried, not marked Bounced.** Send errors are usually rate limits, not dead
+    addresses; only a provider bounce webhook should set BOUNCED. Sends pause ~0.6s apart.
+39. **The seed refuses any non-local database host** unless `--force` is passed. `NODE_ENV` is usually unset in a
+    terminal, so it was not a real guard.
+40. **Invoice reminders attach the PDF** instead of linking to it: the PDF route needs a login, which most client
+    contacts don't have.
+41. **Auto-tracked goals count whole IST days**, including their last day.
+42. **Shared `<Field>` and `companyCode()`** replace 33 copies of the label markup and 10 copies of the
+    company-code helper.

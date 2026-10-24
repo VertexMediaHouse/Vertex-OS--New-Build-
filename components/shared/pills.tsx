@@ -4,6 +4,9 @@ import { PRIORITY, TONE_CLASSES, type Tone } from "@/lib/status";
 
 export type CompanyBadgeCode = "VMH" | "VTH" | "ALL";
 
+/** "vmh" → "VMH"; no company (shared across both) → "ALL". */
+export const companyCode = (id: string | null | undefined): CompanyBadgeCode => (id ? (id.toUpperCase() as CompanyBadgeCode) : "ALL");
+
 const BADGE: Record<CompanyBadgeCode, string> = {
   VMH: "bg-vmh-soft text-vmh-text",
   VTH: "bg-vth-soft text-vth-text",

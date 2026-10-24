@@ -5,7 +5,7 @@ import { getRequestContext } from "@/lib/auth/context";
 import { can } from "@/lib/auth/permissions";
 import { db, type Prisma } from "@/lib/db";
 import { scopedWhere } from "@/lib/db/scope";
-import { now } from "@/lib/clock";
+import { addDays, now } from "@/lib/clock";
 import { formatDate, formatINR, formatRelative } from "@/lib/format";
 import { pctChange } from "@/lib/period";
 import { readParams, subScope, type SP } from "@/lib/search-params";
@@ -17,7 +17,7 @@ import { CardSkeleton, KeyValue, PageHeader } from "@/components/shared/layout";
 import { FilterTabs } from "@/components/shared/nav";
 import { DateRangePicker, FilterSelect, SearchInput } from "@/components/shared/filters";
 import { BarsChart, ChartLegend, DonutChart } from "@/components/shared/charts";
-import { CompanyBadge, EnumPill } from "@/components/shared/pills";
+import { CompanyBadge, EnumPill, companyCode } from "@/components/shared/pills";
 import { UrlSheet } from "@/components/shared/url-sheet";
 import { ActivityRow } from "@/components/shared/display";
 import { LeadBoard, type BoardLead } from "@/components/leads/lead-board";
@@ -35,11 +35,11 @@ export default function LeadsPage({ searchParams }: PageProps<"/leads">) {
   );
 }
 
-const code = (id: string) => (id === "vmh" ? "VMH" : "VTH") as "VMH" | "VTH";
 
 async function Leads({ searchParams }: { searchParams: Promise<SP> }) {
   const [ctx, sp] = await Promise.all([getRequestContext(), searchParams]);
   const p = readParams(sp);
+  if (!can(ctx.user, "view", "lead")) return <p className="p-6 text-sm">You don&apos;t have access to leads.</p>;
   const t = now();
   const companyIds = subScope(ctx.companyIds, p.str("co"));
   const scope = { companyIds: ctx.companyIds };
@@ -56,7 +56,17 @@ async function Leads({ searchParams }: { searchParams: Promise<SP> }) {
   const all = { ...scopedWhere(scope), stage: { not: "LOST" as const } };
 
   const [leads, counts, owners, kpi] = await Promise.all([
-    db.lead.findMany({ where: { ...where, stage: p.str("lost") ? undefined : { not: "LOST" } }, orderBy: [{ position: "asc" }], include: { owner: { select: { name: true } } } }),
+    // Closed leads drop off the board after 30 days, so it doesn't grow without end.
+    db.lead.findMany({
+      where: {
+        ...where,
+        stage: p.str("lost") ? undefined : { not: "LOST" },
+        // AND, because `where` already uses OR for the search box.
+        AND: [{ OR: [{ stage: { notIn: ["WON", "LOST"] } }, { lastActivityAt: { gte: addDays(t, -30) } }] }],
+      },
+      orderBy: [{ position: "asc" }],
+      include: { owner: { select: { name: true } } },
+    }),
     db.lead.groupBy({ by: ["companyId"], _count: true, where: all }),
     db.user.findMany({ where: { kind: "STAFF", memberships: { some: { companyId: { in: ctx.companyIds } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
     Promise.all([
@@ -83,7 +93,7 @@ async function Leads({ searchParams }: { searchParams: Promise<SP> }) {
   const split = (f: (id: string) => React.ReactNode) => (ctx.scope === "ALL" ? [{ value: f("vmh"), label: "VMH" }, { value: f("vth"), label: "VTH" }] : undefined);
 
   const board: Record<string, BoardLead[]> = { NEW: [], CONTACTED: [], PROPOSAL: [], NEGOTIATION: [], WON: [], LOST: [] };
-  for (const l of leads) board[l.stage]!.push({ id: l.id, name: l.name, service: l.service, value: Number(l.value), co: code(l.companyId), owner: l.owner?.name ?? null, ago: l.stage === "NEW" && l.lastActivityAt.getTime() === l.createdAt.getTime() ? null : formatRelative(l.lastActivityAt, t) });
+  for (const l of leads) board[l.stage]!.push({ id: l.id, name: l.name, service: l.service, value: Number(l.value), co: companyCode(l.companyId), owner: l.owner?.name ?? null, ago: l.stage === "NEW" && l.lastActivityAt.getTime() === l.createdAt.getTime() ? null : formatRelative(l.lastActivityAt, t) });
 
   const sources = ["FIVERR", "WEBSITE", "REFERRAL", "LINKEDIN", "EMAIL", "INSTAGRAM", "OTHER"].map((s) => ({
     source: SOURCE_LABEL[s]!,
@@ -155,7 +165,7 @@ async function Leads({ searchParams }: { searchParams: Promise<SP> }) {
               {recent.map((l) => (
                 <tr key={l.id} className="border-b last:border-0">
                   <td className="px-2 py-1.5 text-ink">{l.name}</td>
-                  <td className="px-2 py-1.5"><CompanyBadge code={code(l.companyId)} /></td>
+                  <td className="px-2 py-1.5"><CompanyBadge code={companyCode(l.companyId)} /></td>
                   <td className="px-2 py-1.5 text-ink-2">{l.service}</td>
                   <td className="px-2 py-1.5 text-ink tabular">{formatINR(l.value)}</td>
                   <td className="px-2 py-1.5"><EnumPill map={LEAD_STAGE} value={l.stage} dot={false} size="xs" /></td>
@@ -192,7 +202,7 @@ async function LeadDrawer({ id, owners, companies }: { id: string; owners: { id:
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-ink">{lead.name}</h2>
-            <CompanyBadge code={code(lead.companyId)} />
+            <CompanyBadge code={companyCode(lead.companyId)} />
           </div>
           <p className="text-sm text-ink-muted">{lead.service}</p>
           <div className="mt-2 flex items-center gap-2">
@@ -217,7 +227,7 @@ async function LeadDrawer({ id, owners, companies }: { id: string; owners: { id:
             <LeadFormDialog owners={owners} companies={companies} lead={{ id: lead.id, name: lead.name, service: lead.service, value: Number(lead.value), companyId: lead.companyId as "vmh", source: lead.source, ownerId: lead.ownerId ?? "", contactName: lead.contactName ?? "", email: lead.email ?? "", phone: lead.phone ?? "", notes: lead.notes ?? "" }} trigger={<button className="h-9 rounded-lg border px-3 text-sm font-medium">Edit</button>} />
           )}
         </div>
-        {can(ctx.user, "create", "client", lead.companyId) && lead.stage !== "LOST" && (
+        {can(ctx.user, "create", "client", lead.companyId) && lead.stage !== "LOST" && !lead.clientId && (
           <div className="space-y-2 rounded-xl border p-3">
             <p className="text-sm font-semibold text-ink">Convert to Client</p>
             <p className="text-xs text-ink-muted">Creates (or links) the client, marks the lead Won, and optionally starts a project.</p>

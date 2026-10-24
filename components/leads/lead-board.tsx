@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { KanbanBoard, KanbanCard, type KanbanColumn } from "@/components/shared/kanban";
-import { CompanyBadge } from "@/components/shared/pills";
+import { CompanyBadge, type CompanyBadgeCode } from "@/components/shared/pills";
 import { Avatar } from "@/components/shared/primitives";
 import { useHrefWith } from "@/components/shared/nav";
 import { formatINR } from "@/lib/format";
 import { moveLead } from "@/app/(app)/leads/actions";
 
-export type BoardLead = { id: string; name: string; service: string; value: number; co: "VMH" | "VTH"; owner: string | null; ago: string | null };
+export type BoardLead = { id: string; name: string; service: string; value: number; co: CompanyBadgeCode; owner: string | null; ago: string | null };
 
 const COLUMNS: (Omit<KanbanColumn, "meta"> & { more: string })[] = [
   { id: "NEW", title: "New", headerClass: "bg-[#ECF0F8]", bodyClass: "bg-[#F7F8FB]", accentClass: "text-ink", more: "text-blue" },
