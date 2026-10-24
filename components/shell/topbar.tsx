@@ -11,6 +11,7 @@ import { authClient } from "@/lib/auth/client";
 import { markAllNotificationsRead } from "@/app/(app)/actions/notifications";
 import { CompanyDropdown, CompanyPills, type SwitchProps } from "./company-switch";
 import { SidebarContent } from "./sidebar";
+import { MiniTimer } from "@/components/time/time-client";
 
 const SEARCH_PLACEHOLDER: [string, string][] = [
   ["/leads", "Search leads, clients, projects..."],
@@ -32,7 +33,8 @@ export function Topbar({
   user,
   notifications,
   unread,
-}: SwitchProps & { user: { name: string; image: string | null; role: string }; notifications: TopbarNotification[]; unread: number }) {
+  timer,
+}: SwitchProps & { user: { name: string; image: string | null; role: string }; notifications: TopbarNotification[]; unread: number; timer: { startedAt: string; label: string } | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -54,6 +56,7 @@ export function Topbar({
       <CompanyPills scope={scope} allowed={allowed} />
 
       <div className="ml-auto flex items-center gap-4">
+        {timer && <MiniTimer startedAt={timer.startedAt} label={timer.label} />}
         {/* Global search opens the command palette (Phase 14); the field shows the page's scope. */}
         <label className="relative hidden h-9 w-[204px] items-center lg:flex">
           <Search className="pointer-events-none absolute left-3 size-4 text-ink-muted" aria-hidden />

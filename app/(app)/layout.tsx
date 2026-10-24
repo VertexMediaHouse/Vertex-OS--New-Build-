@@ -20,9 +20,10 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 async function Shell({ children }: { children: React.ReactNode }) {
   const { user, scope } = await getRequestContext();
   const allowed = allowedCompanyIds(user).map((id) => id.toUpperCase() as CompanyCode);
-  const [notifications, unread] = await Promise.all([
+  const [notifications, unread, running] = await Promise.all([
     db.notification.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 8 }),
     db.notification.count({ where: { userId: user.id, readAt: null } }),
+    db.timeEntry.findFirst({ where: { userId: user.id, status: "RUNNING" }, include: { task: { select: { title: true } }, project: { select: { name: true } } } }),
   ]);
   const at = now();
   return (
@@ -34,6 +35,7 @@ async function Shell({ children }: { children: React.ReactNode }) {
           allowed={allowed}
           user={{ name: user.name, image: user.image, role: roleLabel(user) }}
           unread={unread}
+          timer={running ? { startedAt: running.start.toISOString(), label: running.task?.title ?? running.project?.name ?? "Timer" } : null}
           notifications={notifications.map((n) => ({ id: n.id, title: n.title, link: n.link, unread: !n.readAt, time: formatRelative(n.createdAt, at) }))}
         />
         <main className="flex-1 px-4 pt-5 pb-8">{children}</main>
