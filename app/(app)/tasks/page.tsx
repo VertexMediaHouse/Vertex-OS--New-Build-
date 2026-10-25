@@ -18,7 +18,7 @@ import { ClearFilters, FilterSelect, SearchInput } from "@/components/shared/fil
 import { CompanyBadge, EnumPill, companyCode } from "@/components/shared/pills";
 import { UrlSheet } from "@/components/shared/url-sheet";
 import { FileIcon } from "@/components/shared/display";
-import { ChecklistControls, CommentBox, NewTaskDialog, TaskBoard, TaskFieldSelect, TaskStatusSelect, type BoardTask } from "@/components/tasks/task-client";
+import { ChecklistControls, CommentBox, NewTaskDialog, TaskBoard, TaskFieldSelect, TaskReview, TaskStatusSelect, type BoardTask } from "@/components/tasks/task-client";
 import * as M from "@/lib/metrics/dashboard";
 import { workloadState } from "@/lib/metrics/workload";
 
@@ -237,6 +237,12 @@ async function TaskDrawer({ id, people }: { id: string; people: { id: string; na
           ["Tags", tk.tags.length ? <span key="t" className="flex flex-wrap gap-1">{tk.tags.map((g) => <span key={g} className="rounded bg-surface-muted px-1.5 py-0.5">{g}</span>)}</span> : "–"],
           ["Time logged", formatDuration(minutes)],
         ]} />
+        {/* The review cycle: hand it up when you finish it, approve or return it when it lands with you. */}
+        {tk.status === "IN_REVIEW" && tk.assigneeId === ctx.user.id ? (
+          <TaskReview taskId={tk.id} mode="review" />
+        ) : tk.status !== "COMPLETED" && tk.assigneeId === ctx.user.id ? (
+          <TaskReview taskId={tk.id} mode="do" />
+        ) : null}
         <section><h3 className="mb-1 text-sm font-semibold text-ink">Description</h3><p className="leading-5 text-ink-2">{tk.description}</p></section>
         <section>
           <h3 className="mb-1 text-sm font-semibold text-ink">Checklist ({done}/{tk.checklist.length})</h3>

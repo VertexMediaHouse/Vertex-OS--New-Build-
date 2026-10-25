@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { CalendarDays, Clock, Filter, Handshake, Users } from "lucide-react";
+import { CalendarDays, Clock, Download, Filter, Handshake, Users } from "lucide-react";
 import { getRequestContext } from "@/lib/auth/context";
 import { can } from "@/lib/auth/permissions";
 import { db, type Prisma } from "@/lib/db";
@@ -58,6 +58,7 @@ async function Leads({ searchParams }: { searchParams: Promise<SP> }) {
   // The board hides leads won or lost over 30 days ago, so it doesn't grow without end.
   // Search and the Lost toggle must still find them. AND, because `where` uses OR.
   const recentOnly = !q && !p.str("lost");
+  const exportHref = `/leads/export?${new URLSearchParams(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string"))}`;
   const [leads, counts, owners, kpi] = await Promise.all([
     db.lead.findMany({
       where: {
@@ -110,7 +111,17 @@ async function Leads({ searchParams }: { searchParams: Promise<SP> }) {
 
   return (
     <div className="space-y-3.5">
-      <PageHeader title="Leads" subtitle="Track, manage and convert leads for Vertex Media House and Vertex Tech House." actions={allowedCo.length > 0 && <LeadFormDialog owners={owners} companies={allowedCo} />} />
+      <PageHeader
+        title="Leads"
+        subtitle="Track, manage and convert leads for Vertex Media House and Vertex Tech House."
+        actions={
+          <>
+            {/* Plain <a>: a file download, not a page. Carries the filters you are looking at. */}
+            <a href={exportHref} className="inline-flex h-9 items-center gap-2 rounded-lg border bg-card px-3 text-xs font-medium text-ink-2 hover:bg-accent"><Download className="size-4" /> Export</a>
+            {allowedCo.length > 0 && <LeadFormDialog owners={owners} companies={allowedCo} />}
+          </>
+        }
+      />
       <div className="grid gap-3.5 md:grid-cols-3 xl:grid-cols-5">
         <KpiCard icon={Users} tone="blue" label="Total Leads" value={sum(totals, cnt)} trend={pctChange(sum(created, cnt), createdPrev)} split={split((id) => by(totals, id, cnt))} />
         <KpiCard icon={Filter} tone="blue" label="Pipeline Value" value={formatINR(sum(pipeline, (r) => Number(r._sum.value)))} split={split((id) => formatINR(by(pipeline, id, (r) => Number(r._sum.value))))} />

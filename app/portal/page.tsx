@@ -25,16 +25,27 @@ export default function PortalPage() {
 async function Portal() {
   const user = await getCurrentUser();
   if (user.kind !== "CLIENT") redirect("/dashboard");
-  const contact = await db.clientContact.findUnique({ where: { userId: user.id }, include: { client: true } });
+  const contact = await db.clientContact.findUnique({ where: { userId: user.id }, include: { client: true, projects: { select: { projectId: true } } } });
   if (!contact?.portalAccess) return <p className="p-10 text-center text-sm">Your portal access has been turned off. Contact your account manager.</p>;
+  // Access is per project: without one shared with them, there is nothing to show.
+  const projectIds = contact.projects.map((p) => p.projectId);
+  if (projectIds.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-page p-10">
+        <p className="max-w-sm text-center text-sm text-ink-2">
+          Nothing has been shared with you yet. Your account manager will give you access to a project shortly.
+        </p>
+      </div>
+    );
+  }
   const [projects, approvals, files, invoices, tasks] = await Promise.all([
-    db.project.findMany({ where: { clientId: contact.clientId }, include: { company: true, members: { include: { user: { select: { name: true } } } } }, orderBy: { startDate: "desc" } }),
-    db.approval.findMany({ where: { project: { clientId: contact.clientId } }, include: { project: { select: { name: true } }, file: true }, orderBy: { requestedAt: "desc" }, take: 20 }),
-    db.file.findMany({ where: { clientId: contact.clientId, deletedAt: null, sharedWithPortal: true }, orderBy: { updatedAt: "desc" }, take: 20 }),
-    db.invoice.findMany({ where: { clientId: contact.clientId, status: { not: "DRAFT" } }, orderBy: { issueDate: "desc" }, take: 20 }),
+    db.project.findMany({ where: { id: { in: projectIds } }, include: { company: true, members: { include: { user: { select: { name: true } } } } }, orderBy: { startDate: "desc" } }),
+    db.approval.findMany({ where: { projectId: { in: projectIds } }, include: { project: { select: { name: true } }, file: true }, orderBy: { requestedAt: "desc" }, take: 20 }),
+    db.file.findMany({ where: { projectId: { in: projectIds }, deletedAt: null, sharedWithPortal: true }, orderBy: { updatedAt: "desc" }, take: 20 }),
+    db.invoice.findMany({ where: { projectId: { in: projectIds }, status: { not: "DRAFT" } }, orderBy: { issueDate: "desc" }, take: 20 }),
     // Most recently touched first, so a status change the team just made is at the top.
     db.task.findMany({
-      where: { project: { clientId: contact.clientId } },
+      where: { projectId: { in: projectIds } },
       orderBy: { updatedAt: "desc" },
       take: 12,
       select: { id: true, title: true, status: true, progress: true, dueDate: true, completedAt: true, project: { select: { name: true } } },

@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { EnumPill, StatusPill } from "@/components/shared/pills";
 import { PROJECT_STATUS } from "@/lib/status";
-import { addProjectNote, createProject, inviteContact, requestApproval, revokeContact, setMilestoneStatus, setProjectStatus, updateDeliverable, updateProject } from "@/app/(app)/projects/actions";
+import { addProjectNote, createProject, inviteContact, requestApproval, revokeContact, setMilestoneStatus, setProjectStatus, shareProject, unshareProject, updateDeliverable, updateProject } from "@/app/(app)/projects/actions";
 import type { ActionResult } from "@/lib/validation/result";
 import { Field as L } from "@/components/shared/layout";
 
@@ -105,15 +105,35 @@ export function RequestApproval({ projectId, files }: { projectId: string; files
   );
 }
 
-export function PortalAccessButton({ contactId, active }: { contactId: string; active: boolean }) {
+/**
+ * Portal access has two halves: a login, and this project. A contact with a login still
+ * sees nothing until a project is shared with them.
+ */
+export function PortalAccessButton({ contactId, projectId, active, shared }: { contactId: string; projectId: string; active: boolean; shared: boolean }) {
   const { pending, run } = useAction();
-  return active ? (
+  if (!active) {
+    return (
+      <Button size="sm" variant="outline" disabled={pending} onClick={() => run(() => inviteContact(contactId, projectId), "Invite sent, and this project shared.")}>
+        Invite to portal
+      </Button>
+    );
+  }
+  return (
     <div className="flex items-center gap-2">
-      <StatusPill label="Portal access" tone="success" />
-      <button type="button" disabled={pending} onClick={() => run(() => revokeContact(contactId), "Access removed.")} className="text-2xs text-danger-text hover:underline">Revoke</button>
+      <StatusPill label={shared ? "Sees this project" : "Login only"} tone={shared ? "success" : "neutral"} />
+      {shared ? (
+        <button type="button" disabled={pending} onClick={() => run(() => unshareProject(contactId, projectId), "Project unshared.")} className="text-2xs text-danger-text hover:underline">
+          Unshare
+        </button>
+      ) : (
+        <button type="button" disabled={pending} onClick={() => run(() => shareProject(contactId, projectId), "Project shared.")} className="text-2xs text-brand-text hover:underline">
+          Share this project
+        </button>
+      )}
+      <button type="button" disabled={pending} onClick={() => run(() => revokeContact(contactId), "Portal access removed.")} className="text-2xs text-ink-muted hover:underline">
+        Remove login
+      </button>
     </div>
-  ) : (
-    <Button size="sm" variant="outline" disabled={pending} onClick={() => run(() => inviteContact(contactId), "Invite sent.")}>Invite to portal</Button>
   );
 }
 

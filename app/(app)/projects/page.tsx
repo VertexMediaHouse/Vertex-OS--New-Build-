@@ -20,6 +20,7 @@ import { SearchInput } from "@/components/shared/filters";
 import { CompanyBadge, EnumPill, StatusPill } from "@/components/shared/pills";
 import { ActivityRow, CheckRow, FileRow, Timeline, type TimelinePoint } from "@/components/shared/display";
 import { DeliverableStepper, MilestoneToggle, NewProjectDialog, NoteForm, PercentInput, PortalAccessButton, ProjectStatusSelect, RequestApproval } from "@/components/projects/controls";
+import { NewTaskDialog } from "@/components/tasks/task-client";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Projects" };
@@ -138,7 +139,7 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
     // Same rule as the list: members only see projects they're on.
     where: { id, companyId: { in: ctx.companyIds }, ...(isMemberOnly(ctx.user) && { members: { some: { userId: ctx.user.id } } }) },
     include: {
-      client: { include: { contacts: { orderBy: { isPrimary: "desc" } } } },
+      client: { include: { contacts: { orderBy: { isPrimary: "desc" }, include: { projects: { where: { projectId: id }, select: { projectId: true } } } } } },
       company: { select: { name: true, code: true } },
       members: { include: { user: { select: { name: true, image: true } } } },
       deliverables: { orderBy: { order: "asc" } },
@@ -151,7 +152,7 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
   if (!pr) notFound();
   const vth = pr.template === "VTH";
   const t = now();
-  const [tasks, taskCount, doneCount, files, time, notes, activity, clients] = await Promise.all([
+  const [tasks, taskCount, doneCount, files, time, notes, activity, clients, people] = await Promise.all([
     db.task.findMany({ where: { projectId: id }, orderBy: [{ dueDate: "asc" }], take: tab === "tasks" ? 100 : 5, include: { assignee: { select: { name: true, image: true } } } }),
     db.task.count({ where: { projectId: id } }),
     db.task.count({ where: { projectId: id, status: "COMPLETED" } }),
@@ -160,6 +161,7 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
     db.comment.findMany({ where: { entityType: "PROJECT", entityId: id }, orderBy: { createdAt: "desc" }, take: tab === "notes" ? 100 : 3, include: { author: { select: { name: true, image: true } } } }),
     db.activity.findMany({ where: { entityId: id }, orderBy: { createdAt: "desc" }, take: 20, include: { actor: { select: { name: true } } } }),
     db.client.findMany({ where: { archivedAt: null, companies: { some: { companyId: pr.companyId } } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    db.user.findMany({ where: { kind: "STAFF", memberships: { some: { companyId: pr.companyId } } }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
   ]);
   const billable = Number(time.find((x) => x.billable)?._sum.durationMin ?? 0);
   const nonBillable = Number(time.find((x) => !x.billable)?._sum.durationMin ?? 0);
@@ -347,7 +349,17 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
         </>
       )}
 
-      {tab === "tasks" && <Card className="p-4">{taskTable}</Card>}
+      {tab === "tasks" && (
+        <Card className="p-4">
+          {/* Created here with this project already set, so it shows up on the Tasks board too. */}
+          {editable && (
+            <div className="mb-3 flex justify-end">
+              <NewTaskDialog companies={[pr.companyId as "vmh"]} projects={[{ id: pr.id, name: pr.name, companyId: pr.companyId }]} people={people} />
+            </div>
+          )}
+          {taskTable}
+        </Card>
+      )}
       {tab === "milestones" && (
         <Card className="p-4">
           {pr.milestones.map((m, i) => <CheckRow key={m.id} round done={m.status === "COMPLETED"} label={`${i + 1}. ${m.title}`} right={<span className="flex items-center gap-3"><span className="text-2xs text-ink-2">{formatDate(m.dueDate)}</span><EnumPill map={MILESTONE_STATUS} value={m.status} size="xs" />{editable && <MilestoneToggle id={m.id} status={m.status} />}</span>} />)}
@@ -367,10 +379,10 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
       {tab === "access" && (
         <div className="grid gap-3.5 xl:grid-cols-2">
           <SectionCard title="Client portal access">
-            <p className="mb-3 text-xs text-ink-muted">Invited contacts can log in at /portal to see this project, shared files and invoices, and approve deliverables.</p>
+            <p className="mb-3 text-xs text-ink-muted">A contact sees a project only once it is shared with them. Sharing this one shows them its files, invoices and deliverables to approve, and nothing else.</p>
             <ul className="space-y-3">
               {pr.client?.contacts.map((c) => (
-                <li key={c.id} className="flex items-center gap-3"><Avatar person={c} size={32} /><div className="min-w-0 flex-1 text-xs"><p className="font-semibold text-ink">{c.name}</p><p className="text-ink-muted">{c.email ?? "No email"}</p></div>{editable && <PortalAccessButton contactId={c.id} active={c.portalAccess} />}</li>
+                <li key={c.id} className="flex items-center gap-3"><Avatar person={c} size={32} /><div className="min-w-0 flex-1 text-xs"><p className="font-semibold text-ink">{c.name}</p><p className="text-ink-muted">{c.email ?? "No email"}</p></div>{editable && <PortalAccessButton contactId={c.id} projectId={pr.id} active={c.portalAccess} shared={c.projects.length > 0} />}</li>
               ))}
             </ul>
           </SectionCard>

@@ -138,13 +138,46 @@ export async function requestApproval(projectId: string, title: string, fileId?:
 }
 
 /** Give a client contact portal access: creates a CLIENT login and emails a set-password link. */
-export async function inviteContact(contactId: string): Promise<ActionResult> {
+export async function inviteContact(contactId: string, projectId?: string): Promise<ActionResult> {
   const { user } = await getRequestContext();
   const contact = await db.clientContact.findUniqueOrThrow({ where: { id: id.parse(contactId) }, include: { client: { include: { companies: true } } } });
   contact.client.companies.forEach((c) => assertCan(user, "update", "client", c.companyId));
   const res = await invitePortalContact(contact.id);
+  // A login on its own shows nothing: access is granted one project at a time.
+  if (res.ok && projectId) {
+    const { project } = await projectFor("update", projectId);
+    if (project.clientId !== contact.clientId) return { ok: false, error: "That contact belongs to another client." };
+    await db.projectContact.upsert({
+      where: { projectId_contactId: { projectId: project.id, contactId: contact.id } },
+      create: { projectId: project.id, contactId: contact.id },
+      update: {},
+    });
+  }
   refresh();
   return res;
+}
+
+/** Give an already-invited contact this project too. */
+export async function shareProject(contactId: string, projectId: string): Promise<ActionResult> {
+  const { project } = await projectFor("update", projectId);
+  const contact = await db.clientContact.findUniqueOrThrow({ where: { id: id.parse(contactId) } });
+  if (project.clientId !== contact.clientId) return { ok: false, error: "That contact belongs to another client." };
+  if (!contact.portalAccess) return { ok: false, error: "Invite them to the portal first." };
+  await db.projectContact.upsert({
+    where: { projectId_contactId: { projectId: project.id, contactId: contact.id } },
+    create: { projectId: project.id, contactId: contact.id },
+    update: {},
+  });
+  refresh();
+  return { ok: true };
+}
+
+/** Take this one project away without touching their login or other projects. */
+export async function unshareProject(contactId: string, projectId: string): Promise<ActionResult> {
+  const { project } = await projectFor("update", projectId);
+  await db.projectContact.deleteMany({ where: { projectId: project.id, contactId: id.parse(contactId) } });
+  refresh();
+  return { ok: true };
 }
 
 export async function revokeContact(contactId: string) {

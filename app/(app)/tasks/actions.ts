@@ -52,9 +52,21 @@ export async function createTask(input: z.input<typeof taskSchema>): Promise<Act
 }
 
 /** Board drop (or the status dropdown, which passes no card): slot the task in above `beforeId`. */
+/** Who reviews this task: whoever assigned it, as long as that is not the person finishing it. */
+function reviewerOf(task: { createdById: string | null; assigneeId: string | null }, actorId: string) {
+  const reviewer = task.createdById;
+  return reviewer && reviewer !== actorId ? reviewer : null;
+}
+
 export async function moveTask(taskId: string, status: string, beforeId: string | null) {
   const { user, task } = await taskFor(taskId);
   const s = z.enum(STATUSES).parse(status);
+  // Finishing someone else's task sends it up for review rather than closing it.
+  const handUp = s === "COMPLETED" && task.status !== "COMPLETED" ? reviewerOf(task, user.id) : null;
+  if (handUp) {
+    await submitForReview(task.id, "");
+    return;
+  }
   const bId = z.string().max(64).nullable().parse(beforeId);
   await db.$transaction(async (tx) => {
     // Make room with one update instead of renumbering the whole column; the board may be
@@ -129,4 +141,87 @@ export async function addTaskComment(taskId: string, body: string) {
     await notify(tx, { userIds: [...mentions, ...(task.assigneeId ? [task.assigneeId] : [])], exceptUserId: user.id, type: "mention", title: `${user.name} commented on ${task.title}`, link: `/tasks?id=${task.id}` });
   });
   refresh();
+}
+
+// ── Review cycle ────────────────────────────────────────────────────────
+
+const reviewNote = z.string().trim().max(2000);
+
+/**
+ * Hand a finished task back to whoever assigned it, with a note on what they should look
+ * at. Nobody to hand it to (you assigned it yourself) means it simply completes.
+ */
+export async function submitForReview(taskId: string, note: string): Promise<ActionResult> {
+  const { user, task } = await taskFor(taskId);
+  const body = reviewNote.parse(note);
+  const reviewer = reviewerOf(task, user.id);
+  if (!reviewer) {
+    await db.$transaction(async (tx) => {
+      await tx.task.update({ where: { id: task.id }, data: { status: "COMPLETED", completedAt: task.completedAt ?? new Date(), progress: 100 } });
+      await logActivity(tx, { companyId: task.companyId, actorId: user.id, verb: "completed", entityType: "TASK", entityId: task.id, summary: `${user.name} completed ${task.title}` });
+    });
+    refresh();
+    return { ok: true };
+  }
+  await db.$transaction(async (tx) => {
+    await tx.task.update({
+      where: { id: task.id },
+      data: { status: "IN_REVIEW", assigneeId: reviewer, reviewFromId: task.assigneeId ?? user.id, progress: 100, completedAt: null },
+    });
+    if (body) await tx.comment.create({ data: { entityType: "TASK", entityId: task.id, authorId: user.id, body } });
+    await notify(tx, {
+      userIds: [reviewer],
+      exceptUserId: user.id,
+      type: "task_review",
+      title: `${user.name} finished "${task.title}" — your review`,
+      body: body || undefined,
+      link: `/tasks?id=${task.id}`,
+    });
+    await logActivity(tx, { companyId: task.companyId, actorId: user.id, verb: "submitted", entityType: "TASK", entityId: task.id, summary: `${user.name} sent ${task.title} for review` });
+  });
+  refresh();
+  return { ok: true };
+}
+
+/**
+ * The reviewer's half of the cycle: approve it, which closes it and credits whoever did
+ * the work, or send it back to them with what still needs doing.
+ */
+export async function reviewTask(taskId: string, decision: "approve" | "rework", note: string): Promise<ActionResult> {
+  const { user, task } = await taskFor(taskId);
+  const body = reviewNote.parse(note);
+  const d = z.enum(["approve", "rework"]).parse(decision);
+  if (task.status !== "IN_REVIEW") return { ok: false, error: "That task is not waiting for review." };
+  const doer = task.reviewFromId;
+  if (d === "rework" && !body) return { ok: false, error: "Say what still needs doing." };
+  await db.$transaction(async (tx) => {
+    await tx.task.update({
+      where: { id: task.id },
+      data:
+        d === "approve"
+          ? { status: "COMPLETED", completedAt: new Date(), progress: 100, assigneeId: doer ?? task.assigneeId, reviewFromId: null }
+          : { status: "IN_PROGRESS", completedAt: null, progress: 50, assigneeId: doer ?? task.assigneeId, reviewFromId: null },
+    });
+    if (body) await tx.comment.create({ data: { entityType: "TASK", entityId: task.id, authorId: user.id, body } });
+    if (doer) {
+      await notify(tx, {
+        userIds: [doer],
+        exceptUserId: user.id,
+        type: d === "approve" ? "task_approved" : "task_rework",
+        title: d === "approve" ? `${user.name} approved "${task.title}"` : `${user.name} sent "${task.title}" back`,
+        body: body || undefined,
+        link: `/tasks?id=${task.id}`,
+      });
+    }
+    await logActivity(tx, {
+      companyId: task.companyId,
+      actorId: user.id,
+      verb: d === "approve" ? "approved" : "returned",
+      entityType: "TASK",
+      entityId: task.id,
+      summary: d === "approve" ? `${user.name} approved ${task.title}` : `${user.name} sent ${task.title} back for changes`,
+    });
+  });
+  refresh();
+  return { ok: true };
 }

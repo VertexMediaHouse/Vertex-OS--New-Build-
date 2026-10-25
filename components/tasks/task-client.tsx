@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { addChecklistItem, addTaskComment, createTask, moveTask, toggleChecklist, updateTask } from "@/app/(app)/tasks/actions";
+import { addChecklistItem, addTaskComment, createTask, moveTask, reviewTask, submitForReview, toggleChecklist, updateTask } from "@/app/(app)/tasks/actions";
 import { Field as F } from "@/components/shared/layout";
 
 export type BoardTask = { id: string; title: string; co: CompanyBadgeCode; client: string | null; priority: string; due: string | null; progress: number; assignee: string | null };
@@ -151,5 +151,71 @@ export function TaskStatusSelect({ taskId, value }: { taskId: string; value: str
     <select aria-label="Status" disabled={pending} defaultValue={value} onChange={(e) => start(() => moveTask(taskId, e.target.value, null))} className="h-7 rounded-full bg-info-soft px-2 text-xs font-medium text-info-text">
       {COLS.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
     </select>
+  );
+}
+
+/**
+ * The review cycle, as the two people in it see it. Whoever holds a task they did not
+ * assign themselves gets "Mark done", which hands it up with a note; whoever is reviewing
+ * gets Approve or Send back.
+ */
+export function TaskReview({ taskId, mode }: { taskId: string; mode: "do" | "review" }) {
+  const [open, setOpen] = useState<null | "done" | "approve" | "rework">(null);
+  const [pending, start] = useTransition();
+  const run = (fn: () => Promise<{ ok: boolean; error?: string }>, ok: string) =>
+    start(async () => {
+      const res = await fn();
+      if (!res.ok) return void toast.error(res.error ?? "Something went wrong.");
+      toast.success(ok);
+      setOpen(null);
+    });
+  const note = (form: HTMLFormElement) => String(new FormData(form).get("note") || "");
+
+  const dialog = (
+    <Dialog open={open !== null} onOpenChange={(o) => setOpen(o ? open : null)}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{open === "done" ? "Send for review" : open === "approve" ? "Approve this task" : "Send back for changes"}</DialogTitle>
+        </DialogHeader>
+        <form
+          className="space-y-3 text-sm"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const body = note(e.currentTarget);
+            if (open === "done") run(() => submitForReview(taskId, body), "Sent for review.");
+            else run(() => reviewTask(taskId, open === "approve" ? "approve" : "rework", body), open === "approve" ? "Task approved." : "Sent back.");
+          }}
+        >
+          <F label={open === "rework" ? "What still needs doing" : "Note (optional)"}>
+            <Textarea
+              name="note"
+              rows={4}
+              required={open === "rework"}
+              placeholder={open === "done" ? "What you did, and anything they should check…" : open === "approve" ? "Anything to add…" : "Be specific about what to change…"}
+            />
+          </F>
+          <DialogFooter>
+            <Button type="submit" disabled={pending}>{pending ? "Saving…" : open === "rework" ? "Send back" : open === "approve" ? "Approve" : "Send for review"}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+
+  if (mode === "review") {
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-xl bg-review-soft p-3">
+        <p className="min-w-0 flex-1 text-xs font-medium text-review-text">Waiting for your review.</p>
+        <Button type="button" size="sm" disabled={pending} onClick={() => setOpen("approve")}>Approve</Button>
+        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => setOpen("rework")}>Send back</Button>
+        {dialog}
+      </div>
+    );
+  }
+  return (
+    <>
+      <Button type="button" className="w-full" disabled={pending} onClick={() => setOpen("done")}>Mark done &amp; send for review</Button>
+      {dialog}
+    </>
   );
 }
