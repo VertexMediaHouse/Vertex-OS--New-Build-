@@ -303,6 +303,10 @@ model User {
   comments          Comment[]
   activities        Activity[]
   notifications     Notification[]
+  notes             Note[]            @relation("NoteAuthor")
+  ownedContent      ContentItem[]     @relation("ContentOwner")
+  recurringTasks    RecurringTask[]   @relation("RecurringAssignee")
+  createdRecurring  RecurringTask[]   @relation("RecurringCreator")
 
   @@map("user")
 }
@@ -398,12 +402,17 @@ model Company {
   campaigns       EmailCampaign[]
   events          CalendarEvent[]
   activities      Activity[]
+  notes           Note[]
+  content         ContentItem[]
+  recurringTasks  RecurringTask[]
 }
 
 model Membership {
   userId    String
   companyId String
   role      MemberRole @default(MEMBER)
+  /// Modules this person may open, overriding the role's defaults. Empty = use the role.
+  modules   String[]
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt DateTime   @default(now())
@@ -577,6 +586,7 @@ model Project {
   folders        Folder[]
   files          File[]
   events         CalendarEvent[]
+  recurringTasks RecurringTask[]
 
   @@index([companyId, status])
   @@index([clientId])
@@ -1105,4 +1115,89 @@ model Tag {
   id    String @id @default(cuid())
   name  String @unique
   color String @default("#64748B")
+}
+
+// ───────────────────────── Content, notes, routines ─────────────────────────
+
+enum ContentStage {
+  IDEA
+  SCRIPTING
+  FILMING
+  EDITING
+  SCHEDULED
+  PUBLISHED
+}
+
+enum ContentChannel {
+  YOUTUBE
+  INSTAGRAM
+  LINKEDIN
+  SHORTS
+  PODCAST
+  OTHER
+}
+
+/// Our own content, idea to published. One row per piece; the board columns are the stages.
+model ContentItem {
+  id          String         @id @default(cuid())
+  companyId   String
+  company     Company        @relation(fields: [companyId], references: [id])
+  title       String
+  channel     ContentChannel @default(YOUTUBE)
+  stage       ContentStage   @default(IDEA)
+  ownerId     String?
+  owner       User?          @relation("ContentOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  hook        String? /// the one line that sells it
+  notes       String?
+  shootDate   DateTime?
+  publishDate DateTime?
+  publishedAt DateTime?
+  link        String?
+  position    Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([companyId, stage])
+  @@index([publishDate])
+}
+
+/// Notebook on the dashboard: short notes kept beside the numbers.
+model Note {
+  id        String   @id @default(cuid())
+  companyId String? /// null = both companies
+  company   Company? @relation(fields: [companyId], references: [id])
+  authorId  String
+  author    User     @relation("NoteAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  title     String?
+  body      String
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorId, pinned, updatedAt])
+}
+
+/// A task written once and created fresh for its assignee on each of its weekdays.
+model RecurringTask {
+  id               String    @id @default(cuid())
+  companyId        String
+  company          Company   @relation(fields: [companyId], references: [id])
+  title            String
+  assigneeId       String
+  assignee         User      @relation("RecurringAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
+  projectId        String?
+  project          Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  priority         Priority  @default(MEDIUM)
+  estimatedMinutes Int?
+  /// ISO weekdays it runs on, 1 = Monday … 7 = Sunday. Empty = every day.
+  weekdays         Int[]
+  active           Boolean   @default(true)
+  /// The IST day it last created a task for, so a day is never doubled up.
+  lastRunOn        String?
+  createdById      String?
+  createdBy        User?     @relation("RecurringCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([companyId, active])
 }

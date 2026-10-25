@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { scopedClientWhere, scopedSharedWhere, scopedWhere, type ScopeFilter } from "@/lib/db/scope";
 import { addDays, addMonthsIST, now, startOfDayIST, startOfMonthIST, startOfWeekIST } from "@/lib/clock";
 import { pctChange, type Period } from "@/lib/period";
-import { avgTurnaroundHours, workloadPercent } from "./workload";
+import { workloadPercent } from "./workload";
 import { goalProgress } from "./goals";
 import { parseCompanySettings } from "@/lib/settings";
 
@@ -149,46 +149,9 @@ export async function teamWorkload(s: ScopeFilter) {
   });
 }
 
-export function approvalsWaiting(s: ScopeFilter) {
-  return db.approval.findMany({ where: { status: "PENDING", project: scopedWhere(s) }, orderBy: { requestedAt: "asc" }, take: 4, include: { project: { select: { name: true, client: { select: { name: true } } } } } });
-}
-
-export async function productionBoard(p: Period) {
-  const vmh = { companyId: "vmh" };
-  const [stages, delivered] = await Promise.all([
-    db.task.groupBy({ by: ["productionStage"], _count: true, where: { ...vmh, status: { not: "COMPLETED" }, productionStage: { not: null } } }),
-    db.task.findMany({ where: { ...vmh, productionStage: "DELIVERED", deliveredAt: { gte: p.from, lt: p.to } }, select: { editingStartedAt: true, deliveredAt: true } }),
-  ]);
-  const c = (k: string) => stages.find((g) => g.productionStage === k)?._count ?? 0;
-  return {
-    EDITING: c("EDITING"), INTERNAL_QC: c("INTERNAL_QC"), CLIENT_REVIEW: c("CLIENT_REVIEW"), REVISION: c("REVISION"), DELIVERED: delivered.length,
-    avgTurnaround: avgTurnaroundHours(delivered.map((d) => ({ start: d.editingStartedAt, end: d.deliveredAt }))),
-  };
-}
-
-export async function deliveryBoard() {
-  const weekStart = startOfWeekIST(now());
-  const vth = { companyId: "vth" };
-  const monthStart = startOfMonthIST(now());
-  const [milestones, bugs, tickets, retainers] = await Promise.all([
-    db.milestone.count({ where: { project: vth, status: { not: "COMPLETED" }, dueDate: { gte: weekStart, lt: addDays(weekStart, 7) } } }),
-    db.bug.count({ where: { project: vth, status: { in: ["OPEN", "IN_PROGRESS"] } } }),
-    db.supportTicket.count({ where: { status: { in: ["OPEN", "IN_PROGRESS"] }, client: { companies: { some: { companyId: "vth" } } } } }),
-    db.project.findMany({ where: { ...vth, billingType: "RETAINER_HOURS", status: ACTIVE_PROJECT }, select: { id: true, retainerHours: true } }),
-  ]);
-  const used = retainers.length
-    ? await db.timeEntry.aggregate({ _sum: { durationMin: true }, where: { projectId: { in: retainers.map((r) => r.id) }, status: "APPROVED", start: { gte: monthStart } } })
-    : { _sum: { durationMin: 0 } };
-  return { milestones, bugs, tickets, retainerUsed: num(used._sum.durationMin) / 60, retainerTotal: retainers.reduce((a, r) => a + (r.retainerHours ?? 0), 0) };
-}
-
 export function todaysAgenda(s: ScopeFilter) {
   const today = startOfDayIST(now());
   return db.calendarEvent.findMany({ where: { ...scopedSharedWhere(s), start: { gte: today, lt: addDays(today, 1) } }, orderBy: { start: "asc" }, take: 4 });
-}
-
-export function recentActivity(s: ScopeFilter, take = 4) {
-  return db.activity.findMany({ where: { ...scopedSharedWhere(s), entityType: { notIn: ["GOAL", "TIME_ENTRY"] } }, orderBy: { createdAt: "desc" }, take, include: { actor: { select: { name: true, image: true } } } });
 }
 
 export function crossSellAlerts(s: ScopeFilter) {
@@ -197,4 +160,63 @@ export function crossSellAlerts(s: ScopeFilter) {
 
 export function clientCount(s: ScopeFilter) {
   return db.client.count({ where: scopedClientWhere(s) });
+}
+
+export type TaskFilter = "today" | "overdue" | "week" | "all";
+
+/** The dashboard's open-task list. The buckets match ?due= on the tasks page. */
+export function openTasks(s: ScopeFilter, filter: TaskFilter, take = 8) {
+  const today = startOfDayIST(now());
+  const open = { ...scopedWhere(s), status: { not: "COMPLETED" as const } };
+  const where =
+    filter === "today"
+      ? { ...open, dueDate: { gte: today, lt: addDays(today, 1) } }
+      : filter === "overdue"
+        ? { ...open, dueDate: { lt: today } }
+        : filter === "week"
+          ? { ...open, dueDate: { gte: addDays(today, 1), lt: addDays(today, 8) } }
+          : open;
+  return db.task.findMany({
+    where,
+    orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { position: "asc" }],
+    take,
+    include: { assignee: { select: { name: true, image: true } }, project: { select: { name: true, client: { select: { name: true } } } } },
+  });
+}
+
+/** Open tasks per person: who is carrying what, and what came back for review. */
+export async function tasksByPerson(s: ScopeFilter) {
+  const t = now();
+  const today = startOfDayIST(t);
+  const weekStart = startOfWeekIST(t);
+  const people = await db.user.findMany({
+    where: { kind: "STAFF", memberships: { some: { companyId: { in: s.companyIds } } } },
+    select: { id: true, name: true, image: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const tasks = await db.task.findMany({
+    where: { ...scopedWhere(s), assigneeId: { in: people.map((p) => p.id) } },
+    select: { assigneeId: true, status: true, dueDate: true, completedAt: true },
+  });
+  return people.map((p) => {
+    const own = tasks.filter((x) => x.assigneeId === p.id);
+    const open = own.filter((x) => x.status !== "COMPLETED");
+    return {
+      ...p,
+      open: open.length,
+      today: open.filter((x) => x.dueDate && x.dueDate >= today && x.dueDate < addDays(today, 1)).length,
+      overdue: open.filter((x) => x.dueDate && x.dueDate < today).length,
+      inReview: open.filter((x) => x.status === "IN_REVIEW").length,
+      doneWeek: own.filter((x) => x.status === "COMPLETED" && x.completedAt && x.completedAt >= weekStart).length,
+    };
+  });
+}
+
+/** The notebook beside the numbers: pinned first, then most recently edited. */
+export function notes(s: ScopeFilter, authorId: string, take = 6) {
+  return db.note.findMany({
+    where: { authorId, OR: [{ companyId: null }, { companyId: { in: s.companyIds } }] },
+    orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
+    take,
+  });
 }

@@ -8,7 +8,7 @@ import "./globals.css";
 const font = Inter_Tight({ variable: "--font-app", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: "Vertex Command Center", template: "%s · Vertex Command Center" },
+  title: { default: "Vertex OS", template: "%s · Vertex OS" },
   description: "Operations for Vertex Media House and Vertex Tech House",
 };
 

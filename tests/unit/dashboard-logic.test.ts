@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avgTurnaroundHours, waitingDays, workloadPercent, workloadState } from "@/lib/metrics/workload";
+import { workloadPercent, workloadState } from "@/lib/metrics/workload";
 import { matchRules } from "@/lib/crosssell";
 import { pctChange, resolvePeriod, dayKey, lastDay } from "@/lib/period";
 import { pageItems, parsePage } from "@/lib/pagination";
@@ -17,11 +17,6 @@ describe("workload", () => {
     expect(workloadState(40)).toBe("idle");
     expect(workloadState(70)).toBe("ok");
     expect(workloadState(100)).toBe("ok");
-  });
-  it("averages turnaround and counts waiting days", () => {
-    expect(avgTurnaroundHours([{ start: ist("2026-10-20T10:00:00"), end: ist("2026-10-21T14:00:00") }, { start: ist("2026-10-20T10:00:00"), end: ist("2026-10-21T10:00:00") }])).toBe(26);
-    expect(avgTurnaroundHours([{ start: null, end: null }])).toBeNull();
-    expect(waitingDays(ist("2026-10-20T09:00:00"), ist("2026-10-22T10:00:00"))).toBe(2);
   });
 });
 

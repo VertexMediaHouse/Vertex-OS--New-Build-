@@ -1,23 +1,20 @@
 // Dashboard cards shared by the owner (page 1) and company (page 2) layouts.
 import Link from "next/link";
-import {
-  Activity, AlertCircle, Bug, CalendarDays, CircleCheck, Clock, Code2, Folder, Headphones, Lightbulb, Play, ReceiptIndianRupee, Send, Target, Users, UsersRound, Video,
-} from "lucide-react";
+import { CalendarDays, CircleCheck, Folder, Lightbulb, ReceiptIndianRupee, Send, StickyNote, Target, Users, UsersRound, Video } from "lucide-react";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { Card, IconTile, Inset, ProgressBar, SectionCard, SegmentedBar, ViewAll, type TileTone } from "@/components/shared/primitives";
 import { Avatar } from "@/components/shared/primitives";
-import { Chip, CompanyBadge, StatusPill, companyCode } from "@/components/shared/pills";
-import { ActivityRow } from "@/components/shared/display";
+import { Chip, CompanyBadge, EnumPill, companyCode } from "@/components/shared/pills";
+import { NewNoteButton, NoteBoard } from "./notes-client";
 import { DonutLegend } from "@/components/shared/charts";
-import { formatINR, formatRelative, formatTimePadded } from "@/lib/format";
-import { now } from "@/lib/clock";
-import { waitingDays, workloadState } from "@/lib/metrics/workload";
+import { formatINR, formatShortDate, formatTimePadded } from "@/lib/format";
+import { now, startOfDayIST } from "@/lib/clock";
+import { workloadState } from "@/lib/metrics/workload";
+import { PRIORITY } from "@/lib/status";
 import type { ScopeFilter } from "@/lib/db/scope";
 import type { Period } from "@/lib/period";
-import { parseCompanySettings } from "@/lib/settings";
-import { db } from "@/lib/db";
 import * as M from "@/lib/metrics/dashboard";
-import { LEAD_STAGE_COLORS, PRODUCTION_STAGE_COLORS, PROJECT_STATUS_COLORS, TASK_OVERVIEW_COLORS } from "@/lib/chart-colors";
+import { LEAD_STAGE_COLORS, PROJECT_STATUS_COLORS, TASK_OVERVIEW_COLORS } from "@/lib/chart-colors";
 import { CrossSellActions } from "./cross-sell-actions";
 
 type Ctx = ScopeFilter & { scope: "ALL" | "VMH" | "VTH" };
@@ -116,6 +113,119 @@ export async function LeadsKpi({ ctx, period, owner }: { ctx: Ctx; period: Perio
   );
 }
 
+// ── Open tasks, by date and by person ───────────────────────────────────
+const TASK_FILTERS: [M.TaskFilter, string, string][] = [
+  ["today", "Today", "/tasks?due=today"],
+  ["overdue", "Overdue", "/tasks?due=overdue"],
+  ["week", "Next 7 days", "/tasks?due=week"],
+  ["all", "All open", "/tasks"],
+];
+
+export async function OpenTasksCard({ ctx, filter, sp }: { ctx: Ctx; filter: M.TaskFilter; sp: Record<string, string | string[] | undefined> }) {
+  const tasks = await M.openTasks(ctx, filter);
+  const t = now();
+  const today = startOfDayIST(t);
+  // Keep the rest of the query string (date range, company) when switching filter.
+  const keep = Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string" && e[0] !== "tasks");
+  const tabHref = (f: M.TaskFilter) => `/dashboard?${new URLSearchParams([...keep, ["tasks", f]])}`;
+  const current = TASK_FILTERS.find(([f]) => f === filter)!;
+  return (
+    <SectionCard
+      title="Open Tasks"
+      icon={CircleCheck}
+      tone="blue"
+      subtitle={`${tasks.length === 8 ? "First 8" : tasks.length} ${current[1].toLowerCase()}`}
+      action={<ViewAll href={current[2]} />}
+    >
+      <div className="-mt-1 mb-2 flex flex-wrap gap-1">
+        {TASK_FILTERS.map(([f, label]) => (
+          <Link
+            key={f}
+            href={tabHref(f)}
+            scroll={false}
+            aria-current={f === filter ? "page" : undefined}
+            className={`rounded-lg px-2.5 py-1 text-2xs font-medium ${f === filter ? "bg-brand-strong text-white" : "bg-surface-muted text-ink-2 hover:bg-accent"}`}
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+      <ul className="divide-y">
+        {tasks.length === 0 && <li className="py-6 text-center text-xs text-ink-muted">Nothing {current[1].toLowerCase()}.</li>}
+        {tasks.map((tk) => {
+          const overdue = tk.dueDate !== null && tk.dueDate < today && tk.status !== "COMPLETED";
+          return (
+            <li key={tk.id} className="py-1.5">
+              <Link href={`/tasks?id=${tk.id}`} className="flex items-center gap-2.5 rounded-md text-xs hover:bg-accent">
+                <EnumPill map={PRIORITY} value={tk.priority} size="xs" />
+                <span className="min-w-0 flex-1 truncate text-ink">
+                  {tk.title}
+                  {tk.project && <span className="text-ink-muted"> · {tk.project.client?.name ?? tk.project.name}</span>}
+                </span>
+                {tk.assignee && <Avatar person={tk.assignee} size={20} />}
+                <span className={`w-16 text-right ${overdue ? "font-semibold text-danger-text" : "text-ink-muted"}`}>
+                  {tk.dueDate ? formatShortDate(tk.dueDate) : "—"}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </SectionCard>
+  );
+}
+
+export async function TeamTasksCard({ ctx }: { ctx: Ctx }) {
+  const people = await M.tasksByPerson(ctx);
+  return (
+    <SectionCard title={`Tasks by Person${suffix(ctx)}`} icon={UsersRound} tone="purple" href="/tasks">
+      <table className="w-full text-2xs">
+        <thead>
+          <tr className="text-left text-ink-2">
+            {["Person", "Open", "Today", "Overdue", "In review", "Done this week"].map((h, i) => (
+              <th key={h} className={`bg-surface-muted px-2 py-1.5 font-medium ${i === 0 ? "rounded-l-md" : ""} ${i === 5 ? "rounded-r-md text-right" : ""} ${i > 0 && i < 5 ? "text-center" : ""}`}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {people.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-ink-muted">No one on the team yet.</td></tr>}
+          {people.map((p) => (
+            <tr key={p.id} className="border-b last:border-0">
+              <td className="px-2 py-1.5">
+                <Link href={`/tasks?assignee=${p.id}`} className="flex items-center gap-2 font-medium text-ink hover:underline">
+                  <Avatar person={p} size={22} />
+                  {p.name}
+                </Link>
+              </td>
+              <td className="px-2 text-center font-semibold text-ink tabular">{p.open}</td>
+              <td className="px-2 text-center tabular">
+                {p.today > 0 ? <Link href={`/tasks?assignee=${p.id}&due=today`} className="font-semibold text-warning-text hover:underline">{p.today}</Link> : <span className="text-ink-muted">–</span>}
+              </td>
+              <td className="px-2 text-center tabular">
+                {p.overdue > 0 ? <Link href={`/tasks?assignee=${p.id}&due=overdue`} className="font-semibold text-danger-text hover:underline">{p.overdue}</Link> : <span className="text-ink-muted">–</span>}
+              </td>
+              <td className="px-2 text-center tabular">
+                {p.inReview > 0 ? <Link href={`/tasks?assignee=${p.id}&status=IN_REVIEW`} className="font-semibold text-review-text hover:underline">{p.inReview}</Link> : <span className="text-ink-muted">–</span>}
+              </td>
+              <td className="px-2 text-right font-semibold text-success-text tabular">{p.doneWeek}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </SectionCard>
+  );
+}
+
+export async function NotesCard({ ctx, userId }: { ctx: Ctx; userId: string }) {
+  const rows = await M.notes(ctx, userId);
+  const companies = ctx.companyIds.filter((c): c is "vmh" | "vth" => c === "vmh" || c === "vth");
+  return (
+    <SectionCard title="Notebook" icon={StickyNote} tone="amber" action={<NewNoteButton companies={companies} />}>
+      <NoteBoard notes={rows.map(({ id, title, body, pinned, companyId }) => ({ id, title, body, pinned, companyId }))} companies={companies} />
+    </SectionCard>
+  );
+}
+
 // ── Owner rows ──────────────────────────────────────────────────────────
 export async function CampaignsCard({ ctx }: { ctx: Ctx }) {
   const list = await M.activeCampaigns(ctx);
@@ -204,99 +314,6 @@ export async function WorkloadCard({ ctx, compact }: { ctx: Ctx; compact?: boole
   );
 }
 
-export async function ApprovalsCard({ ctx }: { ctx: Ctx }) {
-  const list = await M.approvalsWaiting(ctx);
-  const t = now();
-  return (
-    <SectionCard title="Client Approvals Waiting" icon={Clock} tone="orange" href="/projects?list=review">
-      <table className="w-full text-2xs">
-        <thead>
-          <tr className="text-left text-ink-2">
-            {["Client", "Project", "Deliverable", "Waiting Since"].map((h, i) => (
-              <th key={h} className={`bg-surface-muted px-2 py-1.5 font-medium ${i === 0 ? "rounded-l-md" : ""} ${i === 3 ? "rounded-r-md" : ""}`}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {list.map((a) => {
-            const d = waitingDays(a.requestedAt, t);
-            return (
-              <tr key={a.id} className="border-b last:border-0">
-                <td className="px-2 py-1 text-ink">{a.project.client?.name}</td>
-                <td className="px-2 py-1 text-ink-2">{a.project.name}</td>
-                <td className="px-2 py-1">
-                  <Link href={`/projects?id=${a.projectId}`} className="text-ink-2 underline underline-offset-2 hover:text-brand-text">{a.title}</Link>
-                </td>
-                <td className="px-2 py-1">
-                  <StatusPill dot={false} size="xs" tone={d >= 2 ? "danger" : "warning"} label={`${d} day${d === 1 ? "" : "s"}`} />
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </SectionCard>
-  );
-}
-
-const STAGES: ["EDITING" | "INTERNAL_QC" | "CLIENT_REVIEW" | "REVISION" | "DELIVERED", string][] = [["EDITING", "Editing"], ["INTERNAL_QC", "Internal QC"], ["CLIENT_REVIEW", "Client Review"], ["REVISION", "Revision"], ["DELIVERED", "Delivered"]];
-
-export async function ProductionCard({ period }: { period: Period }) {
-  const [b, company] = await Promise.all([M.productionBoard(period), db.company.findUnique({ where: { id: "vmh" }, select: { settings: true } })]);
-  const target = parseCompanySettings(company?.settings).turnaroundTargetHours;
-  const onTrack = b.avgTurnaround === null || b.avgTurnaround <= target.max;
-  return (
-    <SectionCard
-      title="VMH Production Board"
-      icon={Play}
-      tone="red"
-      subtitle={<>Avg. Turnaround: <span className="font-semibold text-ink">{b.avgTurnaround === null ? "–" : `${Math.round(b.avgTurnaround)} hours`}</span></>}
-      action={<span className="flex items-center gap-2"><StatusPill dot={false} tone={onTrack ? "success" : "danger"} label={onTrack ? "On Track" : "Delayed"} /><ViewAll href="/projects?list=active" /></span>}
-    >
-      <div className="grid grid-cols-5 divide-x">
-        {STAGES.map(([k, label]) => (
-          <div key={k} className="px-2 first:pl-0">
-            <p className="text-[10.5px] whitespace-nowrap text-ink-2">{label}</p>
-            <p className="mt-1 text-sm font-bold text-ink tabular">{b[k]}</p>
-            <div className="mt-1.5 h-1.5 rounded-full" style={{ background: PRODUCTION_STAGE_COLORS[k] }} />
-          </div>
-        ))}
-      </div>
-      <p className="mt-3 flex items-center gap-1.5 text-2xs text-ink-muted">
-        <AlertCircle className="size-3.5 text-brand-text" aria-hidden /> Target: {target.min}–{target.max} hours for Shorts
-      </p>
-    </SectionCard>
-  );
-}
-
-export async function DeliveryCard() {
-  const d = await M.deliveryBoard();
-  const pct = d.retainerTotal ? (d.retainerUsed / d.retainerTotal) * 100 : 0;
-  const row = (Icon: typeof Bug, cls: string, label: string, value: React.ReactNode) => (
-    <div className="flex items-center gap-2.5 py-1 text-xs">
-      <span className={`inline-flex size-6 items-center justify-center rounded-md ${cls}`}><Icon className="size-3.5" aria-hidden /></span>
-      <span className="flex-1 text-ink">{label}</span>
-      <span className="font-semibold text-ink tabular">{value}</span>
-    </div>
-  );
-  return (
-    <SectionCard title="VTH Delivery Board" icon={Code2} tone="blue" href="/projects?list=active">
-      {row(CalendarDays, "bg-info-soft text-info-text", "Milestones Due This Week", d.milestones)}
-      {row(Bug, "bg-danger-soft text-danger-text", "Open Bugs", d.bugs)}
-      {row(Headphones, "bg-success-soft text-success-text", "Support Tickets", d.tickets)}
-      <div className="flex items-center gap-2.5 py-1.5 text-xs">
-        <span className="inline-flex size-6 items-center justify-center rounded-md bg-review-soft text-review-text"><Clock className="size-3.5" aria-hidden /></span>
-        <span className="flex-1 text-ink">Retainer Hours Used</span>
-        <div className="w-[96px]">
-          <p className="text-xs font-semibold text-ink tabular">{Math.round(d.retainerUsed)}h / {d.retainerTotal}h</p>
-          <ProgressBar value={pct} tone="success" className="mt-1" />
-        </div>
-        <span className="w-9 text-right font-semibold text-ink tabular">{Math.round(pct)}%</span>
-      </div>
-    </SectionCard>
-  );
-}
-
 export async function AgendaCard({ ctx, compact }: { ctx: Ctx; compact?: boolean }) {
   const events = await M.todaysAgenda(ctx);
   return (
@@ -314,34 +331,6 @@ export async function AgendaCard({ ctx, compact }: { ctx: Ctx; compact?: boolean
           </li>
         ))}
       </ul>
-    </SectionCard>
-  );
-}
-
-const ACTIVITY_ICON: Record<string, { icon: typeof Bug; cls: string }> = {
-  PAYMENT: { icon: ReceiptIndianRupee, cls: "bg-success-soft text-success-text" },
-  LEAD: { icon: Users, cls: "bg-surface-muted text-ink-2" },
-};
-
-export async function ActivityCard({ ctx, compact }: { ctx: Ctx; compact?: boolean }) {
-  const items = await M.recentActivity(ctx);
-  const t = now();
-  return (
-    <SectionCard title="Recent Activity" icon={compact ? undefined : Activity} tone="purple" href="/activity">
-      {items.map((a) => {
-        const icon = !a.actor || a.entityType === "LEAD" ? ACTIVITY_ICON[a.entityType] : undefined;
-        return (
-          <ActivityRow
-            key={a.id}
-            person={icon ? undefined : (a.actor ?? undefined)}
-            icon={icon?.icon ?? (a.actor ? undefined : Activity)}
-            iconClass={icon?.cls}
-            text={a.summary}
-            time={formatRelative(a.createdAt, t)}
-            right={<CompanyBadge code={companyCode(a.companyId)} />}
-          />
-        );
-      })}
     </SectionCard>
   );
 }

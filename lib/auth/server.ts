@@ -27,7 +27,7 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url }) => {
       await sendEmail({
         to: user.email,
-        subject: "Reset your Vertex Command Center password",
+        subject: "Reset your Vertex OS password",
         html: `<p>Hi ${user.name},</p><p><a href="${url}">Choose a new password</a>. The link expires in 1 hour.</p>`,
       });
     },

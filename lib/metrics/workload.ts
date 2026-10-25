@@ -13,13 +13,3 @@ export function workloadState(pct: number): "over" | "idle" | "ok" {
   return "ok";
 }
 
-/** Mean hours from editing start to delivery; null when nothing was delivered. */
-export function avgTurnaroundHours(items: { start: Date | null; end: Date | null }[]): number | null {
-  const spans = items.filter((i) => i.start && i.end).map((i) => (i.end!.getTime() - i.start!.getTime()) / 3_600_000);
-  return spans.length ? spans.reduce((a, b) => a + b, 0) / spans.length : null;
-}
-
-/** Waiting Since pill: 1 day = amber, 2+ days = red. */
-export function waitingDays(requestedAt: Date, now: Date): number {
-  return Math.max(0, Math.floor((now.getTime() - requestedAt.getTime()) / 86_400_000));
-}

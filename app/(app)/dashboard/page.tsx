@@ -14,8 +14,8 @@ import { CardSkeleton, KpiSkeleton, PageHeader } from "@/components/shared/layou
 import { DateRangePicker } from "@/components/shared/filters";
 import { BarsChart, ChartLegend, DonutChart, DonutLegend } from "@/components/shared/charts";
 import {
-  ActivityCard, AgendaCard, ApprovalsCard, CampaignsCard, CrossSellCard, DeliveryCard, donutData, GoalsCard, LeadsKpi, LeadsPipelineCard,
-  ProductionCard, ProjectsKpi, RevenueKpi, taskDonutData, TasksKpi, WorkloadCard,
+  AgendaCard, CampaignsCard, CrossSellCard, donutData, GoalsCard, LeadsKpi, LeadsPipelineCard, NotesCard, OpenTasksCard,
+  ProjectsKpi, RevenueKpi, taskDonutData, TasksKpi, TeamTasksCard, WorkloadCard,
 } from "@/components/dashboard/cards";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -28,20 +28,25 @@ export default function DashboardPage({ searchParams }: PageProps<"/dashboard">)
   );
 }
 
+const TASK_FILTERS = ["today", "overdue", "week", "all"] as const;
+
 async function Dashboard({ searchParams }: { searchParams: PageProps<"/dashboard">["searchParams"] }) {
   const [ctx, sp] = await Promise.all([getRequestContext(), searchParams]);
   const str = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : null);
   const period = resolvePeriod({ range: str("range"), from: str("from"), to: str("to") }, now());
-  return ctx.scope === "ALL" ? <OwnerDashboard ctx={ctx} period={period} /> : <CompanyDashboard ctx={ctx} period={period} />;
+  const tasks = (TASK_FILTERS as readonly string[]).includes(str("tasks") ?? "") ? (str("tasks") as M.TaskFilter) : "today";
+  const view = { ctx, period, sp, tasks };
+  return ctx.scope === "ALL" ? <OwnerDashboard {...view} /> : <CompanyDashboard {...view} />;
 }
 
 type Ctx = Awaited<ReturnType<typeof getRequestContext>>;
 type P = ReturnType<typeof resolvePeriod>;
+type View = { ctx: Ctx; period: P; sp: Record<string, string | string[] | undefined>; tasks: M.TaskFilter };
 const S = ({ children, h = "h-60" }: { children: React.ReactNode; h?: string }) => <Suspense fallback={<CardSkeleton className={h} />}>{children}</Suspense>;
 const K = ({ children }: { children: React.ReactNode }) => <Suspense fallback={<KpiSkeleton />}>{children}</Suspense>;
 
-/** PDF page 1: owner command center (All companies). */
-function OwnerDashboard({ ctx, period }: { ctx: Ctx; period: P }) {
+/** All companies: what needs doing, who is doing it, and the notes beside it. */
+function OwnerDashboard({ ctx, period, sp, tasks }: View) {
   return (
     <div className="space-y-3.5">
       <PageHeader
@@ -67,27 +72,28 @@ function OwnerDashboard({ ctx, period }: { ctx: Ctx; period: P }) {
         <K><TasksKpi ctx={ctx} period={period} owner /></K>
         <K><LeadsKpi ctx={ctx} period={period} owner /></K>
       </div>
+      <div className="grid gap-3.5 xl:grid-cols-[1.25fr_1fr]">
+        <S h="h-72"><OpenTasksCard ctx={ctx} filter={tasks} sp={sp} /></S>
+        <S h="h-72"><TeamTasksCard ctx={ctx} /></S>
+      </div>
+      <div className="grid gap-3.5 xl:grid-cols-[1.25fr_1fr]">
+        <S h="h-64"><NotesCard ctx={ctx} userId={ctx.user.id} /></S>
+        <S h="h-64"><GoalsCard ctx={ctx} /></S>
+      </div>
       <div className="grid gap-3.5 xl:grid-cols-[1.17fr_1.14fr_1fr]">
         <S><CampaignsCard ctx={ctx} /></S>
-        <S><GoalsCard ctx={ctx} /></S>
         <S><WorkloadCard ctx={ctx} /></S>
+        <S><AgendaCard ctx={ctx} /></S>
       </div>
-      <div className="grid gap-3.5 xl:grid-cols-[1.32fr_1.18fr_1fr]">
-        <S h="h-48"><ApprovalsCard ctx={ctx} /></S>
-        <S h="h-48"><ProductionCard period={period} /></S>
-        <S h="h-48"><DeliveryCard /></S>
-      </div>
-      <div className="grid gap-3.5 xl:grid-cols-[1fr_0.97fr_1.08fr]">
-        <S h="h-48"><AgendaCard ctx={ctx} /></S>
-        <S h="h-48"><ActivityCard ctx={ctx} /></S>
+      <div className="grid gap-3.5 xl:grid-cols-2">
         <S h="h-48"><CrossSellCard ctx={ctx} /></S>
       </div>
     </div>
   );
 }
 
-/** PDF page 2 (VMH / VTH views): analytics layout for one company. */
-function CompanyDashboard({ ctx, period }: { ctx: Ctx; period: P }) {
+/** One company: the same picture, narrowed to it. */
+function CompanyDashboard({ ctx, period, sp, tasks }: View) {
   const code = ctx.scope as "VMH" | "VTH";
   return (
     <div className="space-y-3.5">
@@ -109,15 +115,17 @@ function CompanyDashboard({ ctx, period }: { ctx: Ctx; period: P }) {
         <S><TasksOverview ctx={ctx} period={period} /></S>
         <S><WorkloadCard ctx={ctx} compact /></S>
       </div>
-      {/* The board for the company in scope: picking Tech House has to show its own numbers. */}
-      <div className="grid gap-3.5 xl:grid-cols-2">
-        <S h="h-48">{code === "VTH" ? <DeliveryCard /> : <ProductionCard period={period} />}</S>
-        <S h="h-48"><ApprovalsCard ctx={ctx} /></S>
+      <div className="grid gap-3.5 xl:grid-cols-[1.25fr_1fr]">
+        <S h="h-72"><OpenTasksCard ctx={ctx} filter={tasks} sp={sp} /></S>
+        <S h="h-72"><TeamTasksCard ctx={ctx} /></S>
       </div>
-      <div className="grid gap-3.5 xl:grid-cols-[1.2fr_1fr_1fr]">
+      <div className="grid gap-3.5 xl:grid-cols-[1.25fr_1fr]">
+        <S h="h-64"><NotesCard ctx={ctx} userId={ctx.user.id} /></S>
+        <S h="h-64"><GoalsCard ctx={ctx} /></S>
+      </div>
+      <div className="grid gap-3.5 xl:grid-cols-2">
         <S h="h-40"><LeadsPipelineCard ctx={ctx} /></S>
         <S h="h-40"><AgendaCard ctx={ctx} compact /></S>
-        <S h="h-40"><ActivityCard ctx={ctx} compact /></S>
       </div>
     </div>
   );

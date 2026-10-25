@@ -8,7 +8,7 @@ export type Email = {
 };
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const from = process.env.EMAIL_FROM ?? "Vertex Command Center <notifications@vertexmediahouse.com>";
+const from = process.env.EMAIL_FROM ?? "Vertex OS <notifications@vertexmediahouse.com>";
 
 /** Sends through Resend; without RESEND_API_KEY it prints the email instead (local dev). */
 export async function sendEmail(email: Email): Promise<void> {
