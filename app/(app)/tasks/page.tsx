@@ -32,6 +32,7 @@ export default function TasksPage({ searchParams }: PageProps<"/tasks">) {
 
 async function Tasks({ searchParams }: { searchParams: Promise<SP> }) {
   const [ctx, sp] = await Promise.all([getRequestContext(), searchParams]);
+  if (!can(ctx.user, "view", "task")) return <p className="p-6 text-sm text-ink-2">You don&apos;t have access to tasks.</p>;
   const p = readParams(sp);
   const t = now();
   const today = startOfDayIST(t);

@@ -20,6 +20,7 @@ export default function TeamPage() {
 
 async function Team() {
   const ctx = await getRequestContext();
+  if (!can(ctx.user, "view", "team")) return <p className="p-6 text-sm text-ink-2">You don&apos;t have access to the team.</p>;
   const [workload, users, tasks] = await Promise.all([
     M.teamWorkload(ctx),
     db.user.findMany({ where: { kind: "STAFF", memberships: { some: { companyId: { in: ctx.companyIds } } } }, include: { memberships: true }, orderBy: [{ isOwner: "desc" }, { createdAt: "asc" }] }),
@@ -38,7 +39,7 @@ async function Team() {
               <Card className="p-4 hover:bg-accent">
                 <div className="flex items-center gap-3">
                   <Avatar person={u} size={44} />
-                  <div className="min-w-0 flex-1"><p className="font-semibold text-ink">{u.name}{!u.active && <span className="ml-2 text-2xs text-danger-text">inactive</span>}</p><p className="text-xs text-ink-muted">{roleLabel({ ...u, memberships: u.memberships.map((m) => ({ companyId: m.companyId, role: m.role })), kind: "STAFF" })}</p></div>
+                  <div className="min-w-0 flex-1"><p className="font-semibold text-ink">{u.name}{!u.active && <span className="ml-2 text-2xs text-danger-text">inactive</span>}</p><p className="text-xs text-ink-muted">{roleLabel({ ...u, memberships: u.memberships.map((m) => ({ companyId: m.companyId, role: m.role, modules: m.modules })), kind: "STAFF" })}</p></div>
                   <CompanyBadges codes={u.memberships.map((m) => (m.companyId === "vmh" ? "VMH" : "VTH") as "VMH").sort()} />
                 </div>
                 {w && (

@@ -3,31 +3,35 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ChartColumn, Clock, FileText, Files, FolderKanban, House, Mail, Settings, SquareCheck, SquareCheckBig, UserRound, Users, UsersRound,
+  ChartColumn, Clapperboard, Clock, FileText, Files, FolderKanban, House, Mail, Settings, SquareCheck, SquareCheckBig, UserRound, Users, UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo, LogoMark } from "@/components/shared/logo";
 import { SwitchCompanyCard, type SwitchProps } from "./company-switch";
 
-export const NAV: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/dashboard", label: "Dashboard", icon: House },
-  { href: "/leads", label: "Leads", icon: UserRound },
-  { href: "/clients", label: "Clients", icon: UsersRound },
-  { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/tasks", label: "Tasks", icon: SquareCheckBig },
-  { href: "/time", label: "Time Tracking", icon: Clock },
-  { href: "/invoices", label: "Invoices", icon: FileText },
-  { href: "/campaigns", label: "Email Campaigns", icon: Mail },
-  { href: "/goals", label: "Goals", icon: SquareCheck },
-  { href: "/team", label: "Team", icon: Users },
-  { href: "/files", label: "Files", icon: Files },
-  { href: "/reports", label: "Reports", icon: ChartColumn },
-  { href: "/settings", label: "Settings", icon: Settings },
+/** The shell also needs to know which modules this person may open. */
+export type NavProps = SwitchProps & { modules: string[] };
+
+export const NAV: { href: string; label: string; icon: LucideIcon; module: string }[] = [
+  { href: "/dashboard", label: "Dashboard", icon: House, module: "dashboard" },
+  { href: "/leads", label: "Leads", icon: UserRound, module: "lead" },
+  { href: "/clients", label: "Clients", icon: UsersRound, module: "client" },
+  { href: "/projects", label: "Projects", icon: FolderKanban, module: "project" },
+  { href: "/tasks", label: "Tasks", icon: SquareCheckBig, module: "task" },
+  { href: "/time", label: "Time Tracking", icon: Clock, module: "time" },
+  { href: "/invoices", label: "Invoices", icon: FileText, module: "invoice" },
+  { href: "/campaigns", label: "Email Campaigns", icon: Mail, module: "campaign" },
+  { href: "/content", label: "Content", icon: Clapperboard, module: "content" },
+  { href: "/goals", label: "Goals", icon: SquareCheck, module: "goal" },
+  { href: "/team", label: "Team", icon: Users, module: "team" },
+  { href: "/files", label: "Files", icon: Files, module: "file" },
+  { href: "/reports", label: "Reports", icon: ChartColumn, module: "report" },
+  { href: "/settings", label: "Settings", icon: Settings, module: "settings" },
 ];
 
 /** Left navigation. Full width ≥ 1280px, icons only from 768px, drawer below (see MobileNav). */
-export function Sidebar(props: SwitchProps) {
+export function Sidebar(props: NavProps) {
   return (
     <aside className="sticky top-0 hidden h-screen w-16 shrink-0 flex-col bg-sidebar-bg md:flex xl:w-[220px]">
       <SidebarContent {...props} />
@@ -35,7 +39,7 @@ export function Sidebar(props: SwitchProps) {
   );
 }
 
-export function SidebarContent({ scope, allowed, forceFull = false, onNavigate }: SwitchProps & { forceFull?: boolean; onNavigate?: () => void }) {
+export function SidebarContent({ scope, allowed, modules, forceFull = false, onNavigate }: NavProps & { forceFull?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
   const full = forceFull ? "" : "hidden xl:";
   return (
@@ -49,7 +53,7 @@ export function SidebarContent({ scope, allowed, forceFull = false, onNavigate }
         </div>
       </div>
       <nav aria-label="Main" className="flex-1 space-y-0.5 overflow-y-auto px-3">
-        {NAV.map(({ href, label, icon: Icon }) => {
+        {NAV.filter((n) => modules.includes(n.module)).map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link

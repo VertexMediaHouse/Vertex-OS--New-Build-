@@ -38,6 +38,7 @@ export default function ProjectsPage({ searchParams }: PageProps<"/projects">) {
 
 async function Projects({ searchParams }: { searchParams: Promise<SP> }) {
   const [ctx, sp] = await Promise.all([getRequestContext(), searchParams]);
+  if (!can(ctx.user, "view", "project")) return <p className="p-6 text-sm text-ink-2">You don&apos;t have access to projects.</p>;
   const p = readParams(sp);
   const q = p.str("q");
   const base: Prisma.ProjectWhereInput = { companyId: { in: ctx.companyIds }, clientId: { not: null }, ...(p.str("client") && { clientId: p.str("client")! }) };

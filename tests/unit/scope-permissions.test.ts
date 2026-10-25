@@ -23,8 +23,10 @@ describe("scope", () => {
 
 describe("permissions", () => {
   const owner = user({ isOwner: true });
-  const vmhManager = user({ memberships: [{ companyId: "vmh", role: "MANAGER" }] });
-  const member = user({ memberships: [{ companyId: "vmh", role: "MEMBER" }, { companyId: "vth", role: "MEMBER" }] });
+  const vmhManager = user({ memberships: [{ companyId: "vmh", role: "MANAGER", modules: [] }] });
+  const member = user({ memberships: [{ companyId: "vmh", role: "MEMBER", modules: [] }, { companyId: "vth", role: "MEMBER", modules: [] }] });
+  // Someone an admin has narrowed to just two modules in Settings.
+  const narrowed = user({ memberships: [{ companyId: "vmh", role: "MANAGER", modules: ["task", "time"] }] });
   const client = user({ kind: "CLIENT" });
 
   it("owner sees both companies and can do anything", () => {
@@ -44,6 +46,12 @@ describe("permissions", () => {
     expect(can(member, "view", "lead")).toBe(false);
     expect(isMemberOnly(member)).toBe(true);
     expect(isMemberOnly(vmhManager, "vmh")).toBe(false);
+  });
+  it("a module list in Settings narrows the role, never widens it", () => {
+    expect(can(narrowed, "update", "task", "vmh")).toBe(true);
+    expect(can(narrowed, "view", "lead", "vmh")).toBe(false); // the role allows it, the list does not
+    expect(can(narrowed, "view", "invoice", "vmh")).toBe(false);
+    expect(can(narrowed, "view", "settings", "vmh")).toBe(false); // not granted by the role either
   });
   it("portal clients get no staff permissions", () => {
     expect(can(client, "view", "dashboard")).toBe(false);

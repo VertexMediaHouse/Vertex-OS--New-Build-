@@ -35,6 +35,7 @@ export default function ClientsPage({ searchParams }: PageProps<"/clients">) {
 
 async function Clients({ searchParams }: { searchParams: Promise<SP> }) {
   const [ctx, sp] = await Promise.all([getRequestContext(), searchParams]);
+  if (!can(ctx.user, "view", "client")) return <p className="p-6 text-sm text-ink-2">You don&apos;t have access to clients.</p>;
   const p = readParams(sp);
   const all = await listClients({ companyIds: ctx.companyIds });
   const archived = p.str("archived") === "1";

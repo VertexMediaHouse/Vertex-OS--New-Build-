@@ -27,6 +27,7 @@ export default function FilesPage({ searchParams }: PageProps<"/files">) {
 
 async function Files({ searchParams }: { searchParams: Promise<SP> }) {
   const [ctx, sp] = await Promise.all([getRequestContext(), searchParams]);
+  if (!can(ctx.user, "view", "file")) return <p className="p-6 text-sm text-ink-2">You don&apos;t have access to files.</p>;
   const p = readParams(sp);
   const view = p.str("view") ?? "all"; // all | recent | starred | shared | trash
   const folderId = p.str("folder");

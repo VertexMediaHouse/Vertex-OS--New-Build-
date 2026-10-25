@@ -27,6 +27,7 @@ export default function TimePage({ searchParams }: PageProps<"/time">) {
 
 async function Time({ searchParams }: { searchParams: Promise<SP> }) {
   const [ctx, sp] = await Promise.all([getRequestContext(), searchParams]);
+  if (!can(ctx.user, "view", "time")) return <p className="p-6 text-sm text-ink-2">You don&apos;t have access to time tracking.</p>;
   const p = readParams(sp);
   const t = now();
   const unit = p.str("view") ?? "week";

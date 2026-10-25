@@ -1,10 +1,10 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { updateCompany, updateProfile } from "@/app/(app)/settings/actions";
+import { setMemberModules, updateCompany, updateProfile } from "@/app/(app)/settings/actions";
 import type { CompanySettings } from "@/lib/settings";
 import { Field as F } from "@/components/shared/layout";
 
@@ -55,6 +55,63 @@ export function CompanyForm({ c }: { c: { id: string; name: string; address: str
       <F label="Turnaround target min (h)"><Input name="tMin" type="number" defaultValue={s.turnaroundTargetHours.min} /></F>
       <F label="Turnaround target max (h)"><Input name="tMax" type="number" defaultValue={s.turnaroundTargetHours.max} /></F>
       <div className="flex items-end"><Button type="submit" disabled={pending}>Save {c.name}</Button></div>
+    </form>
+  );
+}
+
+/**
+ * Module access for one person in one company. Nothing ticked means their role decides;
+ * ticking some narrows them to those. It cannot give anyone more than their role allows.
+ */
+export function ModuleAccess({
+  userId, companyId, companyName, role, modules, resources,
+}: {
+  userId: string;
+  companyId: string;
+  companyName: string;
+  role: string;
+  modules: string[];
+  resources: { value: string; label: string }[];
+}) {
+  const [pending, start] = useTransition();
+  const [picked, setPicked] = useState<string[]>(modules);
+  const all = picked.length === 0;
+  const toggle = (value: string) =>
+    setPicked((p) => (p.includes(value) ? p.filter((x) => x !== value) : [...p, value]));
+  return (
+    <form
+      className="rounded-xl border p-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        start(async () => {
+          const r = await setMemberModules(userId, companyId, picked);
+          if (!r.ok) return void toast.error(r.error);
+          toast.success("Access updated.");
+        });
+      }}
+    >
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <p className="min-w-0 flex-1 text-xs font-semibold text-ink">
+          {companyName} <span className="font-normal text-ink-muted">· {role.toLowerCase()}</span>
+        </p>
+        <p className="text-2xs text-ink-muted">{all ? "Everything their role allows" : `${picked.length} of ${resources.length} modules`}</p>
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
+        {resources.map((r) => (
+          <label key={r.value} className="flex items-center gap-2 text-xs text-ink-2">
+            <input type="checkbox" checked={all || picked.includes(r.value)} onChange={() => toggle(r.value)} />
+            {r.label}
+          </label>
+        ))}
+      </div>
+      <div className="mt-2.5 flex items-center gap-3">
+        <Button type="submit" size="sm" disabled={pending}>{pending ? "Saving…" : "Save access"}</Button>
+        {!all && (
+          <button type="button" className="text-2xs text-ink-muted hover:underline" onClick={() => setPicked([])}>
+            Reset to role defaults
+          </button>
+        )}
+      </div>
     </form>
   );
 }

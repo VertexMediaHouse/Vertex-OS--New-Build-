@@ -14,7 +14,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   if (!session) redirect("/login");
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    include: { memberships: { select: { companyId: true, role: true } } },
+    include: { memberships: { select: { companyId: true, role: true, modules: true } } },
   });
   if (!user || !user.active) redirect("/login");
   return {

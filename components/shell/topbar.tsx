@@ -9,8 +9,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { authClient } from "@/lib/auth/client";
 import { markAllNotificationsRead } from "@/app/(app)/actions/notifications";
-import { CompanyDropdown, CompanyPills, type SwitchProps } from "./company-switch";
-import { SidebarContent } from "./sidebar";
+import { CompanyDropdown, CompanyPills } from "./company-switch";
+import { SidebarContent, type NavProps } from "./sidebar";
 import { MiniTimer } from "@/components/time/time-client";
 import { GlobalSearch } from "./global-search";
 
@@ -31,11 +31,12 @@ export type TopbarNotification = { id: string; title: string; time: string; link
 export function Topbar({
   scope,
   allowed,
+  modules,
   user,
   notifications,
   unread,
   timer,
-}: SwitchProps & { user: { name: string; image: string | null; role: string }; notifications: TopbarNotification[]; unread: number; timer: { startedAt: string; label: string } | null }) {
+}: NavProps & { user: { name: string; image: string | null; role: string }; notifications: TopbarNotification[]; unread: number; timer: { startedAt: string; label: string } | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -49,7 +50,7 @@ export function Topbar({
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-[240px] border-none bg-sidebar-bg p-0">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <SidebarContent scope={scope} allowed={allowed} forceFull onNavigate={() => setMobileOpen(false)} />
+          <SidebarContent scope={scope} allowed={allowed} modules={modules} forceFull onNavigate={() => setMobileOpen(false)} />
         </SheetContent>
       </Sheet>
 

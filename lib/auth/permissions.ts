@@ -16,7 +16,19 @@ export type CurrentUser = {
   kind: "STAFF" | "CLIENT";
   title: string | null;
   weeklyCapacityHours: number;
-  memberships: { companyId: string; role: MemberRoleName }[];
+  memberships: { companyId: string; role: MemberRoleName; modules: string[] }[];
+};
+
+/** Every module a person can be given or denied in Settings → Users & Roles. */
+export const RESOURCES = [
+  "dashboard", "lead", "client", "project", "task", "time", "invoice",
+  "goal", "file", "campaign", "content", "report", "team", "settings",
+] as const;
+
+export const RESOURCE_LABELS: Record<Resource, string> = {
+  dashboard: "Dashboard", lead: "Leads", client: "Clients", project: "Projects", task: "Tasks",
+  time: "Time", invoice: "Invoices", goal: "Goals", file: "Files", campaign: "Campaigns",
+  content: "Content", report: "Reports", team: "Team", settings: "Settings",
 };
 
 export type Resource =
@@ -30,6 +42,7 @@ export type Resource =
   | "goal"
   | "file"
   | "campaign"
+  | "content"
   | "report"
   | "team"
   | "settings";
@@ -42,16 +55,16 @@ const EDIT: Action[] = ["view", "create", "update"];
 const MATRIX: Record<MemberRoleName, Partial<Record<Resource, Action[]>>> = {
   ADMIN: {
     dashboard: ALL, lead: ALL, client: ALL, project: ALL, task: ALL, time: ALL, invoice: ALL,
-    goal: ALL, file: ALL, campaign: ALL, report: ALL, team: ALL, settings: ALL,
+    goal: ALL, file: ALL, campaign: ALL, content: ALL, report: ALL, team: ALL, settings: ALL,
   },
   MANAGER: {
     dashboard: ["view"], lead: EDIT, client: EDIT, project: EDIT, task: [...EDIT, "delete"],
     time: [...EDIT, "approve"], invoice: EDIT, goal: EDIT, file: [...EDIT, "delete"], campaign: EDIT,
-    report: ["view"], team: ["view"],
+    content: [...EDIT, "delete"], report: ["view"], team: ["view"],
   },
   MEMBER: {
     dashboard: ["view"], client: ["view"], project: ["view"], task: EDIT, time: EDIT,
-    goal: ["view", "update"], file: ["view", "create", "update"], team: ["view"],
+    goal: ["view", "update"], file: ["view", "create", "update"], content: EDIT, team: ["view"],
   },
 };
 
@@ -81,10 +94,12 @@ export function roleIn(user: CurrentUser, companyId: string): Role | null {
 export function can(user: CurrentUser, action: Action, resource: Resource, companyId?: string): boolean {
   if (user.kind === "CLIENT") return false;
   if (user.isOwner) return true;
-  const roles = companyId
-    ? [roleIn(user, companyId)].filter((r): r is MemberRoleName => r !== null && r !== "OWNER")
-    : user.memberships.map((m) => m.role);
-  return roles.some((r) => MATRIX[r][resource]?.includes(action) ?? false);
+  const memberships = companyId ? user.memberships.filter((m) => m.companyId === companyId) : user.memberships;
+  return memberships.some((m) => {
+    // A module list set in Settings narrows the role: anything left off is off.
+    if (m.modules.length > 0 && !m.modules.includes(resource)) return false;
+    return MATRIX[m.role][resource]?.includes(action) ?? false;
+  });
 }
 
 export function assertCan(user: CurrentUser, action: Action, resource: Resource, companyId?: string): void {

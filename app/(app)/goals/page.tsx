@@ -34,6 +34,7 @@ export default function GoalsPage({ searchParams }: PageProps<"/goals">) {
 
 async function Goals({ searchParams }: { searchParams: Promise<SP> }) {
   const [ctx, sp] = await Promise.all([getRequestContext(), searchParams]);
+  if (!can(ctx.user, "view", "goal")) return <p className="p-6 text-sm text-ink-2">You don&apos;t have access to goals.</p>;
   const p = readParams(sp);
   const t = now();
   // Default period: this quarter-ish window (this month + 2), like "Oct 2026 - Dec 2026".

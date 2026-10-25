@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sidebar } from "@/components/shell/sidebar";
 import { Topbar } from "@/components/shell/topbar";
 import { getRequestContext } from "@/lib/auth/context";
-import { allowedCompanyIds, roleLabel } from "@/lib/auth/permissions";
+import { allowedCompanyIds, can, RESOURCES, roleLabel } from "@/lib/auth/permissions";
 import { db } from "@/lib/db";
 import { now } from "@/lib/clock";
 import { formatRelative } from "@/lib/format";
@@ -20,6 +20,8 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 async function Shell({ children }: { children: React.ReactNode }) {
   const { user, scope } = await getRequestContext();
   const allowed = allowedCompanyIds(user).map((id) => id.toUpperCase() as CompanyCode);
+  // The nav only lists what this person may open; each page checks again on its own.
+  const modules = RESOURCES.filter((r) => can(user, "view", r));
   const [notifications, unread, running] = await Promise.all([
     db.notification.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, take: 8 }),
     db.notification.count({ where: { userId: user.id, readAt: null } }),
@@ -28,11 +30,12 @@ async function Shell({ children }: { children: React.ReactNode }) {
   const at = now();
   return (
     <div data-scope={scope.toLowerCase()} className="flex min-h-screen bg-page">
-      <Sidebar scope={scope} allowed={allowed} />
+      <Sidebar scope={scope} allowed={allowed} modules={modules} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
           scope={scope}
           allowed={allowed}
+          modules={modules}
           user={{ name: user.name, image: user.image, role: roleLabel(user) }}
           unread={unread}
           timer={running ? { startedAt: running.start.toISOString(), label: running.task?.title ?? running.project?.name ?? "Timer" } : null}
