@@ -107,3 +107,17 @@ export async function convertLead(id: string, withProject: boolean): Promise<Act
   refresh();
   return { ok: true, id: clientId };
 }
+
+/** Hard delete, for a lead added by mistake. A lead already converted to a client stays. */
+export async function deleteLead(leadId: string): Promise<ActionResult> {
+  const { user } = await getRequestContext();
+  const lead = await db.lead.findUniqueOrThrow({ where: { id: z.string().max(64).parse(leadId) } });
+  assertCan(user, "delete", "lead", lead.companyId);
+  if (lead.clientId) return { ok: false, error: `${lead.name} is linked to a client. Mark it Lost instead.` };
+  await db.$transaction([
+    db.lead.delete({ where: { id: lead.id } }),
+    db.activity.create({ data: { companyId: lead.companyId, actorId: user.id, verb: "deleted", entityType: "LEAD", entityId: lead.id, summary: `${user.name} deleted lead ${lead.name}` } }),
+  ]);
+  refresh();
+  return { ok: true };
+}

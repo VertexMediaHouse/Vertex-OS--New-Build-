@@ -22,6 +22,8 @@ import { UrlSheet } from "@/components/shared/url-sheet";
 import { ActivityRow } from "@/components/shared/display";
 import { LeadBoard, type BoardLead } from "@/components/leads/lead-board";
 import { LeadFormDialog, SOURCE_LABEL } from "@/components/leads/lead-form";
+import { DeleteButton } from "@/components/shared/delete-button";
+import { deleteLead } from "./actions";
 import { ConvertButtons } from "@/components/leads/convert-buttons";
 import Link from "next/link";
 
@@ -238,6 +240,9 @@ async function LeadDrawer({ id, owners, companies }: { id: string; owners: { id:
         <div className="flex flex-wrap gap-2">
           {companies.includes(lead.companyId as "vmh") && (
             <LeadFormDialog owners={owners} companies={companies} lead={{ id: lead.id, name: lead.name, service: lead.service, value: Number(lead.value), companyId: lead.companyId as "vmh", source: lead.source, ownerId: lead.ownerId ?? "", contactName: lead.contactName ?? "", email: lead.email ?? "", phone: lead.phone ?? "", notes: lead.notes ?? "" }} trigger={<button className="h-9 rounded-lg border px-3 text-sm font-medium">Edit</button>} />
+          )}
+          {can(ctx.user, "delete", "lead", lead.companyId) && (
+            <DeleteButton action={deleteLead.bind(null, lead.id)} noun="lead" name={lead.name} redirectTo="/leads" />
           )}
         </div>
         {can(ctx.user, "create", "client", lead.companyId) && lead.stage !== "LOST" && !lead.clientId && (

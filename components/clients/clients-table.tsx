@@ -10,7 +10,8 @@ import { Avatar } from "@/components/shared/primitives";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CLIENT_STATUS } from "@/lib/status";
 import { formatINR } from "@/lib/format";
-import { archiveClients, setClientStatus } from "@/app/(app)/clients/actions";
+import { archiveClients, deleteClient, setClientStatus } from "@/app/(app)/clients/actions";
+import { toast as notify } from "sonner";
 
 export type ClientRow = {
   id: string; name: string; domain: string | null; companies: ("VMH" | "VTH")[]; type: string | null; status: string;
@@ -69,6 +70,15 @@ const columns = col.columns([
         <DropdownMenuContent align="end">
           <DropdownMenuItem asChild><Link href={`/clients/${c.row.original.id}`}>View or edit</Link></DropdownMenuItem>
           <DropdownMenuItem onSelect={async () => { await archiveClients([c.row.original.id]); toast.success("Client archived."); }}>Archive</DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-danger-text"
+            onSelect={async () => {
+              const res = await deleteClient(c.row.original.id);
+              notify[res.ok ? "success" : "error"](res.ok ? "Client deleted." : res.error);
+            }}
+          >
+            Delete
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),

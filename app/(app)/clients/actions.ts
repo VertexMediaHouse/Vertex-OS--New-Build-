@@ -111,3 +111,24 @@ export async function archiveClients(ids: string[], restore = false): Promise<vo
   }
   refresh();
 }
+
+/**
+ * Hard delete, for a client added by mistake. Anything with real history behind it —
+ * projects, invoices, leads — is refused and should be archived instead.
+ */
+export async function deleteClient(clientId: string): Promise<ActionResult> {
+  const { user, client } = await assertClient("delete", clientId);
+  const [projects, invoices, leads] = await Promise.all([
+    db.project.count({ where: { clientId: client.id } }),
+    db.invoice.count({ where: { clientId: client.id } }),
+    db.lead.count({ where: { clientId: client.id } }),
+  ]);
+  const held = [projects && `${projects} project${projects > 1 ? "s" : ""}`, invoices && `${invoices} invoice${invoices > 1 ? "s" : ""}`, leads && `${leads} lead${leads > 1 ? "s" : ""}`].filter(Boolean);
+  if (held.length) return { ok: false, error: `${client.name} still has ${held.join(" and ")}. Archive it instead, or remove those first.` };
+  await db.$transaction([
+    db.client.delete({ where: { id: client.id } }),
+    db.activity.create({ data: { actorId: user.id, verb: "deleted", entityType: "CLIENT", entityId: client.id, summary: `${user.name} deleted ${client.name}` } }),
+  ]);
+  refresh();
+  return { ok: true };
+}

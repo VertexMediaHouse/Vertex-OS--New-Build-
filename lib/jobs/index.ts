@@ -4,12 +4,15 @@ import { now } from "@/lib/clock";
 import { markOverdueInvoices } from "./invoices";
 import { recomputeGoals } from "./goals";
 import { purgeTrash } from "./files";
+import { runRoutines } from "./routines";
 import { sendDueCampaignSteps } from "@/lib/campaigns";
 import { runCrossSellRules } from "@/lib/crosssell";
 
 /** Background jobs on the same Postgres (pg-boss). Started once per server process. */
 export const JOBS = {
   "invoices.overdue": { cron: "0 6 * * *", run: () => markOverdueInvoices(db, now()) },
+  // Early enough that the day's fixed tasks are waiting when people start.
+  "routines.create": { cron: "5 6 * * *", run: () => runRoutines(db, now()) },
   "goals.recompute": { cron: "0 * * * *", run: () => recomputeGoals(db, now()) },
   "files.purge": { cron: "30 3 * * *", run: () => purgeTrash(db, now()) },
   "campaigns.send": { cron: "*/10 * * * *", run: () => sendDueCampaignSteps(db, now()) },

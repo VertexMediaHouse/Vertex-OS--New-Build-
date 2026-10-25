@@ -225,3 +225,69 @@ export async function reviewTask(taskId: string, decision: "approve" | "rework",
   refresh();
   return { ok: true };
 }
+
+/** Hard delete, for a task added by mistake. Refused once time has been logged on it. */
+export async function deleteTask(taskId: string): Promise<ActionResult> {
+  const { user, task } = await taskFor(taskId);
+  assertCan(user, "delete", "task", task.companyId);
+  const time = await db.timeEntry.count({ where: { taskId: task.id } });
+  if (time) return { ok: false, error: `${time} time entr${time > 1 ? "ies are" : "y is"} logged against this task. Complete or cancel it instead.` };
+  await db.$transaction([
+    db.comment.deleteMany({ where: { entityType: "TASK", entityId: task.id } }),
+    db.task.delete({ where: { id: task.id } }),
+    db.activity.create({ data: { companyId: task.companyId, actorId: user.id, verb: "deleted", entityType: "TASK", entityId: task.id, summary: `${user.name} deleted task ${task.title}` } }),
+  ]);
+  refresh();
+  return { ok: true };
+}
+
+// ── Routines: the fixed tasks that come back every day ──────────────────
+
+const routineSchema = z.object({
+  title: z.string().trim().min(1, "Title is required").max(200),
+  companyId: z.enum(["vmh", "vth"]),
+  assigneeId: z.string().min(1, "Pick who does it").max(64),
+  projectId: z.string().max(64).optional().or(z.literal("")),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"),
+  estimatedMinutes: z.coerce.number().int().min(0).max(1440).optional(),
+  /** ISO weekdays, 1 = Monday … 7 = Sunday. Empty = every day. */
+  weekdays: z.array(z.coerce.number().int().min(1).max(7)).max(7).default([]),
+});
+
+export async function saveRoutine(routineId: string | null, input: z.input<typeof routineSchema>): Promise<ActionResult> {
+  const { user } = await getRequestContext();
+  const parsed = routineSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]!.message };
+  const d = parsed.data;
+  assertCan(user, "create", "task", d.companyId);
+  const data = { ...d, projectId: d.projectId || null, estimatedMinutes: d.estimatedMinutes || null };
+  if (routineId) {
+    const existing = await db.recurringTask.findUniqueOrThrow({ where: { id: id.parse(routineId) } });
+    assertCan(user, "update", "task", existing.companyId);
+    await db.recurringTask.update({ where: { id: existing.id }, data });
+  } else {
+    await db.recurringTask.create({ data: { ...data, createdById: user.id } });
+  }
+  refresh();
+  return { ok: true };
+}
+
+/** Pause a routine instead of deleting it: tomorrow it simply makes nothing. */
+export async function toggleRoutine(routineId: string, active: boolean): Promise<ActionResult> {
+  const { user } = await getRequestContext();
+  const routine = await db.recurringTask.findUniqueOrThrow({ where: { id: id.parse(routineId) } });
+  assertCan(user, "update", "task", routine.companyId);
+  await db.recurringTask.update({ where: { id: routine.id }, data: { active: z.boolean().parse(active) } });
+  refresh();
+  return { ok: true };
+}
+
+export async function deleteRoutine(routineId: string): Promise<ActionResult> {
+  const { user } = await getRequestContext();
+  const routine = await db.recurringTask.findUniqueOrThrow({ where: { id: id.parse(routineId) } });
+  assertCan(user, "delete", "task", routine.companyId);
+  // Tasks it already made stay; only the routine stops.
+  await db.recurringTask.delete({ where: { id: routine.id } });
+  refresh();
+  return { ok: true };
+}

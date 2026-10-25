@@ -10,6 +10,8 @@ import { formatDate, formatDateTime, formatDaysLeft, formatDuration, formatFileS
 import { pctChange } from "@/lib/period";
 import { readParams, subScope, type SP } from "@/lib/search-params";
 import { PRIORITY, TASK_STATUS } from "@/lib/status";
+import { DeleteButton } from "@/components/shared/delete-button";
+import { deleteTask } from "./actions";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { Card, ProgressBar, SectionCard, Avatar } from "@/components/shared/primitives";
 import { CardSkeleton, EmptyState, KeyValue, PageHeader } from "@/components/shared/layout";
@@ -18,7 +20,7 @@ import { ClearFilters, FilterSelect, SearchInput } from "@/components/shared/fil
 import { CompanyBadge, EnumPill, companyCode } from "@/components/shared/pills";
 import { UrlSheet } from "@/components/shared/url-sheet";
 import { FileIcon } from "@/components/shared/display";
-import { ChecklistControls, CommentBox, NewTaskDialog, TaskBoard, TaskFieldSelect, TaskReview, TaskStatusSelect, type BoardTask } from "@/components/tasks/task-client";
+import { ChecklistControls, CommentBox, NewTaskDialog, RoutinesDialog, TaskBoard, TaskFieldSelect, TaskReview, TaskStatusSelect, type BoardTask } from "@/components/tasks/task-client";
 import * as M from "@/lib/metrics/dashboard";
 import { workloadState } from "@/lib/metrics/workload";
 
@@ -56,7 +58,7 @@ async function Tasks({ searchParams }: { searchParams: Promise<SP> }) {
   // The board hides tasks completed over 30 days ago, so it doesn't grow without end. Search,
   // the status filter and the other views must still find them. AND, because `where` uses OR.
   const recentOnly = view === "kanban" && !q && !p.str("status") && !p.str("due");
-  const [tasks, projects, people, kpis, myTasks] = await Promise.all([
+  const [tasks, projects, people, kpis, myTasks, routineRows] = await Promise.all([
     db.task.findMany({
       where: recentOnly ? { ...where, AND: [{ OR: [{ status: { not: "COMPLETED" } }, { completedAt: { gte: addDays(t, -30) } }] }] } : where,
       orderBy: [{ position: "asc" }, { dueDate: "asc" }],
@@ -75,8 +77,10 @@ async function Tasks({ searchParams }: { searchParams: Promise<SP> }) {
       db.task.count({ where: { ...base, createdAt: { gte: new Date(month.getTime() - 30 * 86_400_000), lt: month } } }),
     ]),
     db.task.findMany({ where: { companyId: { in: ctx.companyIds }, status: { not: "COMPLETED" }, OR: [{ assigneeId: ctx.user.id }, { createdById: ctx.user.id }] }, orderBy: { dueDate: "asc" }, take: 5, include: { project: { select: { client: { select: { name: true } } } }, assignee: { select: { name: true } } } }),
+    db.recurringTask.findMany({ where: { companyId: { in: ctx.companyIds } }, orderBy: [{ active: "desc" }, { title: "asc" }], include: { assignee: { select: { name: true } } } }),
   ]);
   const [total, pending, dueToday, overdue, doneWeek, donePrev, createdNow, createdPrev] = kpis;
+  const routines = routineRows.map((r) => ({ id: r.id, title: r.title, companyId: r.companyId, assigneeId: r.assigneeId, assignee: r.assignee.name, projectId: r.projectId, priority: r.priority, estimatedMinutes: r.estimatedMinutes, weekdays: r.weekdays, active: r.active }));
   const sum = (r: { _count: number }[]) => r.reduce((a, x) => a + x._count, 0);
   const by = (r: { companyId: string; _count: number }[], c: string) => r.find((x) => x.companyId === c)?._count ?? 0;
   const split = (r: { companyId: string; _count: number }[]) => (ctx.scope === "ALL" ? [{ value: by(r, "vmh"), label: "VMH" }, { value: by(r, "vth"), label: "VTH" }] : undefined);
@@ -103,6 +107,7 @@ async function Tasks({ searchParams }: { searchParams: Promise<SP> }) {
         subtitle="Plan, assign and track all tasks across Vertex Media House and Vertex Tech House."
         actions={
           <>
+            {companies.length > 0 && <RoutinesDialog companies={companies} projects={projects} people={people} routines={routines} />}
             {companies.length > 0 && <NewTaskDialog key={p.str("new") ?? "x"} companies={companies} projects={projects} people={people} open={Boolean(p.str("new"))} status={p.str("status") ?? undefined} />}
             <SegmentedControl param="view" active={view} options={[{ value: "kanban", label: "Kanban", icon: <Columns3 className="size-4" /> }, { value: "list", label: "List", icon: <List className="size-4" /> }, { value: "calendar", label: "Calendar", icon: <CalendarDays className="size-4" /> }]} />
           </>
@@ -257,6 +262,9 @@ async function TaskDrawer({ id, people }: { id: string; people: { id: string; na
           {comments.map((c) => <div key={c.id} className="flex gap-2 py-1.5"><Avatar person={c.author} size={26} /><div><p><b>{c.author.name}</b> <span className="text-ink-muted">{formatDateTime(c.createdAt)}</span></p><p className="text-ink-2">{c.body}</p></div></div>)}
           <CommentBox taskId={tk.id} />
         </section>
+        {can(ctx.user, "delete", "task", tk.companyId) && (
+          <DeleteButton action={deleteTask.bind(null, tk.id)} noun="task" name={tk.title} redirectTo="/tasks" />
+        )}
         <section><h3 className="mb-1 text-sm font-semibold text-ink">Activity</h3>{activity.map((a) => <p key={a.id} className="py-0.5 text-ink-2">{a.summary} · <span className="text-ink-muted">{formatDateTime(a.createdAt)}</span></p>)}</section>
       </div>
     </UrlSheet>

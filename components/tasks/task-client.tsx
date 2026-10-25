@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { addChecklistItem, addTaskComment, createTask, moveTask, reviewTask, submitForReview, toggleChecklist, updateTask } from "@/app/(app)/tasks/actions";
+import { addChecklistItem, addTaskComment, createTask, deleteRoutine, moveTask, reviewTask, saveRoutine, submitForReview, toggleChecklist, toggleRoutine, updateTask } from "@/app/(app)/tasks/actions";
 import { Field as F } from "@/components/shared/layout";
 
 export type BoardTask = { id: string; title: string; co: CompanyBadgeCode; client: string | null; priority: string; due: string | null; progress: number; assignee: string | null };
@@ -217,5 +217,134 @@ export function TaskReview({ taskId, mode }: { taskId: string; mode: "do" | "rev
       <Button type="button" className="w-full" disabled={pending} onClick={() => setOpen("done")}>Mark done &amp; send for review</Button>
       {dialog}
     </>
+  );
+}
+
+const WEEKDAYS: [number, string][] = [[1, "Mon"], [2, "Tue"], [3, "Wed"], [4, "Thu"], [5, "Fri"], [6, "Sat"], [7, "Sun"]];
+
+export type Routine = {
+  id: string; title: string; companyId: string; assigneeId: string; assignee: string;
+  projectId: string | null; priority: string; estimatedMinutes: number | null; weekdays: number[]; active: boolean;
+};
+
+/**
+ * Fixed tasks: written once here, created fresh for their assignee every morning. Pausing
+ * one stops tomorrow's copy without touching the tasks it already made.
+ */
+export function RoutinesDialog({
+  companies, projects, people, routines,
+}: {
+  companies: ("vmh" | "vth")[];
+  projects: { id: string; name: string; companyId: string }[];
+  people: { id: string; name: string }[];
+  routines: Routine[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Routine | null>(null);
+  const [pending, start] = useTransition();
+  const [co, setCo] = useState<"vmh" | "vth">(companies[0] ?? "vmh");
+
+  const run = (fn: () => Promise<{ ok: boolean; error?: string }>, ok: string) =>
+    start(async () => {
+      const res = await fn();
+      if (!res.ok) return void toast.error(res.error ?? "Something went wrong.");
+      toast.success(ok);
+      setEditing(null);
+    });
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    run(
+      () =>
+        saveRoutine(editing?.id ?? null, {
+          title: String(f.get("title") || ""),
+          companyId: (editing?.companyId ?? co) as "vmh",
+          assigneeId: String(f.get("assigneeId") || ""),
+          projectId: String(f.get("projectId") || ""),
+          priority: String(f.get("priority") || "MEDIUM") as "MEDIUM",
+          estimatedMinutes: Number(f.get("estimatedMinutes") || 0),
+          weekdays: f.getAll("weekdays").map(Number),
+        }),
+      editing ? "Routine saved." : "Routine added.",
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button type="button" className="inline-flex h-10 items-center gap-2 rounded-lg border bg-card px-3 text-md font-medium hover:bg-accent">
+          <CalendarDays className="size-4" /> Daily tasks
+        </button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Daily tasks</DialogTitle>
+        </DialogHeader>
+        <p className="-mt-2 text-xs text-ink-muted">Each of these becomes a fresh task for its owner every morning it runs.</p>
+
+        <ul className="divide-y">
+          {routines.length === 0 && <li className="py-4 text-center text-xs text-ink-muted">Nothing set up yet.</li>}
+          {routines.map((r) => (
+            <li key={r.id} className="flex flex-wrap items-center gap-2 py-2 text-xs">
+              <span className={`min-w-0 flex-1 ${r.active ? "text-ink" : "text-ink-muted line-through"}`}>
+                <b>{r.title}</b> · {r.assignee} · {r.weekdays.length === 0 ? "every day" : WEEKDAYS.filter(([d]) => r.weekdays.includes(d)).map(([, l]) => l).join(" ")}
+              </span>
+              <button type="button" disabled={pending} className="text-2xs text-brand-text hover:underline" onClick={() => setEditing(r)}>Edit</button>
+              <button type="button" disabled={pending} className="text-2xs text-ink-2 hover:underline" onClick={() => run(() => toggleRoutine(r.id, !r.active), r.active ? "Paused." : "Resumed.")}>
+                {r.active ? "Pause" : "Resume"}
+              </button>
+              <button type="button" disabled={pending} className="text-2xs text-danger-text hover:underline" onClick={() => run(() => deleteRoutine(r.id), "Routine deleted.")}>Delete</button>
+            </li>
+          ))}
+        </ul>
+
+        <form onSubmit={onSubmit} className="grid grid-cols-2 gap-3 border-t pt-3 text-sm">
+          <p className="col-span-2 text-xs font-semibold text-ink">{editing ? `Editing "${editing.title}"` : "Add a daily task"}</p>
+          {companies.length > 1 && !editing && (
+            <div className="col-span-2 flex gap-4 text-xs">
+              {companies.map((c) => (
+                <label key={c} className="flex items-center gap-2">
+                  <input type="radio" checked={co === c} onChange={() => setCo(c)} /> {c === "vmh" ? "Vertex Media House" : "Vertex Tech House"}
+                </label>
+              ))}
+            </div>
+          )}
+          <F label="Task" className="col-span-2"><Input name="title" required defaultValue={editing?.title ?? ""} placeholder="Post the daily short" /></F>
+          <F label="Who does it">
+            <select name="assigneeId" required defaultValue={editing?.assigneeId ?? ""} className="h-9 w-full rounded-lg border bg-card px-3">
+              <option value="">Pick someone</option>
+              {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </F>
+          <F label="Project (optional)">
+            <select name="projectId" defaultValue={editing?.projectId ?? ""} className="h-9 w-full rounded-lg border bg-card px-3">
+              <option value="">No project</option>
+              {projects.filter((p) => p.companyId === (editing?.companyId ?? co)).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </F>
+          <F label="Priority">
+            <select name="priority" defaultValue={editing?.priority ?? "MEDIUM"} className="h-9 w-full rounded-lg border bg-card px-3">
+              <option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option>
+            </select>
+          </F>
+          <F label="Minutes (optional)"><Input name="estimatedMinutes" type="number" min={0} defaultValue={editing?.estimatedMinutes ?? ""} /></F>
+          <fieldset className="col-span-2">
+            <legend className="mb-1 text-xs font-medium text-ink-2">Days (none ticked = every day)</legend>
+            <div className="flex flex-wrap gap-3 text-xs">
+              {WEEKDAYS.map(([d, label]) => (
+                <label key={d} className="flex items-center gap-1.5">
+                  <input type="checkbox" name="weekdays" value={d} defaultChecked={editing?.weekdays.includes(d)} /> {label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <DialogFooter className="col-span-2 gap-2">
+            {editing && <Button type="button" variant="outline" onClick={() => setEditing(null)}>Cancel edit</Button>}
+            <Button type="submit" disabled={pending}>{pending ? "Saving…" : editing ? "Save routine" : "Add routine"}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

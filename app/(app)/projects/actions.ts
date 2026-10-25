@@ -15,7 +15,7 @@ import { mentionedUsers } from "@/lib/mentions";
 
 const id = z.string().min(1).max(64);
 
-async function projectFor(action: "update" | "create", projectId: string) {
+async function projectFor(action: "update" | "create" | "delete", projectId: string) {
   const { user } = await getRequestContext();
   const project = await db.project.findUniqueOrThrow({ where: { id: id.parse(projectId) } });
   assertCan(user, action, "project", project.companyId);
@@ -187,4 +187,28 @@ export async function revokeContact(contactId: string) {
   await db.clientContact.update({ where: { id: contact.id }, data: { portalAccess: false } });
   if (contact.userId) await db.session.deleteMany({ where: { userId: contact.userId } });
   refresh();
+}
+
+/**
+ * Hard delete, for a project started by mistake. Refused once anyone has logged time or
+ * invoiced against it, since that history would go with it.
+ */
+export async function deleteProject(projectId: string): Promise<ActionResult> {
+  const { user, project } = await projectFor("delete", projectId);
+  const [time, invoices] = await Promise.all([
+    db.timeEntry.count({ where: { projectId: project.id } }),
+    db.invoice.count({ where: { projectId: project.id } }),
+  ]);
+  if (time || invoices) {
+    const held = [time && `${time} time entr${time > 1 ? "ies" : "y"}`, invoices && `${invoices} invoice${invoices > 1 ? "s" : ""}`].filter(Boolean);
+    return { ok: false, error: `${project.name} has ${held.join(" and ")} against it. Mark it cancelled instead.` };
+  }
+  // Tasks, deliverables, milestones and notes belong to the project and go with it.
+  await db.$transaction([
+    db.task.deleteMany({ where: { projectId: project.id } }),
+    db.project.delete({ where: { id: project.id } }),
+    db.activity.create({ data: { companyId: project.companyId, actorId: user.id, verb: "deleted", entityType: "PROJECT", entityId: project.id, summary: `${user.name} deleted project ${project.name}` } }),
+  ]);
+  refresh();
+  return { ok: true };
 }

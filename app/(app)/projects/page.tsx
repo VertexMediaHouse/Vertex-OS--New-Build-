@@ -21,6 +21,8 @@ import { CompanyBadge, EnumPill, StatusPill } from "@/components/shared/pills";
 import { ActivityRow, CheckRow, FileRow, Timeline, type TimelinePoint } from "@/components/shared/display";
 import { DeliverableStepper, MilestoneToggle, NewProjectDialog, NoteForm, PercentInput, PortalAccessButton, ProjectStatusSelect, RequestApproval } from "@/components/projects/controls";
 import { NewTaskDialog } from "@/components/tasks/task-client";
+import { DeleteButton } from "@/components/shared/delete-button";
+import { deleteProject } from "./actions";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Projects" };
@@ -225,6 +227,7 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
         <p className="text-xs text-ink-muted"><Link href="/projects" className="hover:underline">Projects</Link> › {pr.client?.name} › {pr.name}</p>
         <div className="flex gap-2">
           {editable && editDialog(<button type="button" className="inline-flex h-9 items-center gap-2 rounded-lg border bg-card px-3 text-xs font-medium hover:bg-accent"><Pencil className="size-3.5" /> Edit Project</button>)}
+          {can(ctx.user, "delete", "project", pr.companyId) && <DeleteButton action={deleteProject.bind(null, pr.id)} noun="project" name={pr.name} redirectTo="/projects" />}
         </div>
       </div>
       <div className="flex flex-wrap items-start gap-4">
