@@ -26,7 +26,7 @@ export function useHrefWith() {
 export type FilterTab = { value: string; label: string; count?: number; tone?: "blue" | "vmh" | "vth" | Tone };
 
 const TAB_TONE: Record<string, string> = {
-  blue: "bg-[#DCE8FC] text-blue",
+  blue: "bg-info-soft text-brand-text",
   vmh: "bg-vmh-soft text-vmh-text",
   vth: "bg-vth-soft text-vth-text",
   success: "bg-success-soft text-success-text",
@@ -135,7 +135,7 @@ export function SegmentedControl({
             scroll={false}
             className={cn(
               "inline-flex h-full items-center gap-1.5 rounded-md px-4 text-sm font-medium transition-colors",
-              selected ? "bg-blue text-white" : "text-ink-2 hover:bg-accent",
+              selected ? "bg-brand-strong text-white" : "text-ink-2 hover:bg-accent",
             )}
           >
             {o.icon}
@@ -176,7 +176,7 @@ export function Pagination({ page, pageSize, total, noun, className }: { page: n
               type="button"
               aria-current={p === page ? "page" : undefined}
               onClick={() => go(p)}
-              className={cn(box, p === page ? "border-blue bg-blue text-white" : "bg-card text-ink-2 hover:bg-accent")}
+              className={cn(box, p === page ? "border-brand bg-brand-strong text-white" : "bg-card text-ink-2 hover:bg-accent")}
             >
               {p}
             </button>

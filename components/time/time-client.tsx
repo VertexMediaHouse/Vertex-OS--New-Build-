@@ -22,7 +22,7 @@ export function StartTimerPanel({ projects }: { projects: Project[] }) {
   const tasks = projects.find((p) => p.id === projectId)?.tasks ?? [];
   return (
     <div className="overflow-hidden rounded-xl border bg-card shadow-card">
-      <div className="flex items-center justify-between bg-blue px-4 py-2.5 text-white">
+      <div className="flex items-center justify-between bg-brand-strong px-4 py-2.5 text-white">
         <span className="flex items-center gap-2 text-base font-semibold"><Play className="size-4 fill-white" /> Start Timer</span>
         <ManualEntryDialog projects={projects} />
       </div>
@@ -34,7 +34,7 @@ export function StartTimerPanel({ projects }: { projects: Project[] }) {
           <select value={taskId} onChange={(e) => setTaskId(e.target.value)} disabled={!tasks.length} className="h-9 w-full rounded-lg border bg-card px-2"><option value="">Choose a task...</option>{tasks.map((t) => <option key={t.id} value={t.id}>{t.title}</option>)}</select>
         </Field>
         <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} placeholder="Add a note (what are you working on?)" aria-label="Note" />
-        <Button className="w-full bg-blue hover:bg-blue/90" disabled={!projectId || pending} onClick={() => start(async () => { const r = await startTimer({ projectId, taskId, note }); if (r.ok) { toast.success("Timer started."); setNote(""); } })}>
+        <Button className="w-full bg-brand-strong hover:bg-brand-strong/90" disabled={!projectId || pending} onClick={() => start(async () => { const r = await startTimer({ projectId, taskId, note }); if (r.ok) { toast.success("Timer started."); setNote(""); } })}>
           <Play className="size-4" /> Start Tracking
         </Button>
       </div>

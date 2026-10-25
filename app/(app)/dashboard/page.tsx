@@ -50,7 +50,7 @@ function OwnerDashboard({ ctx, period }: { ctx: Ctx; period: P }) {
         subtitle="Here's what's happening across Vertex Media House and Vertex Tech House."
         actions={
           <Card className="flex items-center gap-3 px-4 py-3">
-            <span className="inline-flex size-9 items-center justify-center rounded-lg bg-[#F1E8FF] text-[#7C3AED]">
+            <span className="inline-flex size-9 items-center justify-center rounded-lg bg-review-soft text-review-text">
               <CalendarDays className="size-5" aria-hidden />
             </span>
             <span>

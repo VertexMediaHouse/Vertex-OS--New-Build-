@@ -25,8 +25,8 @@ async function Notifications() {
       <Card className="divide-y">
         {list.length === 0 && <EmptyState title="You're all caught up" />}
         {list.map((n) => (
-          <Link key={n.id} href={n.link ?? "#"} className="flex items-start gap-3 p-4 hover:bg-[#F8FAFC]">
-            <span className={`mt-1.5 size-2 shrink-0 rounded-full ${n.readAt ? "" : "bg-blue"}`} aria-label={n.readAt ? undefined : "Unread"} />
+          <Link key={n.id} href={n.link ?? "#"} className="flex items-start gap-3 p-4 hover:bg-accent">
+            <span className={`mt-1.5 size-2 shrink-0 rounded-full ${n.readAt ? "" : "bg-brand-strong"}`} aria-label={n.readAt ? undefined : "Unread"} />
             <span className="flex-1"><span className={`block text-sm ${n.readAt ? "text-ink-2" : "font-semibold text-ink"}`}>{n.title}</span>{n.body && <span className="block text-xs text-ink-muted">{n.body}</span>}</span>
             <span className="text-2xs text-ink-muted">{formatRelative(n.createdAt, t)}</span>
           </Link>

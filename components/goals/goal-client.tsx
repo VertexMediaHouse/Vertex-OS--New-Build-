@@ -73,7 +73,7 @@ export function MilestoneCheck({ id, done, label }: { id: string; done: boolean;
 export function AddMilestone({ goalId }: { goalId: string }) {
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
-  if (!open) return <button type="button" onClick={() => setOpen(true)} className="text-xs font-medium text-blue">+ Add Milestone</button>;
+  if (!open) return <button type="button" onClick={() => setOpen(true)} className="text-xs font-medium text-brand-text">+ Add Milestone</button>;
   return (
     <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.currentTarget); start(async () => { await addGoalMilestone(goalId, String(f.get("title")), String(f.get("date"))); setOpen(false); }); }}>
       <Input name="title" required placeholder="Milestone" className="h-8 text-xs" />

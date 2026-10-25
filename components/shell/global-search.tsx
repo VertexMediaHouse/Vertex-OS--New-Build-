@@ -30,7 +30,7 @@ export function GlobalSearch({ placeholder }: { placeholder: string }) {
   const groups = [...new Set(hits.map((h) => h.group))];
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="relative hidden h-9 w-[204px] items-center rounded-lg bg-[#F4F6F9] pr-3 pl-9 text-left text-xs text-ink-muted lg:flex" aria-label="Search (Ctrl+K)">
+      <button type="button" onClick={() => setOpen(true)} className="relative hidden h-9 w-[204px] items-center rounded-lg bg-surface-muted pr-3 pl-9 text-left text-xs text-ink-muted lg:flex" aria-label="Search (Ctrl+K)">
         <Search className="absolute left-3 size-4" aria-hidden />
         <span className="truncate">{placeholder}</span>
       </button>

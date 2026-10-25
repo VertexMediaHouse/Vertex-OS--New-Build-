@@ -138,13 +138,13 @@ export function BarsChart({
               barSize={size}
               // rounded data-end only on the top segment of a stack
               radius={!stacked || i === series.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-              stroke={stacked ? "#FFFFFF" : undefined}
+              stroke={stacked ? "var(--card-bg)" : undefined}
               strokeWidth={stacked ? 1 : 0}
             >
-              {topLabels && i === series.length - 1 && <LabelList dataKey="__total" position="top" fill="#334155" fontSize={11} fontWeight={600} />}
+              {topLabels && i === series.length - 1 && <LabelList dataKey="__total" position="top" fill="var(--text-2)" fontSize={11} fontWeight={600} />}
             </Bar>
           ))}
-          {line && <Line dataKey={line.key} name={line.label} stroke={line.color} strokeWidth={2} dot={{ r: 3, fill: line.color, stroke: "#FFFFFF", strokeWidth: 2 }} activeDot={{ r: 4 }} />}
+          {line && <Line dataKey={line.key} name={line.label} stroke={line.color} strokeWidth={2} dot={{ r: 3, fill: line.color, stroke: "var(--card-bg)", strokeWidth: 2 }} activeDot={{ r: 4 }} />}
         </ComposedChart>
       </ResponsiveContainer>
     </div>
@@ -173,8 +173,8 @@ export function DonutChart({
     <div className="relative shrink-0" style={{ width: size, height: size }} role="img" aria-label={data.map((d) => `${d.label} ${format(d.value)}`).join(", ")}>
       <ResponsiveContainer width="100%" height="100%">
         <RPieChart>
-          <Pie data={shown.length ? shown : [{ label: "None", value: 1, color: "#E9EEF4" }]} dataKey="value" nameKey="label" innerRadius={size / 2 - thickness} outerRadius={size / 2} startAngle={90} endAngle={-270} stroke="#FFFFFF" strokeWidth={2} isAnimationActive={false}>
-            {(shown.length ? shown : [{ color: "#E9EEF4" }]).map((d, i) => (
+          <Pie data={shown.length ? shown : [{ label: "None", value: 1, color: "var(--track)" }]} dataKey="value" nameKey="label" innerRadius={size / 2 - thickness} outerRadius={size / 2} startAngle={90} endAngle={-270} stroke="var(--card-bg)" strokeWidth={2} isAnimationActive={false}>
+            {(shown.length ? shown : [{ color: "var(--track)" }]).map((d, i) => (
               <Cell key={i} fill={d.color} />
             ))}
           </Pie>
@@ -196,7 +196,7 @@ export function PieChart({ data, size = 140, format: fName = "plain" }: { data: 
     <div style={{ width: size, height: size }} className="shrink-0" role="img" aria-label={data.map((d) => `${d.label} ${format(d.value)}`).join(", ")}>
       <ResponsiveContainer width="100%" height="100%">
         <RPieChart>
-          <Pie data={data.filter((d) => d.value > 0)} dataKey="value" nameKey="label" outerRadius={size / 2} startAngle={90} endAngle={-270} stroke="#FFFFFF" strokeWidth={2} isAnimationActive={false}>
+          <Pie data={data.filter((d) => d.value > 0)} dataKey="value" nameKey="label" outerRadius={size / 2} startAngle={90} endAngle={-270} stroke="var(--card-bg)" strokeWidth={2} isAnimationActive={false}>
             {data.filter((d) => d.value > 0).map((d) => (
               <Cell key={d.label} fill={d.color} />
             ))}
@@ -221,7 +221,7 @@ export function LinesChart({ data, xKey, series, height = 200, yFormat: yName = 
           <YAxis {...axisProps} width={40} tickFormatter={yFormat} domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} />
           <Tooltip content={(p) => <TooltipBox active={p.active} payload={p.payload} label={p.label} format={yFormat} />} />
           {series.map((s) => (
-            <Line key={s.key} dataKey={s.key} name={s.label} stroke={s.color} strokeWidth={2} isAnimationActive={false} dot={{ r: 4, fill: s.color, stroke: "#FFFFFF", strokeWidth: 2 }} activeDot={{ r: 5 }}>
+            <Line key={s.key} dataKey={s.key} name={s.label} stroke={s.color} strokeWidth={2} isAnimationActive={false} dot={{ r: 4, fill: s.color, stroke: "var(--card-bg)", strokeWidth: 2 }} activeDot={{ r: 5 }}>
               {endLabels && (
                 <LabelList
                   dataKey={s.key}
@@ -229,7 +229,7 @@ export function LinesChart({ data, xKey, series, height = 200, yFormat: yName = 
                     index === last && value != null ? (
                       <g>
                         <rect x={Number(x) + 10} y={Number(y) - 10} width={40} height={20} rx={5} fill={s.color} opacity={0.16} />
-                        <text x={Number(x) + 30} y={Number(y) + 4} textAnchor="middle" fontSize={11} fontWeight={600} fill="#0F172A">
+                        <text x={Number(x) + 30} y={Number(y) + 4} textAnchor="middle" fontSize={11} fontWeight={600} fill="var(--text)">
                           {yFormat(Number(value))}
                         </text>
                       </g>
@@ -246,7 +246,7 @@ export function LinesChart({ data, xKey, series, height = 200, yFormat: yName = 
 }
 
 /** HTML bar list: label (avatar/logo) + bar + value. Hours by member, top clients. */
-export function BarList({ rows, max, color = "var(--blue)", barClass }: { rows: { key: string; label: React.ReactNode; value: number; display: string }[]; max?: number; color?: string; barClass?: string }) {
+export function BarList({ rows, max, color = "var(--brand)", barClass }: { rows: { key: string; label: React.ReactNode; value: number; display: string }[]; max?: number; color?: string; barClass?: string }) {
   const top = max ?? Math.max(1, ...rows.map((r) => r.value));
   return (
     <ul className="space-y-2.5">

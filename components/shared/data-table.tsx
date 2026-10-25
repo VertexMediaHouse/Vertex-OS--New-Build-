@@ -67,7 +67,7 @@ export function DataTable<T extends RowData & { id: string }>({
   return (
     <div className={cn("relative", className)}>
       {selectable && selectedIds.length > 0 && bulkActions && (
-        <div className="mb-2 flex items-center gap-3 rounded-lg bg-blue-soft px-3 py-2 text-xs text-blue">
+        <div className="mb-2 flex items-center gap-3 rounded-lg bg-brand-soft px-3 py-2 text-xs text-brand-text">
           <span className="font-semibold">{selectedIds.length} selected</span>
           {bulkActions(selectedIds, () => setRowSelection({}))}
         </div>
@@ -123,7 +123,7 @@ export function DataTable<T extends RowData & { id: string }>({
           </thead>
           <tbody>
             {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className={cn("group", row.id === activeId ? "bg-[#EAF4FC]" : "hover:bg-[#F8FAFC]")} data-state={row.getIsSelected() ? "selected" : undefined}>
+              <tr key={row.id} className={cn("group", row.id === activeId ? "bg-brand-soft" : "hover:bg-accent")} data-state={row.getIsSelected() ? "selected" : undefined}>
                 {selectable && (
                   <td className={cn("border-b pl-3", cellPad)}>
                     <input

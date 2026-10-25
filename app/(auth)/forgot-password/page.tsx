@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
           <Button type="submit" disabled={pending} className="h-10 w-full">Send reset link</Button>
         </form>
       )}
-      <Link href="/login" className="mt-4 block text-xs text-blue hover:underline">Back to login</Link>
+      <Link href="/login" className="mt-4 block text-xs text-brand-text hover:underline">Back to login</Link>
     </div>
   );
 }

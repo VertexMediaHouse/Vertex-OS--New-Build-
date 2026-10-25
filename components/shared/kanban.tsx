@@ -127,7 +127,7 @@ export function KanbanBoard<T extends { id: string }>({ columns, items, renderCa
 function Column({ col, count, countStyle, children }: { col: KanbanColumn; count: number; countStyle: "plain" | "chip"; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
   return (
-    <section ref={setNodeRef} aria-label={`${col.title} (${count})`} className={cn("flex flex-col rounded-xl", col.bodyClass, isOver && "ring-2 ring-blue/30")}>
+    <section ref={setNodeRef} aria-label={`${col.title} (${count})`} className={cn("flex flex-col rounded-xl", col.bodyClass, isOver && "ring-2 ring-brand/30")}>
       <header className={cn("rounded-t-xl px-3.5 pt-3 pb-2.5", col.headerClass)}>
         <div className="flex items-center gap-2">
           {col.icon}

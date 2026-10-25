@@ -87,7 +87,7 @@ async function Projects({ searchParams }: { searchParams: Promise<SP> }) {
                 <Link
                   href={`?${new URLSearchParams({ ...strParams(sp), id: pr.id, tab: "" }).toString().replace(/&?tab=/, "")}`}
                   scroll={false}
-                  className={cn("block rounded-[10px] border bg-card p-3 transition-colors", selected ? (vth ? "border-l-2 border-l-vth bg-blue-soft/60" : "border-l-2 border-l-blue bg-blue-soft/60") : "hover:bg-[#F8FAFC]")}
+                  className={cn("block rounded-[10px] border bg-card p-3 transition-colors", selected ? (vth ? "border-l-2 border-l-vth bg-brand-soft/60" : "border-l-2 border-l-blue bg-brand-soft/60") : "hover:bg-accent")}
                 >
                   <div className="flex items-start gap-3">
                     <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-lg font-bold" style={{ background: `${color}1F`, color }}>{pr.client?.name[0]}</span>
@@ -172,7 +172,7 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
   const editable = can(ctx.user, "update", "project", pr.companyId);
   const formValues = { id: pr.id, companyId: pr.companyId as "vmh" | "vth", clientId: pr.clientId ?? "", name: pr.name, typeLabel: pr.typeLabel, category: pr.category, billingType: pr.billingType, value: Number(pr.value), retainerHours: pr.retainerHours, startDate: dayKey(pr.startDate), dueDate: pr.dueDate ? dayKey(pr.dueDate) : "", priority: pr.priority, summary: pr.summary ?? "", description: pr.description ?? "" };
   const editDialog = (trigger: React.ReactNode) => <NewProjectDialog companies={[pr.companyId as "vmh"]} clients={clients} project={formValues} trigger={trigger} />;
-  const accent = vth ? "text-vth-text" : "text-blue";
+  const accent = vth ? "text-vth-text" : "text-brand-text";
   const dueText = due && <span className={dueRed ? "text-danger-text" : undefined}>{formatDate(due)} ({daysLeft})</span>;
   const timeline: TimelinePoint[] = (pr.phases.length ? pr.phases : pr.milestones.map((m) => ({ label: m.title, date: m.dueDate, status: m.status }))).map((ph, i, arr) => {
     const firstOpen = arr.findIndex((x) => x.status !== "COMPLETED");
@@ -190,7 +190,7 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
           const label = !vth && tk.status === "IN_PROGRESS" && tk.productionStage ? PRODUCTION_STAGE[tk.productionStage]! : TASK_STATUS[tk.status]!;
           return (
             <tr key={tk.id} className="border-b last:border-0">
-              <td className="px-2 py-1.5"><Link href={`/tasks?id=${tk.id}`} className="flex items-center gap-2 text-ink hover:underline"><span className={cn("size-2.5 rounded-full border", tk.status === "COMPLETED" ? "border-success bg-success" : "border-[#C5CDD8]")} aria-hidden />{tk.title}</Link></td>
+              <td className="px-2 py-1.5"><Link href={`/tasks?id=${tk.id}`} className="flex items-center gap-2 text-ink hover:underline"><span className={cn("size-2.5 rounded-full border", tk.status === "COMPLETED" ? "border-success bg-success" : "border-input")} aria-hidden />{tk.title}</Link></td>
               <td className="px-2 py-1.5">{tk.assignee && <Avatar person={tk.assignee} size={22} />}</td>
               <td className="px-2 py-1.5 text-ink-2">{tk.dueDate && formatShortDate(tk.dueDate)}</td>
               <td className="px-2 py-1.5"><StatusPill label={tk.status === "TODO" ? "Pending" : label.label} tone={label.tone} size="xs" /></td>
@@ -213,7 +213,7 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
         <thead><tr className="text-left text-ink-2">{["Invoice", "Amount", "Status", "Due Date"].map((h) => <th key={h} className="bg-surface-muted px-2 py-1.5 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
         <tbody>{pr.invoices.map((i) => <tr key={i.id} className="border-b last:border-0"><td className="px-2 py-1.5"><Link href={`/invoices?id=${i.id}`} className="text-ink hover:underline">#{i.number}</Link></td><td className="px-2 py-1.5 tabular">{formatINR(i.total)}</td><td className="px-2 py-1.5"><EnumPill map={INVOICE_STATUS} value={i.status} size="xs" /></td><td className="px-2 py-1.5 text-ink-2">{formatDate(i.dueDate)}</td></tr>)}</tbody>
       </table>
-      {can(ctx.user, "create", "invoice", pr.companyId) && <Link href={`/invoices/new?project=${pr.id}`} className="mt-3 inline-flex h-8 items-center gap-1 rounded-lg bg-blue-soft px-3 text-xs font-semibold text-blue"><Plus className="size-3.5" /> Create Invoice</Link>}
+      {can(ctx.user, "create", "invoice", pr.companyId) && <Link href={`/invoices/new?project=${pr.id}`} className="mt-3 inline-flex h-8 items-center gap-1 rounded-lg bg-brand-soft px-3 text-xs font-semibold text-brand-text"><Plus className="size-3.5" /> Create Invoice</Link>}
     </>
   );
 
@@ -360,7 +360,7 @@ async function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: SP 
         <Card className="space-y-2 p-4 text-sm">
           <p>Total <b>{formatDuration(billable + nonBillable)}</b> · Billable <b>{formatDuration(billable)}</b> · Non-billable <b>{formatDuration(nonBillable)}</b></p>
           {pr.retainerHours && <p>Retainer: {pr.retainerHours}h per month</p>}
-          <Link href={`/time?project=${pr.id}`} className="text-blue hover:underline">Open in timesheet →</Link>
+          <Link href={`/time?project=${pr.id}`} className="text-brand-text hover:underline">Open in timesheet →</Link>
         </Card>
       )}
       {tab === "activity" && <Card className="p-4">{activity.map((a) => <ActivityRow key={a.id} person={a.actor ?? undefined} text={a.summary} time={formatRelative(a.createdAt, t)} />)}{activity.length === 0 && <EmptyState title="No activity yet" />}</Card>}

@@ -35,7 +35,7 @@ async function Team() {
           const st = w ? workloadState(w.pct) : "ok";
           return (
             <Link key={u.id} href={`/team/${u.id}`}>
-              <Card className="p-4 hover:bg-[#F8FAFC]">
+              <Card className="p-4 hover:bg-accent">
                 <div className="flex items-center gap-3">
                   <Avatar person={u} size={44} />
                   <div className="min-w-0 flex-1"><p className="font-semibold text-ink">{u.name}{!u.active && <span className="ml-2 text-2xs text-danger-text">inactive</span>}</p><p className="text-xs text-ink-muted">{roleLabel({ ...u, memberships: u.memberships.map((m) => ({ companyId: m.companyId, role: m.role })), kind: "STAFF" })}</p></div>

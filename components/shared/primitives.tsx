@@ -9,13 +9,13 @@ import { TONE_CLASSES, type Tone } from "@/lib/status";
 export type TileTone = "green" | "blue" | "purple" | "pink" | "orange" | "red" | "amber" | "slate" | "vmh" | "vth";
 
 const TILE: Record<TileTone, string> = {
-  green: "bg-[#DCF8E9] text-[#10B981]",
-  blue: "bg-[#D2E1FC] text-blue",
-  purple: "bg-[#E8D8FC] text-[#7C3AED]",
-  pink: "bg-[#FCD9E8] text-[#E5487A]",
-  orange: "bg-[#FDEBD8] text-[#F28C28]",
-  red: "bg-[#FCE2E2] text-[#E5484D]",
-  amber: "bg-[#FDF0DD] text-[#F59E0B]",
+  green: "bg-success-soft text-success-text",
+  blue: "bg-info-soft text-brand-text",
+  purple: "bg-review-soft text-review-text",
+  pink: "bg-review-soft text-review-text",
+  orange: "bg-warning-soft text-warning-text",
+  red: "bg-danger-soft text-danger-text",
+  amber: "bg-warning-soft text-warning-text",
   slate: "bg-surface-muted text-ink-muted",
   vmh: "bg-vmh-soft text-vmh-text",
   vth: "bg-vth-soft text-vth-text",
@@ -45,7 +45,7 @@ export type BarTone = Tone | "primary" | "vmh" | "vth" | "brand";
 
 const BAR: Record<BarTone, string> = {
   ...Object.fromEntries(Object.entries(TONE_CLASSES).map(([k, v]) => [k, v.bar])),
-  primary: "bg-blue",
+  primary: "bg-brand-strong",
   brand: "bg-brand",
   vmh: "bg-vmh-chart",
   vth: "bg-vth-chart",
@@ -119,7 +119,7 @@ export function AvatarStack({ people, max = 3, size = 24 }: { people: AvatarPers
         <Avatar key={`${p.name}-${i}`} person={p} size={size} ring />
       ))}
       {extra > 0 && (
-        <span className="inline-flex items-center justify-center rounded-full bg-blue-soft text-[10.5px] font-semibold text-blue ring-2 ring-white" style={{ width: size, height: size }}>
+        <span className="inline-flex items-center justify-center rounded-full bg-brand-soft text-[10.5px] font-semibold text-brand-text ring-2 ring-white" style={{ width: size, height: size }}>
           +{extra}
         </span>
       )}
@@ -140,8 +140,8 @@ export function TrendChip({ value, unit = "%", inverse = false, className }: { v
       className={cn(
         "inline-flex h-5 items-center gap-0.5 rounded-md px-1.5 text-[11px] font-semibold tabular",
         good === null && "bg-neutral-soft text-neutral-text",
-        good === true && "bg-[#D9F8EE] text-success-text",
-        good === false && "bg-[#FCE2E2] text-danger-text",
+        good === true && "bg-success-soft text-success-text",
+        good === false && "bg-danger-soft text-danger-text",
         className,
       )}
     >
@@ -160,7 +160,7 @@ export function Card({ className, ...props }: React.ComponentProps<"div">) {
 
 export function ViewAll({ href, label = "View All" }: { href: string; label?: string }) {
   return (
-    <Link href={href} className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-blue hover:underline">
+    <Link href={href} className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-brand-text hover:underline">
       {label} <ArrowRight className="size-3.5" aria-hidden />
     </Link>
   );

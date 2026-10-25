@@ -18,7 +18,7 @@ export function CrossSellActions({ alertId }: { alertId: string }) {
     });
   return (
     <div className="flex items-center gap-1">
-      <button type="button" disabled={pending} onClick={() => run(() => createOpportunity(alertId), "Opportunity created as a new lead.")} className="h-8 rounded-lg bg-[#E8F0FC] px-3 text-xs font-semibold text-blue hover:bg-blue-soft disabled:opacity-50">
+      <button type="button" disabled={pending} onClick={() => run(() => createOpportunity(alertId), "Opportunity created as a new lead.")} className="h-8 rounded-lg bg-info-soft px-3 text-xs font-semibold text-brand-text hover:bg-brand-soft disabled:opacity-50">
         Create Opportunity
       </button>
       <button type="button" disabled={pending} aria-label="Dismiss" onClick={() => run(() => dismissAlert(alertId), "Alert dismissed.")} className="rounded-md p-1 text-ink-muted hover:bg-accent">

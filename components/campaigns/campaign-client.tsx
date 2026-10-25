@@ -84,8 +84,8 @@ export function RecipientButtons({ id, replied, meeting }: { id: string; replied
   const [pending, start] = useTransition();
   return (
     <span className="flex gap-2 text-2xs">
-      {!replied && <button disabled={pending} onClick={() => start(() => markRecipient(id, "replied"))} className="text-blue hover:underline">Mark replied</button>}
-      {!meeting && <button disabled={pending} onClick={() => start(() => markRecipient(id, "meeting"))} className="text-blue hover:underline">Meeting booked</button>}
+      {!replied && <button disabled={pending} onClick={() => start(() => markRecipient(id, "replied"))} className="text-brand-text hover:underline">Mark replied</button>}
+      {!meeting && <button disabled={pending} onClick={() => start(() => markRecipient(id, "meeting"))} className="text-brand-text hover:underline">Meeting booked</button>}
     </span>
   );
 }

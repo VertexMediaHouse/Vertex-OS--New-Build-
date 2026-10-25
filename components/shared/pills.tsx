@@ -10,7 +10,7 @@ export const companyCode = (id: string | null | undefined): CompanyBadgeCode => 
 const BADGE: Record<CompanyBadgeCode, string> = {
   VMH: "bg-vmh-soft text-vmh-text",
   VTH: "bg-vth-soft text-vth-text",
-  ALL: "bg-blue-soft text-blue",
+  ALL: "bg-brand-soft text-brand-text",
 };
 
 /** VMH / VTH / ALL rectangle. size="lg" is the 40px tile on Cross-Sell Alerts. */

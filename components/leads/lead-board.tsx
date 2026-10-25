@@ -11,12 +11,12 @@ import { moveLead } from "@/app/(app)/leads/actions";
 export type BoardLead = { id: string; name: string; service: string; value: number; co: CompanyBadgeCode; owner: string | null; ago: string | null };
 
 const COLUMNS: (Omit<KanbanColumn, "meta"> & { more: string })[] = [
-  { id: "NEW", title: "New", headerClass: "bg-[#ECF0F8]", bodyClass: "bg-[#F7F8FB]", accentClass: "text-ink", more: "text-blue" },
-  { id: "CONTACTED", title: "Contacted", headerClass: "bg-[#E8F3FC]", bodyClass: "bg-[#F5F9FE]", accentClass: "text-info-text", more: "text-blue" },
-  { id: "PROPOSAL", title: "Proposal", headerClass: "bg-[#F3EBFC]", bodyClass: "bg-[#F8F4FC]", accentClass: "text-review-text", more: "text-review-text" },
-  { id: "NEGOTIATION", title: "Negotiation", headerClass: "bg-[#FCF1EB]", bodyClass: "bg-[#FCF7F3]", accentClass: "text-warning-text", more: "text-warning-text" },
-  { id: "WON", title: "Won", headerClass: "bg-[#E4F8F0]", bodyClass: "bg-[#F3F9F7]", accentClass: "text-success-text", more: "text-success-text" },
-  { id: "LOST", title: "Lost", headerClass: "bg-[#FCE6E8]", bodyClass: "bg-[#FDF5F6]", accentClass: "text-danger-text", more: "text-danger-text" },
+  { id: "NEW", title: "New", headerClass: "bg-surface-muted", bodyClass: "bg-surface-muted", accentClass: "text-ink", more: "text-brand-text" },
+  { id: "CONTACTED", title: "Contacted", headerClass: "bg-info-soft", bodyClass: "bg-info-soft", accentClass: "text-info-text", more: "text-brand-text" },
+  { id: "PROPOSAL", title: "Proposal", headerClass: "bg-review-soft", bodyClass: "bg-review-soft", accentClass: "text-review-text", more: "text-review-text" },
+  { id: "NEGOTIATION", title: "Negotiation", headerClass: "bg-warning-soft", bodyClass: "bg-warning-soft", accentClass: "text-warning-text", more: "text-warning-text" },
+  { id: "WON", title: "Won", headerClass: "bg-success-soft", bodyClass: "bg-success-soft", accentClass: "text-success-text", more: "text-success-text" },
+  { id: "LOST", title: "Lost", headerClass: "bg-danger-soft", bodyClass: "bg-danger-soft", accentClass: "text-danger-text", more: "text-danger-text" },
 ];
 
 export function LeadBoard({ items, showLost }: { items: Record<string, BoardLead[]>; showLost: boolean }) {

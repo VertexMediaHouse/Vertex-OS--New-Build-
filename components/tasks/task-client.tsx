@@ -18,11 +18,11 @@ import { Field as F } from "@/components/shared/layout";
 export type BoardTask = { id: string; title: string; co: CompanyBadgeCode; client: string | null; priority: string; due: string | null; progress: number; assignee: string | null };
 
 const COLS = [
-  { id: "TODO", title: "To Do", headerClass: "bg-[#ECF0F8]", bodyClass: "bg-[#F7F8FB]", accentClass: "text-ink", dot: null },
-  { id: "IN_PROGRESS", title: "In Progress", headerClass: "bg-[#E4F0FC]", bodyClass: "bg-[#F5F9FE]", accentClass: "text-info-text", dot: "bg-blue" },
-  { id: "IN_REVIEW", title: "In Review", headerClass: "bg-[#F0E8FC]", bodyClass: "bg-[#F8F4FC]", accentClass: "text-review-text", dot: "bg-review" },
-  { id: "CLIENT_REVIEW", title: "Client Review", headerClass: "bg-[#FCF0E8]", bodyClass: "bg-[#FCF7F3]", accentClass: "text-warning-text", dot: "bg-warning-text rounded-[2px]" },
-  { id: "COMPLETED", title: "Completed", headerClass: "bg-[#DCF8F0]", bodyClass: "bg-[#F3F9F7]", accentClass: "text-success-text", dot: "bg-success" },
+  { id: "TODO", title: "To Do", headerClass: "bg-surface-muted", bodyClass: "bg-surface-muted", accentClass: "text-ink", dot: null },
+  { id: "IN_PROGRESS", title: "In Progress", headerClass: "bg-info-soft", bodyClass: "bg-info-soft", accentClass: "text-info-text", dot: "bg-brand-strong" },
+  { id: "IN_REVIEW", title: "In Review", headerClass: "bg-review-soft", bodyClass: "bg-review-soft", accentClass: "text-review-text", dot: "bg-review" },
+  { id: "CLIENT_REVIEW", title: "Client Review", headerClass: "bg-warning-soft", bodyClass: "bg-warning-soft", accentClass: "text-warning-text", dot: "bg-warning-text rounded-[2px]" },
+  { id: "COMPLETED", title: "Completed", headerClass: "bg-success-soft", bodyClass: "bg-success-soft", accentClass: "text-success-text", dot: "bg-success" },
 ];
 
 export function TaskBoard({ items, addHref }: { items: Record<string, BoardTask[]>; addHref: string }) {
@@ -38,7 +38,7 @@ export function TaskBoard({ items, addHref }: { items: Record<string, BoardTask[
         ...c,
         icon: c.dot ? <span className={`size-2.5 rounded-full ${c.dot}`} aria-hidden /> : undefined,
         headerAction: <Link href={`${addHref}&status=${c.id}`} aria-label={`Add task to ${c.title}`} className={c.accentClass}><Plus className="size-4" /></Link>,
-        topAction: <Link href={`${addHref}&status=${c.id}`} className="mb-2 block text-center text-xs font-medium text-blue hover:underline">+ Add Task</Link>,
+        topAction: <Link href={`${addHref}&status=${c.id}`} className="mb-2 block text-center text-xs font-medium text-brand-text hover:underline">+ Add Task</Link>,
       }))}
       renderCard={(t) => (
         <KanbanCard className="relative">

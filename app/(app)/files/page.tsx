@@ -74,7 +74,7 @@ async function Files({ searchParams }: { searchParams: Promise<SP> }) {
         {CATS.map(([cat, label, color, bg]) => {
           const r = root(cat);
           return (
-            <Link key={cat} href={href({ view: null, folder: r?.id ?? null, id: null })} className="flex items-center gap-3.5 rounded-xl border bg-card p-4 shadow-card hover:bg-[#F8FAFC]">
+            <Link key={cat} href={href({ view: null, folder: r?.id ?? null, id: null })} className="flex items-center gap-3.5 rounded-xl border bg-card p-4 shadow-card hover:bg-accent">
               <span className="inline-flex size-12 items-center justify-center rounded-xl" style={{ background: bg }}><Folder className="size-6" style={{ color, fill: color }} /></span>
               <span><span className="block text-md font-bold text-ink">{label}</span><span className="text-sm text-ink-muted">{folders.filter((f) => f.category === cat && f.parentId).length} folders · {filesIn(cat)} files</span></span>
             </Link>
@@ -85,7 +85,7 @@ async function Files({ searchParams }: { searchParams: Promise<SP> }) {
         <Card className="h-fit p-4 text-sm">
           <h2 className="mb-3 text-lg font-bold text-ink">Folders</h2>
           {([["all", "All Files", Folder], ["recent", "Recent", Clock], ["starred", "Starred", Star], ["shared", "Shared with Me", Users], ["trash", "Trash", Trash2]] as const).map(([v, label, Icon]) => (
-            <Link key={v} href={href({ view: v === "all" ? null : v, folder: null, id: null })} className={cn("flex items-center gap-2.5 rounded-lg px-2 py-1.5", view === v && !folderId ? "bg-blue-soft text-blue" : "text-ink-2 hover:bg-accent")}><Icon className="size-4" />{label}</Link>
+            <Link key={v} href={href({ view: v === "all" ? null : v, folder: null, id: null })} className={cn("flex items-center gap-2.5 rounded-lg px-2 py-1.5", view === v && !folderId ? "bg-brand-soft text-brand-text" : "text-ink-2 hover:bg-accent")}><Icon className="size-4" />{label}</Link>
           ))}
           <div className="my-3 border-t" />
           {CATS.concat([["TEAM_RESOURCES", "Team Resources", "#64748B", ""]] as never).map(([cat, label, color]) => {
@@ -95,9 +95,9 @@ async function Files({ searchParams }: { searchParams: Promise<SP> }) {
             const open = folderId === r.id || kids.some((k) => k.id === folderId);
             return (
               <div key={cat}>
-                <Link href={href({ view: null, folder: r.id, id: null })} className={cn("flex items-center gap-1.5 rounded-lg px-1 py-1.5", folderId === r.id ? "bg-blue-soft" : "hover:bg-accent")}><ChevronRight className={cn("size-3.5 text-ink-muted", open && "rotate-90")} /><Folder className="size-4" style={{ color, fill: color }} />{label}</Link>
-                {open && kids.slice(0, 6).map((k) => <Link key={k.id} href={href({ view: null, folder: k.id, id: null })} className={cn("ml-6 flex items-center gap-1.5 rounded-lg px-1 py-1 text-xs", folderId === k.id ? "bg-blue-soft" : "hover:bg-accent")}><Folder className="size-3.5" style={{ color: k.color ?? color, fill: k.color ?? color }} />{k.name}</Link>)}
-                {open && kids.length > 6 && <p className="ml-7 py-1 text-xs text-blue">+ {kids.length - 6} more</p>}
+                <Link href={href({ view: null, folder: r.id, id: null })} className={cn("flex items-center gap-1.5 rounded-lg px-1 py-1.5", folderId === r.id ? "bg-brand-soft" : "hover:bg-accent")}><ChevronRight className={cn("size-3.5 text-ink-muted", open && "rotate-90")} /><Folder className="size-4" style={{ color, fill: color }} />{label}</Link>
+                {open && kids.slice(0, 6).map((k) => <Link key={k.id} href={href({ view: null, folder: k.id, id: null })} className={cn("ml-6 flex items-center gap-1.5 rounded-lg px-1 py-1 text-xs", folderId === k.id ? "bg-brand-soft" : "hover:bg-accent")}><Folder className="size-3.5" style={{ color: k.color ?? color, fill: k.color ?? color }} />{k.name}</Link>)}
+                {open && kids.length > 6 && <p className="ml-7 py-1 text-xs text-brand-text">+ {kids.length - 6} more</p>}
               </div>
             );
           })}
@@ -106,8 +106,8 @@ async function Files({ searchParams }: { searchParams: Promise<SP> }) {
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <SearchInput placeholder="Search files and folders..." className="w-72" />
             <span className="ml-auto flex gap-1">
-              <Link href={href({ layout: "grid" })} aria-label="Grid view" className={cn("inline-flex size-9 items-center justify-center rounded-lg", p.str("layout") === "grid" ? "bg-blue text-white" : "border text-blue")}><LayoutGrid className="size-4" /></Link>
-              <Link href={href({ layout: null })} aria-label="List view" className={cn("inline-flex size-9 items-center justify-center rounded-lg", p.str("layout") !== "grid" ? "bg-blue text-white" : "border text-blue")}><List className="size-4" /></Link>
+              <Link href={href({ layout: "grid" })} aria-label="Grid view" className={cn("inline-flex size-9 items-center justify-center rounded-lg", p.str("layout") === "grid" ? "bg-brand-strong text-white" : "border text-brand-text")}><LayoutGrid className="size-4" /></Link>
+              <Link href={href({ layout: null })} aria-label="List view" className={cn("inline-flex size-9 items-center justify-center rounded-lg", p.str("layout") !== "grid" ? "bg-brand-strong text-white" : "border text-brand-text")}><List className="size-4" /></Link>
             </span>
           </div>
           <div className="mb-3 flex flex-wrap gap-2">
@@ -127,9 +127,9 @@ async function Files({ searchParams }: { searchParams: Promise<SP> }) {
             <table className="w-full text-xs">
               <thead><tr className="text-left text-2xs text-ink-2">{["Name", "Type", "Size", "Last Modified", "Shared With", ""].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
               <tbody>
-                {subfolders.map((f) => <tr key={f.id} className="border-b hover:bg-[#F8FAFC]"><td className="px-2 py-2"><Link href={href({ folder: f.id, id: null })} className="flex items-center gap-2.5 font-medium text-ink"><FileIcon ext="FOLDER" size={24} folderColor={f.color ?? undefined} />{f.name}</Link></td><td className="px-2 text-ink-muted">Folder</td><td className="px-2">—</td><td className="px-2">{formatDate(f.updatedAt)}</td><td /><td /></tr>)}
+                {subfolders.map((f) => <tr key={f.id} className="border-b hover:bg-accent"><td className="px-2 py-2"><Link href={href({ folder: f.id, id: null })} className="flex items-center gap-2.5 font-medium text-ink"><FileIcon ext="FOLDER" size={24} folderColor={f.color ?? undefined} />{f.name}</Link></td><td className="px-2 text-ink-muted">Folder</td><td className="px-2">—</td><td className="px-2">{formatDate(f.updatedAt)}</td><td /><td /></tr>)}
                 {files.map((f) => (
-                  <tr key={f.id} className={cn("border-b", f.id === openId ? "bg-[#EAF4FC]" : "hover:bg-[#F8FAFC]")}>
+                  <tr key={f.id} className={cn("border-b", f.id === openId ? "bg-brand-soft" : "hover:bg-accent")}>
                     <td className="px-2 py-2"><Link href={href({ id: f.id })} scroll={false} className="flex items-center gap-2.5 font-medium text-ink"><FileIcon ext={f.ext} size={24} /><span className="truncate">{f.name}</span></Link></td>
                     <td className="px-2 text-ink-muted">{f.ext}</td>
                     <td className="px-2">{formatFileSize(f.size)}</td>
@@ -174,7 +174,7 @@ async function FilePanel({ id, closeHref, people, tab }: { id: string; closeHref
       <p className="mt-3 text-md font-bold text-ink">{f.name}</p>
       <p className="text-xs text-ink-muted">{formatFileSize(f.size)} · {f.ext}{f.version > 1 && ` · v${f.version}`}</p>
       <div className="mt-3 flex gap-2">
-        <a href={dl} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue text-xs font-semibold text-white"><Download className="size-4" /> Download</a>
+        <a href={dl} className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-strong text-xs font-semibold text-white"><Download className="size-4" /> Download</a>
         <Link href={`${closeHref}${closeHref.includes("?") ? "&" : "?"}id=${f.id}&tab=share`} scroll={false} className="inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs"><Share2 className="size-4" /> Share</Link>
       </div>
       <UnderlineTabs className="mt-3" active={tab} tabs={[{ value: "details", label: "Details" }, { value: "versions", label: "Version History" }, { value: "activity", label: "Activity" }, { value: "share", label: "Manage" }]} />
@@ -187,15 +187,15 @@ async function FilePanel({ id, closeHref, people, tab }: { id: string; closeHref
               ["Uploaded on", formatFullDateTime(f.createdAt)],
               ["Last modified", formatFullDateTime(f.updatedAt)],
               ["Shared with", <AvatarStack key="s" people={f.shares.flatMap((s) => (s.user ? [s.user] : []))} size={22} />],
-              ["Tags", f.tags.length ? <span key="t" className="flex flex-wrap gap-1">{f.tags.map((g) => <span key={g} className="rounded bg-blue-soft px-1.5 py-0.5 text-blue">{g}</span>)}</span> : "—"],
+              ["Tags", f.tags.length ? <span key="t" className="flex flex-wrap gap-1">{f.tags.map((g) => <span key={g} className="rounded bg-brand-soft px-1.5 py-0.5 text-brand-text">{g}</span>)}</span> : "—"],
             ]} />
             {f.description && <><p className="mt-3 text-xs font-semibold text-ink">Description</p><p className="mt-1 rounded-lg bg-surface-muted p-2.5 text-xs text-ink-2">{f.description}</p></>}
           </>
         )}
         {tab === "versions" && (
           <ul className="space-y-2 text-xs">
-            <li className="flex justify-between"><span><b>v{f.version}</b> (current) · {formatFileSize(f.size)}</span><a href={dl} className="text-blue">Download</a></li>
-            {f.versions.map((v) => <li key={v.id} className="flex justify-between"><span>v{v.version} · {formatFileSize(v.size)} · {v.uploadedBy.name} · {formatDate(v.createdAt)}</span><a href={`${dl}?v=${v.version}`} className="text-blue">Download</a></li>)}
+            <li className="flex justify-between"><span><b>v{f.version}</b> (current) · {formatFileSize(f.size)}</span><a href={dl} className="text-brand-text">Download</a></li>
+            {f.versions.map((v) => <li key={v.id} className="flex justify-between"><span>v{v.version} · {formatFileSize(v.size)} · {v.uploadedBy.name} · {formatDate(v.createdAt)}</span><a href={`${dl}?v=${v.version}`} className="text-brand-text">Download</a></li>)}
             {can(ctx.user, "update", "file", f.companyId ?? undefined) && <li className="pt-2"><UploadButton fileId={f.id} label="Upload new version" /></li>}
           </ul>
         )}

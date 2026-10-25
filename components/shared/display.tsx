@@ -115,7 +115,7 @@ export function CheckRow({
         className={cn(
           "inline-flex size-4 shrink-0 items-center justify-center border",
           round ? "rounded-full" : "rounded-[4px]",
-          done ? (round ? "border-success bg-success text-white" : "border-blue bg-blue text-white") : "border-[#C5CDD8] bg-white",
+          done ? (round ? "border-success bg-success text-white" : "border-brand bg-brand-strong text-white") : "border-input bg-white",
         )}
       >
         {done && <Check className="size-3" strokeWidth={3} />}

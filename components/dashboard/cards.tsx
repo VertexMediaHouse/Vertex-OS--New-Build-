@@ -17,7 +17,7 @@ import type { Period } from "@/lib/period";
 import { parseCompanySettings } from "@/lib/settings";
 import { db } from "@/lib/db";
 import * as M from "@/lib/metrics/dashboard";
-import { PRODUCTION_STAGE_COLORS, PROJECT_STATUS_COLORS, TASK_OVERVIEW_COLORS } from "@/lib/chart-colors";
+import { LEAD_STAGE_COLORS, PRODUCTION_STAGE_COLORS, PROJECT_STATUS_COLORS, TASK_OVERVIEW_COLORS } from "@/lib/chart-colors";
 import { CrossSellActions } from "./cross-sell-actions";
 
 type Ctx = ScopeFilter & { scope: "ALL" | "VMH" | "VTH" };
@@ -43,13 +43,7 @@ export async function RevenueKpi({ ctx, period, owner }: { ctx: Ctx; period: Per
 
 export async function ProjectsKpi({ ctx, period, owner }: { ctx: Ctx; period: Period; owner?: boolean }) {
   const p = await M.projectSummary(ctx, period);
-  const legend = [
-    { label: "Not started", value: p.notStarted, color: "#9CBCD4" },
-    { label: "In progress", value: p.inProgress, color: "#3888FC" },
-    { label: "In review", value: p.inReview, color: "#ECBC30" },
-    { label: "On hold", value: p.onHold, color: "#F06464" },
-    { label: "Delivered", value: p.delivered, color: "#0E7C66" },
-  ];
+  const legend = donutData(p);
   return (
     <KpiCard href="/projects" icon={Folder} tone="blue" label="Active Projects" value={p.active} trend={p.delta} trendUnit="" split={owner || ctx.scope !== "ALL" ? undefined : [{ value: p.vmh, label: "VMH" }, { value: p.vth, label: "VTH" }]}>
       {owner && (
@@ -72,11 +66,11 @@ export async function ProjectsKpi({ ctx, period, owner }: { ctx: Ctx; period: Pe
 export async function TasksKpi({ ctx, period, owner }: { ctx: Ctx; period: Period; owner?: boolean }) {
   const t = await M.taskSummary(ctx, period);
   const rows = [
-    { label: "Pending", value: t.pending, color: "#3888FC" },
-    { label: "Due today", value: t.dueToday, color: "#ECBC30" },
-    { label: "Overdue", value: t.overdue, color: "#F06464" },
-    { label: "Completed this week", value: t.completedWeek, color: "#334155" },
-    { label: "Upcoming", value: t.upcoming, color: "#60A5FA" },
+    { label: "Pending", value: t.pending, color: TASK_OVERVIEW_COLORS.pending },
+    { label: "Due today", value: t.dueToday, color: TASK_OVERVIEW_COLORS.dueToday },
+    { label: "Overdue", value: t.overdue, color: TASK_OVERVIEW_COLORS.overdue },
+    { label: "Completed this week", value: t.completedWeek, color: TASK_OVERVIEW_COLORS.completed },
+    { label: "Upcoming", value: t.upcoming, color: TASK_OVERVIEW_COLORS.upcoming },
   ];
   return (
     <KpiCard href="/tasks" icon={CircleCheck} tone="purple" label="Open Tasks" value={t.total} trend={owner ? undefined : t.delta} trendUnit="" split={owner || ctx.scope !== "ALL" ? undefined : [{ value: t.vmh, label: "VMH" }, { value: t.vth, label: "VTH" }]}>
@@ -95,7 +89,6 @@ export async function TasksKpi({ ctx, period, owner }: { ctx: Ctx; period: Perio
   );
 }
 
-const STAGE_DOT: Record<string, string> = { NEW: "#3888FC", CONTACTED: "#3888FC", PROPOSAL: "#8B5CF6", NEGOTIATION: "#C026D3", WON: "#10B981" };
 const STAGE_LABEL: Record<string, string> = { NEW: "New", CONTACTED: "Contacted", PROPOSAL: "Proposal", NEGOTIATION: "Negotiation", WON: "Won" };
 
 export async function LeadsKpi({ ctx, period, owner }: { ctx: Ctx; period: Period; owner?: boolean }) {
@@ -107,7 +100,7 @@ export async function LeadsKpi({ ctx, period, owner }: { ctx: Ctx; period: Perio
           <ul className="flex-1 space-y-1 text-xs text-ink-2">
             {l.stages.map((s) => (
               <li key={s.stage} className="flex items-center gap-2">
-                <span className="size-2 rounded-full" style={{ background: STAGE_DOT[s.stage] }} aria-hidden />
+                <span className="size-2 rounded-full" style={{ background: LEAD_STAGE_COLORS[s.stage] }} aria-hidden />
                 <span className="flex-1">{STAGE_LABEL[s.stage]}</span>
                 <span className="font-semibold text-ink tabular">{s.count}</span>
               </li>
@@ -131,7 +124,7 @@ export async function CampaignsCard({ ctx }: { ctx: Ctx }) {
     <SectionCard title="Email Campaigns" icon={Send} tone="blue" subtitle={`${list.length} Active Campaigns`} href="/campaigns">
       <div className="space-y-1.5">
         {list.map((c) => (
-          <Link key={c.id} href={`/campaigns?id=${c.id}`} className="grid grid-cols-[minmax(0,1fr)_48px_48px_60px_auto] items-center gap-2 rounded-lg border px-3 py-1.5 hover:bg-[#F8FAFC]">
+          <Link key={c.id} href={`/campaigns?id=${c.id}`} className="grid grid-cols-[minmax(0,1fr)_48px_48px_60px_auto] items-center gap-2 rounded-lg border px-3 py-1.5 hover:bg-accent">
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold text-ink">{c.name}</p>
               <p className="text-2xs text-ink-muted">{c.sentCount.toLocaleString("en-IN")} sent</p>
@@ -163,7 +156,7 @@ export async function GoalsCard({ ctx }: { ctx: Ctx }) {
     <SectionCard title="Goals Progress" icon={Target} tone="green" href="/goals">
       <div className="space-y-2">
         {goals.map((g) => (
-          <Link key={g.id} href={`/goals?view=detailed&id=${g.id}`} className="grid grid-cols-[minmax(0,1fr)_110px_36px_auto] items-center gap-3 rounded-lg hover:bg-[#F8FAFC]">
+          <Link key={g.id} href={`/goals?view=detailed&id=${g.id}`} className="grid grid-cols-[minmax(0,1fr)_110px_36px_auto] items-center gap-3 rounded-lg hover:bg-accent">
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold text-ink">{g.title}</p>
               <p className="text-2xs text-ink-muted">{g.subtitle}</p>
@@ -192,7 +185,7 @@ export async function WorkloadCard({ ctx, compact }: { ctx: Ctx; compact?: boole
         {team.map((u) => {
           const st = workloadState(u.pct);
           return (
-            <Link key={u.id} href={`/team/${u.id}`} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_40px_36px] items-center gap-3 rounded-lg hover:bg-[#F8FAFC]">
+            <Link key={u.id} href={`/team/${u.id}`} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_40px_36px] items-center gap-3 rounded-lg hover:bg-accent">
               <div className="flex min-w-0 items-center gap-2.5">
                 <Avatar person={u} size={compact ? 28 : 32} />
                 <div className="min-w-0">
@@ -232,7 +225,7 @@ export async function ApprovalsCard({ ctx }: { ctx: Ctx }) {
                 <td className="px-2 py-1 text-ink">{a.project.client?.name}</td>
                 <td className="px-2 py-1 text-ink-2">{a.project.name}</td>
                 <td className="px-2 py-1">
-                  <Link href={`/projects?id=${a.projectId}`} className="text-ink-2 underline underline-offset-2 hover:text-blue">{a.title}</Link>
+                  <Link href={`/projects?id=${a.projectId}`} className="text-ink-2 underline underline-offset-2 hover:text-brand-text">{a.title}</Link>
                 </td>
                 <td className="px-2 py-1">
                   <StatusPill dot={false} size="xs" tone={d >= 2 ? "danger" : "warning"} label={`${d} day${d === 1 ? "" : "s"}`} />
@@ -270,7 +263,7 @@ export async function ProductionCard({ period }: { period: Period }) {
         ))}
       </div>
       <p className="mt-3 flex items-center gap-1.5 text-2xs text-ink-muted">
-        <AlertCircle className="size-3.5 text-blue" aria-hidden /> Target: {target.min}–{target.max} hours for Shorts
+        <AlertCircle className="size-3.5 text-brand-text" aria-hidden /> Target: {target.min}–{target.max} hours for Shorts
       </p>
     </SectionCard>
   );
@@ -313,7 +306,7 @@ export async function AgendaCard({ ctx, compact }: { ctx: Ctx; compact?: boolean
         {events.map((e) => (
           <li key={e.id} className="flex items-center gap-3 py-1 text-xs">
             <span className="w-16 text-ink-muted tabular">{formatTimePadded(e.start)}</span>
-            <span className={`inline-flex size-5 items-center justify-center rounded-full ${e.type === "MEETING" ? "bg-[#FCE7F3] text-[#DB2777]" : "bg-info-soft text-info-text"}`}>
+            <span className={`inline-flex size-5 items-center justify-center rounded-full ${e.type === "MEETING" ? "bg-review-soft text-review-text" : "bg-info-soft text-info-text"}`}>
               <Video className="size-3" aria-hidden />
             </span>
             <span className="min-w-0 flex-1 truncate text-ink">{e.title}</span>

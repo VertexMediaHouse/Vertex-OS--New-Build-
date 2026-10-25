@@ -101,9 +101,9 @@ async function Client({ params }: { params: Promise<{ id: string }> }) {
               <li key={c.id} className="flex items-start gap-3">
                 <Avatar person={c} size={32} />
                 <div className="min-w-0 text-xs">
-                  <p className="font-semibold text-ink">{c.name} {c.isPrimary && <span className="ml-1 text-2xs font-normal text-blue">Primary</span>}</p>
+                  <p className="font-semibold text-ink">{c.name} {c.isPrimary && <span className="ml-1 text-2xs font-normal text-brand-text">Primary</span>}</p>
                   <p className="text-ink-muted">{c.title}</p>
-                  {c.email && <a href={`mailto:${c.email}`} className="flex items-center gap-1 text-blue hover:underline"><Mail className="size-3" />{c.email}</a>}
+                  {c.email && <a href={`mailto:${c.email}`} className="flex items-center gap-1 text-brand-text hover:underline"><Mail className="size-3" />{c.email}</a>}
                   {c.phone && <p className="flex items-center gap-1 text-ink-2"><Phone className="size-3" />{c.phone}</p>}
                 </div>
               </li>

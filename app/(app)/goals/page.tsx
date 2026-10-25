@@ -113,7 +113,7 @@ function Detailed({ ctx, rows, sp, range, people, companies, toggle, t }: Props 
               <thead><tr className="text-left text-ink-2">{["Goal Title", "Company", "Category", "Start Date", "End Date", "Progress", "Status", "Owner"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
               <tbody>
                 {filtered.map((g) => { const [Icon] = ICONS[g.icon ?? "target"] ?? [Target]; return (
-                  <tr key={g.id} className={`border-b ${selected?.id === g.id ? "bg-[#EAF4FC]" : "hover:bg-[#F8FAFC]"}`}>
+                  <tr key={g.id} className={`border-b ${selected?.id === g.id ? "bg-brand-soft" : "hover:bg-accent"}`}>
                     <td className="px-2 py-2"><Link href={`?${new URLSearchParams({ ...Object.fromEntries(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string")), id: g.id })}`} scroll={false} className="flex items-center gap-2 font-semibold text-ink hover:underline"><Icon className="size-4 text-danger-text" />{g.title}</Link></td>
                     <td className="px-2 py-2"><CompanyBadge code={companyCode(g.companyId)} /></td>
                     <td className="px-2 py-2 text-ink-2">{GOAL_CATEGORY_LABELS[g.category]}</td>

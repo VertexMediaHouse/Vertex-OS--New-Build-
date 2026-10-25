@@ -39,7 +39,7 @@ export function KpiCard({
   children?: React.ReactNode;
 }) {
   const card = (
-    <Card className={cn("flex flex-col px-4 pt-4 pb-3.5", href && "h-full hover:bg-[#F8FAFC]", className)}>
+    <Card className={cn("flex flex-col px-4 pt-4 pb-3.5", href && "h-full hover:bg-accent", className)}>
       <div className="flex items-start gap-3.5">
         <IconTile icon={icon} tone={tone} size="lg" />
         <div className="min-w-0">

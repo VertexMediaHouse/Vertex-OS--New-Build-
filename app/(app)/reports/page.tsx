@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { formatDate, formatDuration, formatINR, formatShortDate } from "@/lib/format";
 import { dayKey, lastDay } from "@/lib/period";
 import { readParams, type SP } from "@/lib/search-params";
-import { COMPANY_COLORS, REPORT_STATUS_COLORS, WORK_CATEGORY_COLORS, WORK_CATEGORY_LABELS } from "@/lib/chart-colors";
+import { COMPANY_COLORS, OTHER_GREY, REPORT_STATUS_COLORS, WORK_CATEGORY_COLORS, WORK_CATEGORY_LABELS } from "@/lib/chart-colors";
 import { PROJECT_STATUS } from "@/lib/status";
 import { arAgeing, insightSentences, reportData } from "@/lib/metrics/reports";
 import { logoColor } from "@/lib/clients";
@@ -36,7 +36,7 @@ async function Reports({ searchParams }: { searchParams: Promise<SP> }) {
   const statusData = (Object.keys(REPORT_STATUS_COLORS) as (keyof typeof REPORT_STATUS_COLORS)[]).map((k) => ({ label: PROJECT_STATUS[k]!.label, value: d.status[k], color: REPORT_STATUS_COLORS[k] }));
   const statusTotal = statusData.reduce((a, s) => a + s.value, 0) || 1;
   const catTotal = Object.values(d.categories).reduce((a, b) => a + b, 0) || 1;
-  const catData = Object.entries(d.categories).map(([k, v]) => ({ label: WORK_CATEGORY_LABELS[k] ?? k, value: v, color: WORK_CATEGORY_COLORS[k] ?? "#B8C0CC" })).sort((a, b) => b.value - a.value);
+  const catData = Object.entries(d.categories).map(([k, v]) => ({ label: WORK_CATEGORY_LABELS[k] ?? k, value: v, color: WORK_CATEGORY_COLORS[k] ?? OTHER_GREY })).sort((a, b) => b.value - a.value);
   const ticks = Object.fromEntries(d.revenueWeeks.map((w) => [w.week, `${formatShortDate(w.range.from)} - ${formatShortDate(lastDay({ ...p.period, to: w.range.to }))}`]));
   const exportHref = `/reports/export?${new URLSearchParams(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string"))}`;
   const companyLegend = <ChartLegend items={[{ label: "VMH", color: COMPANY_COLORS.VMH }, { label: "VTH", color: COMPANY_COLORS.VTH }]} />;
@@ -71,7 +71,7 @@ async function Reports({ searchParams }: { searchParams: Promise<SP> }) {
               </table>
             </SectionCard>
             <SectionCard title="Quick Insights" icon={Lightbulb} tone="amber">
-              <ul className="space-y-2">{insightSentences(d.insights).map((s) => { const [Icon, cls] = ({ up: [ArrowUp, "bg-success text-white"], clients: [Users, "bg-blue-soft text-blue"], time: [Clock, "bg-review-soft text-review-text"], trophy: [Trophy, "bg-warning-soft text-warning-text"] } as const)[s.tone]; return <li key={s.text} className="flex items-start gap-2.5 rounded-lg border p-2.5 text-xs text-ink"><span className={`inline-flex size-7 shrink-0 items-center justify-center rounded-full ${cls}`}><Icon className="size-3.5" /></span>{s.text}</li>; })}</ul>
+              <ul className="space-y-2">{insightSentences(d.insights).map((s) => { const [Icon, cls] = ({ up: [ArrowUp, "bg-success text-white"], clients: [Users, "bg-brand-soft text-brand-text"], time: [Clock, "bg-review-soft text-review-text"], trophy: [Trophy, "bg-warning-soft text-warning-text"] } as const)[s.tone]; return <li key={s.text} className="flex items-start gap-2.5 rounded-lg border p-2.5 text-xs text-ink"><span className={`inline-flex size-7 shrink-0 items-center justify-center rounded-full ${cls}`}><Icon className="size-3.5" /></span>{s.text}</li>; })}</ul>
             </SectionCard>
           </div>
         </>

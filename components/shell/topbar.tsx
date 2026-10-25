@@ -69,7 +69,7 @@ export function Topbar({
             <div className="flex items-center justify-between px-2 py-1.5">
               <DropdownMenuLabel className="p-0 text-sm"><Link href="/notifications" className="hover:underline">Notifications</Link></DropdownMenuLabel>
               {unread > 0 && (
-                <button type="button" onClick={() => markAllNotificationsRead()} className="text-xs font-medium text-blue hover:underline">
+                <button type="button" onClick={() => markAllNotificationsRead()} className="text-xs font-medium text-brand-text hover:underline">
                   Mark all read
                 </button>
               )}
@@ -79,7 +79,7 @@ export function Topbar({
             {notifications.map((n) => (
               <DropdownMenuItem key={n.id} asChild className="items-start gap-2.5 py-2">
                 <Link href={n.link ?? "#"}>
-                  <span className={n.unread ? "mt-1.5 size-2 shrink-0 rounded-full bg-blue" : "mt-1.5 size-2 shrink-0"} aria-hidden />
+                  <span className={n.unread ? "mt-1.5 size-2 shrink-0 rounded-full bg-brand-strong" : "mt-1.5 size-2 shrink-0"} aria-hidden />
                   <span className="min-w-0">
                     <span className={n.unread ? "block text-xs font-semibold text-ink" : "block text-xs text-ink-2"}>{n.title}</span>
                     <span className="block text-2xs text-ink-muted">{n.time}</span>

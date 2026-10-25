@@ -83,7 +83,7 @@ async function Time({ searchParams }: { searchParams: Promise<SP> }) {
   const chartMins = chartRows.reduce((a, r) => a + (r.durationMin ?? 0), 0);
   const canApprove = ctx.companyIds.some((c) => can(ctx.user, "approve", "time", c));
   const exportHref = `/time/export?${new URLSearchParams(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string"))}`;
-  const logIcon: Record<string, [typeof Play, string]> = { timer_started: [Play, "bg-success text-white"], timer_stopped: [Square, "bg-danger text-white"], time_edited: [Pencil, "bg-blue text-white"], time_note: [StickyNote, "bg-surface-muted text-ink-2"], time_added: [Pencil, "bg-blue text-white"] };
+  const logIcon: Record<string, [typeof Play, string]> = { timer_started: [Play, "bg-success text-white"], timer_stopped: [Square, "bg-danger text-white"], time_edited: [Pencil, "bg-brand-strong text-white"], time_note: [StickyNote, "bg-surface-muted text-ink-2"], time_added: [Pencil, "bg-brand-strong text-white"] };
 
   return (
     <div className="space-y-3.5">

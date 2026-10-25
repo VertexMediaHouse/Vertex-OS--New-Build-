@@ -61,7 +61,7 @@ async function Invoices({ searchParams }: { searchParams: Promise<SP> }) {
 
   return (
     <div className="space-y-3.5">
-      <PageHeader title="Invoices" subtitle="Create, manage and track all invoices across Vertex Media House and Vertex Tech House." actions={companies.length > 0 && <Link href="/invoices/new" className="inline-flex h-10 items-center gap-2 rounded-lg bg-blue px-4 text-md font-semibold text-white"><Plus className="size-4" /> Create Invoice</Link>} />
+      <PageHeader title="Invoices" subtitle="Create, manage and track all invoices across Vertex Media House and Vertex Tech House." actions={companies.length > 0 && <Link href="/invoices/new" className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-strong px-4 text-md font-semibold text-white"><Plus className="size-4" /> Create Invoice</Link>} />
       <div className={`grid gap-3.5 ${openId ? "xl:grid-cols-[1fr_330px]" : ""}`}>
         <div className="min-w-0 space-y-3.5">
           <div className="grid gap-3.5 md:grid-cols-2 xl:grid-cols-4">
@@ -87,7 +87,7 @@ async function Invoices({ searchParams }: { searchParams: Promise<SP> }) {
                     const pct = Number(i.total) ? (Number(i.paidAmount) / Number(i.total)) * 100 : 0;
                     const color = logoColor(i.client.name);
                     return (
-                      <tr key={i.id} className={`border-b ${i.id === openId ? "bg-[#EAF4FC]" : "hover:bg-[#F8FAFC]"}`}>
+                      <tr key={i.id} className={`border-b ${i.id === openId ? "bg-brand-soft" : "hover:bg-accent"}`}>
                         <td className="px-2 py-2.5"><Link href={`?${new URLSearchParams({ ...strParams(sp), id: i.id })}`} scroll={false} className="font-medium text-ink hover:underline">#{i.number}</Link></td>
                         <td className="px-2 py-2.5"><span className="flex items-center gap-2"><span className="inline-flex size-6 items-center justify-center rounded-md text-xs font-bold" style={{ background: `${color}1F`, color }}>{i.client.name[0]}</span><span className="font-semibold text-ink">{i.client.name}</span></span></td>
                         <td className="px-2 py-2.5"><CompanyBadge code={companyCode(i.companyId)} /></td>
@@ -135,10 +135,10 @@ async function InvoicePanel({ id, tab, sp }: { id: string; tab: string; sp: SP }
             <div className="mb-3 flex items-center gap-3">
               <span className="inline-flex size-10 items-center justify-center rounded-lg text-lg font-bold" style={{ background: `${color}1F`, color }}>{inv.client.name[0]}</span>
               <div className="flex-1"><p className="text-sm font-semibold text-ink">{inv.client.name}</p><p className="text-2xs text-ink-muted">{inv.client.domain}</p></div>
-              <Link href={`/clients/${inv.clientId}`} className="text-2xs text-blue hover:underline">View Client →</Link>
+              <Link href={`/clients/${inv.clientId}`} className="text-2xs text-brand-text hover:underline">View Client →</Link>
             </div>
             <KeyValue labelWidth={90} rows={[
-              ["Project", inv.project ? <Link key="p" href={`/projects?id=${inv.project.id}`} className="inline-flex items-center gap-1 text-blue hover:underline">{inv.project.name}<ExternalLink className="size-3" /></Link> : "–"],
+              ["Project", inv.project ? <Link key="p" href={`/projects?id=${inv.project.id}`} className="inline-flex items-center gap-1 text-brand-text hover:underline">{inv.project.name}<ExternalLink className="size-3" /></Link> : "–"],
               ["Company", <span key="c" className="flex items-center gap-1.5"><CompanyBadge code={companyCode(inv.companyId)} />{inv.company.name}</span>],
               ["Issue Date", formatDate(inv.issueDate)],
               ["Due Date", <span key="d" className={balance > 0 ? "text-danger-text" : ""}>{formatDate(inv.dueDate)}{balance > 0 && ` (${formatDaysLeft(inv.dueDate, t)})`}</span>],
@@ -162,7 +162,7 @@ async function InvoicePanel({ id, tab, sp }: { id: string; tab: string; sp: SP }
             <a href={`/api/invoices/${inv.id}/pdf`} target="_blank" rel="noreferrer" aria-label="Open full size" className="inline-flex size-8 items-center justify-center rounded-lg border"><Maximize2 className="size-3.5" /></a>
           </div>
         </div>
-        <div className="rounded-lg border bg-white p-4 text-[9.5px] text-ink-2" style={{ backgroundImage: "radial-gradient(120% 60% at 100% 120%, #E2EDFC 0 40%, transparent 41%)" }}>
+        <div className="rounded-lg border bg-white p-4 text-[9.5px] text-ink-2" style={{ backgroundImage: "radial-gradient(120% 60% at 100% 120%, var(--brand-soft) 0 40%, transparent 41%)" }}>
           <div className="flex justify-between">
             <Logo tone="dark" subtitle={inv.company.code === "VTH" ? "TECH HOUSE" : "MEDIA HOUSE"} className="origin-top-left scale-75" />
             <div className="text-right"><p className="text-xs font-bold text-ink">#{inv.number}</p><p>Issue Date: {formatDate(inv.issueDate)}</p><p>Due Date: {formatDate(inv.dueDate)}</p></div>

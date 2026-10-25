@@ -128,7 +128,7 @@ async function Leads({ searchParams }: { searchParams: Promise<SP> }) {
           <FilterSelect param="source" placeholder="All Sources" options={Object.entries(SOURCE_LABEL).map(([value, label]) => ({ value, label }))} />
           <FilterSelect param="owner" placeholder="All Owners" options={owners.map((o) => ({ value: o.id, label: o.name }))} />
           <DateRangePicker {...p.range} />
-          <Link href={`?${new URLSearchParams({ ...Object.fromEntries(Object.entries(sp).filter(([, v]) => typeof v === "string")) as Record<string, string>, lost: p.str("lost") ? "" : "1" })}`} className="text-xs font-medium text-blue hover:underline">
+          <Link href={`?${new URLSearchParams({ ...Object.fromEntries(Object.entries(sp).filter(([, v]) => typeof v === "string")) as Record<string, string>, lost: p.str("lost") ? "" : "1" })}`} className="text-xs font-medium text-brand-text hover:underline">
             {p.str("lost") ? "Hide Lost" : "Show Lost"}
           </Link>
         </div>
@@ -216,10 +216,10 @@ async function LeadDrawer({ id, owners, companies }: { id: string; owners: { id:
             ["Source", SOURCE_LABEL[lead.source]],
             ["Owner", lead.owner?.name ?? "–"],
             ["Contact", lead.contactName ?? "–"],
-            ["Email", lead.email ? <a key="e" href={`mailto:${lead.email}`} className="text-blue hover:underline">{lead.email}</a> : "–"],
+            ["Email", lead.email ? <a key="e" href={`mailto:${lead.email}`} className="text-brand-text hover:underline">{lead.email}</a> : "–"],
             ["Phone", lead.phone ?? "–"],
             ["Created", formatDate(lead.createdAt)],
-            ["Client", lead.client ? <Link key="c" href={`/clients/${lead.client.id}`} className="text-blue hover:underline">{lead.client.name}</Link> : "Not a client yet"],
+            ["Client", lead.client ? <Link key="c" href={`/clients/${lead.client.id}`} className="text-brand-text hover:underline">{lead.client.name}</Link> : "Not a client yet"],
           ]}
         />
         {lead.notes && <p className="rounded-lg bg-surface-muted p-3 text-xs text-ink-2">{lead.notes}</p>}

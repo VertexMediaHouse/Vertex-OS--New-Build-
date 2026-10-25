@@ -36,7 +36,7 @@ async function Settings({ searchParams }: { searchParams: Promise<SP> }) {
         const bank = (c.bankDetails ?? {}) as Record<string, string | undefined>;
         return <SectionCard key={c.id} title={c.name}><CompanyForm c={{ id: c.id, name: c.name, address: c.address, gstin: c.gstin, invoicePrefix: c.invoicePrefix, nextInvoiceNumber: c.nextInvoiceNumber, currency: c.currency, bank, settings: parseCompanySettings(c.settings) }} /></SectionCard>;
       })}
-      {tab === "users" && <SectionCard title="Users & Roles"><p className="text-sm text-ink-2">Invite people, set their company roles and weekly capacity on the <Link href="/team" className="text-blue hover:underline">Team</Link> page. Roles: Admin (everything in that company), Manager (run work, approve time, no settings), Member (own tasks and time). Clients get portal access from a project&apos;s Client Access tab.</p></SectionCard>}
+      {tab === "users" && <SectionCard title="Users & Roles"><p className="text-sm text-ink-2">Invite people, set their company roles and weekly capacity on the <Link href="/team" className="text-brand-text hover:underline">Team</Link> page. Roles: Admin (everything in that company), Manager (run work, approve time, no settings), Member (own tasks and time). Clients get portal access from a project&apos;s Client Access tab.</p></SectionCard>}
       {tab === "integrations" && (
         <SectionCard title="Integrations">
           <KeyValue labelWidth={180} rows={[
@@ -53,9 +53,9 @@ async function Settings({ searchParams }: { searchParams: Promise<SP> }) {
           {/* Plain <a>: these are file downloads, not pages. */}
           {/* eslint-disable @next/next/no-html-link-for-pages */}
           <ul className="space-y-2 text-sm">
-            <li><a href="/clients/export" className="text-blue hover:underline">Clients (CSV)</a></li>
-            <li><a href="/time/export?range=quarter" className="text-blue hover:underline">Timesheet, this quarter (CSV)</a></li>
-            <li><a href="/reports/export" className="text-blue hover:underline">Monthly report (CSV)</a></li>
+            <li><a href="/clients/export" className="text-brand-text hover:underline">Clients (CSV)</a></li>
+            <li><a href="/time/export?range=quarter" className="text-brand-text hover:underline">Timesheet, this quarter (CSV)</a></li>
+            <li><a href="/reports/export" className="text-brand-text hover:underline">Monthly report (CSV)</a></li>
           </ul>
         </SectionCard>
       )}

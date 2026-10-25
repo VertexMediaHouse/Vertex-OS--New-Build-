@@ -128,7 +128,7 @@ async function Tasks({ searchParams }: { searchParams: Promise<SP> }) {
             <thead><tr className="text-left text-ink-2">{["Task", "Company", "Project", "Priority", "Due Date", "Progress", "Status", "Assignee"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
             <tbody>
               {tasks.map((tk) => (
-                <tr key={tk.id} className="border-b hover:bg-[#F8FAFC]">
+                <tr key={tk.id} className="border-b hover:bg-accent">
                   <td className="px-2 py-2"><Link href={`?id=${tk.id}&view=list`} className="font-semibold text-ink hover:underline">{tk.title}</Link></td>
                   <td className="px-2 py-2"><CompanyBadge code={companyCode(tk.companyId)} /></td>
                   <td className="px-2 py-2 text-ink-2">{tk.project?.client?.name}</td>
@@ -179,7 +179,7 @@ function TaskCalendar({ tasks, month }: { tasks: { id: string; title: string; du
   const nav = (delta: number) => { const d = new Date(Date.UTC(y, m + delta, 1)); return `?view=calendar&month=${d.toISOString().slice(0, 7)}`; };
   return (
     <Card className="p-4">
-      <div className="mb-3 flex items-center gap-3"><Link href={nav(-1)} className="text-blue">‹</Link><h2 className="text-lg font-semibold text-ink">{label}</h2><Link href={nav(1)} className="text-blue">›</Link></div>
+      <div className="mb-3 flex items-center gap-3"><Link href={nav(-1)} className="text-brand-text">‹</Link><h2 className="text-lg font-semibold text-ink">{label}</h2><Link href={nav(1)} className="text-brand-text">›</Link></div>
       <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border bg-card-border text-2xs">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => <div key={d} className="bg-surface-muted p-2 font-medium text-ink-2">{d}</div>)}
         {Array.from({ length: lead }, (_, i) => <div key={`e${i}`} className="min-h-24 bg-card" />)}
@@ -225,8 +225,8 @@ async function TaskDrawer({ id, people }: { id: string; people: { id: string; na
           </div>
         </div>
         <KeyValue labelWidth={80} rows={[
-          ["Project", tk.project ? <Link key="p" href={`/projects?id=${tk.projectId}`} className="inline-flex items-center gap-1 text-blue hover:underline">{tk.project.client?.name} - {tk.project.name} <ExternalLink className="size-3" /></Link> : "–"],
-          ["Client", tk.project?.client ? <Link key="c" href={`/clients/${tk.project.clientId}`} className="text-blue hover:underline">{tk.project.client.name}</Link> : "–"],
+          ["Project", tk.project ? <Link key="p" href={`/projects?id=${tk.projectId}`} className="inline-flex items-center gap-1 text-brand-text hover:underline">{tk.project.client?.name} - {tk.project.name} <ExternalLink className="size-3" /></Link> : "–"],
+          ["Client", tk.project?.client ? <Link key="c" href={`/clients/${tk.project.clientId}`} className="text-brand-text hover:underline">{tk.project.client.name}</Link> : "–"],
           ["Start Date", tk.startDate ? formatDate(tk.startDate) : "–"],
           ["Due Date", tk.dueDate ? <span key="d" className={tk.status !== "COMPLETED" && tk.dueDate.getTime() - t.getTime() < 3 * 86_400_000 ? "text-danger-text" : ""}>{formatDate(tk.dueDate)} ({formatDaysLeft(tk.dueDate, t)})</span> : "–"],
           ["Assignee", <TaskFieldSelect key="a" taskId={tk.id} field="assigneeId" value={tk.assigneeId ?? ""} options={[{ value: "", label: "Unassigned" }, ...people.map((x) => ({ value: x.id, label: x.name }))]} />],

@@ -72,7 +72,7 @@ export function MilestoneToggle({ id, status }: { id: string; status: string }) 
   const { pending, run } = useAction();
   const next = status === "COMPLETED" ? "PENDING" : status === "PENDING" ? "IN_PROGRESS" : "COMPLETED";
   return (
-    <button type="button" disabled={pending} onClick={() => run(() => setMilestoneStatus(id, next))} className="text-2xs text-blue hover:underline">
+    <button type="button" disabled={pending} onClick={() => run(() => setMilestoneStatus(id, next))} className="text-2xs text-brand-text hover:underline">
       {status === "COMPLETED" ? "Reopen" : status === "PENDING" ? "Start" : "Complete"}
     </button>
   );
@@ -139,7 +139,7 @@ export function NewProjectDialog({ companies, clients, brandGreen, project, trig
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger ?? <Button className={`h-10 px-4 text-md font-semibold ${brandGreen ? "" : "bg-blue hover:bg-blue/90"}`}><Plus className="size-4" /> New Project</Button>}
+        {trigger ?? <Button className={`h-10 px-4 text-md font-semibold ${brandGreen ? "" : "bg-brand-strong hover:bg-brand-strong/90"}`}><Plus className="size-4" /> New Project</Button>}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader><DialogTitle>{project ? "Edit project" : "New project"}</DialogTitle></DialogHeader>

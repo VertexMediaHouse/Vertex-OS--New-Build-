@@ -55,14 +55,14 @@ export function UploadButton({ folderId, fileId, label = "Upload File", projectI
           onDrop={(e) => { e.preventDefault(); void upload(e.dataTransfer.files); }}
           className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed p-8 text-center text-sm text-ink-2"
         >
-          <Upload className="size-6 text-blue" />
+          <Upload className="size-6 text-brand-text" />
           <p>Drag files here, or</p>
           <Button variant="outline" disabled={busy} onClick={() => input.current?.click()}>Choose files</Button>
           <input ref={input} type="file" multiple={!fileId} className="hidden" onChange={(e) => e.target.files && void upload(e.target.files)} />
           <p className="text-2xs text-ink-muted">Large videos upload directly to storage (up to 2 GB each).</p>
         </div>
         {Object.entries(progress).map(([name, p]) => (
-          <div key={name} className="text-xs"><p className="truncate">{name}</p><div className="h-1.5 rounded bg-track"><div className="h-full rounded bg-blue" style={{ width: `${Math.round(p * 100)}%` }} /></div></div>
+          <div key={name} className="text-xs"><p className="truncate">{name}</p><div className="h-1.5 rounded bg-track"><div className="h-full rounded bg-brand-strong" style={{ width: `${Math.round(p * 100)}%` }} /></div></div>
         ))}
       </DialogContent>
     </Dialog>
@@ -102,7 +102,7 @@ export function FileMenuActions({ id, trashed, status, portal, people, shared }:
       </div>
       <label className="flex items-center gap-2"><input type="checkbox" checked={portal} disabled={pending} onChange={(e) => run(() => updateFile(id, { sharedWithPortal: e.target.checked }), e.target.checked ? "Visible in client portal." : "Hidden from portal.")} /> Share with the client portal</label>
       <details>
-        <summary className="cursor-pointer font-medium text-blue">Share with team…</summary>
+        <summary className="cursor-pointer font-medium text-brand-text">Share with team…</summary>
         <div className="mt-2 flex flex-wrap gap-3">{people.map((p) => <label key={p.id} className="flex items-center gap-1.5"><input type="checkbox" checked={picked.includes(p.id)} onChange={(e) => setPicked((x) => (e.target.checked ? [...x, p.id] : x.filter((y) => y !== p.id)))} />{p.name}</label>)}</div>
         <Button size="sm" className="mt-2" disabled={pending} onClick={() => run(() => shareFile(id, picked), "Sharing updated.")}>Save</Button>
       </details>

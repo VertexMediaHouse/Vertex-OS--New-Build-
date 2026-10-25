@@ -50,7 +50,7 @@ export function SearchInput({ placeholder, param = "q", className, variant = "fi
         aria-label={placeholder.replace(/\.\.\.$|…$/, "")}
         className={cn(
           "h-full w-full rounded-lg pr-3 pl-9 text-xs text-ink outline-none placeholder:text-ink-muted focus-visible:ring-2 focus-visible:ring-ring/40",
-          variant === "filled" ? "bg-[#F4F6F9]" : "border border-input bg-card",
+          variant === "filled" ? "bg-surface-muted" : "border border-input bg-card",
         )}
       />
     </label>
@@ -84,7 +84,7 @@ export function FilterSelect({ param, options, placeholder, className }: { param
 export function ClearFilters({ params: keys }: { params: string[] }) {
   const hrefWith = useHrefWith();
   return (
-    <Link href={hrefWith(Object.fromEntries(keys.map((k) => [k, null])))} scroll={false} className="px-1 text-xs font-medium text-blue hover:underline">
+    <Link href={hrefWith(Object.fromEntries(keys.map((k) => [k, null])))} scroll={false} className="px-1 text-xs font-medium text-brand-text hover:underline">
       Clear
     </Link>
   );
@@ -120,11 +120,11 @@ export function DateRangePicker({ from, to, preset, variant = "button", classNam
           )}
         >
           {variant === "card" ? (
-            <span className="inline-flex size-8 items-center justify-center rounded-lg bg-[#F1E8FF] text-[#7C3AED]">
+            <span className="inline-flex size-8 items-center justify-center rounded-lg bg-review-soft text-review-text">
               <CalendarDays className="size-4" aria-hidden />
             </span>
           ) : (
-            <CalendarDays className="size-4 text-blue" aria-hidden />
+            <CalendarDays className="size-4 text-brand-text" aria-hidden />
           )}
           {variant === "card" ? (
             <span className="flex flex-col">
@@ -144,7 +144,7 @@ export function DateRangePicker({ from, to, preset, variant = "button", classNam
               key={p}
               type="button"
               onClick={() => apply({ range: p === "month" ? null : p, from: null, to: null })}
-              className={cn("rounded-md px-2 py-1.5 text-left text-xs hover:bg-accent", preset === p && "bg-blue-soft font-semibold text-blue")}
+              className={cn("rounded-md px-2 py-1.5 text-left text-xs hover:bg-accent", preset === p && "bg-brand-soft font-semibold text-brand-text")}
             >
               {PRESET_LABELS[p]}
             </button>
@@ -158,7 +158,7 @@ export function DateRangePicker({ from, to, preset, variant = "button", classNam
               type="button"
               disabled={!range?.from || !range.to}
               onClick={() => apply({ range: "custom", from: dayKey(range!.from!), to: dayKey(range!.to!) })}
-              className="rounded-md bg-blue px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
+              className="rounded-md bg-brand-strong px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
             >
               Apply
             </button>

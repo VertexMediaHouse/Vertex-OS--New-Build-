@@ -26,9 +26,9 @@ export function InvoiceActions({ id, status, balance, currency }: { id: string; 
   return (
     <div className="flex flex-wrap gap-2">
       {status === "DRAFT" ? (
-        <Button disabled={pending} onClick={() => run(() => setInvoiceState(id, "SEND"), "Invoice sent.")} className="bg-blue hover:bg-blue/90"><Send className="size-4" /> Mark as Sent</Button>
+        <Button disabled={pending} onClick={() => run(() => setInvoiceState(id, "SEND"), "Invoice sent.")} className="bg-brand-strong hover:bg-brand-strong/90"><Send className="size-4" /> Mark as Sent</Button>
       ) : (
-        <Button disabled={pending || status === "PAID" || status === "CANCELLED"} onClick={() => run(() => sendReminder(id), "Reminder sent.")} className="bg-blue hover:bg-blue/90"><Send className="size-4" /> Send Reminder</Button>
+        <Button disabled={pending || status === "PAID" || status === "CANCELLED"} onClick={() => run(() => sendReminder(id), "Reminder sent.")} className="bg-brand-strong hover:bg-brand-strong/90"><Send className="size-4" /> Send Reminder</Button>
       )}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild><Button variant="outline" disabled={status === "PAID" || status === "CANCELLED" || status === "DRAFT"}><CreditCard className="size-4" /> Record Payment</Button></DialogTrigger>
@@ -147,7 +147,7 @@ export function InvoiceBuilder({ companies, clients, projects, entries, defaults
           <Row k={`Tax (${taxRate}%)`} v={formatMoney(totals.taxAmount, currency)} />
           <Row k="Total" v={formatMoney(totals.total, currency)} bold />
         </div>
-        <Button className="w-full bg-blue hover:bg-blue/90" disabled={pending || !clientId} onClick={() => submit(false)}>Create Invoice</Button>
+        <Button className="w-full bg-brand-strong hover:bg-brand-strong/90" disabled={pending || !clientId} onClick={() => submit(false)}>Create Invoice</Button>
         <Button className="w-full" variant="outline" disabled={pending || !clientId} onClick={() => submit(true)}>Save as Draft</Button>
       </div>
     </div>

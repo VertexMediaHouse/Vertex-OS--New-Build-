@@ -35,7 +35,7 @@ export function CompanyDropdown({ scope, allowed }: SwitchProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="hidden h-9 min-w-[184px] items-center gap-2.5 rounded-lg border bg-card px-3 text-sm font-semibold text-ink outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/40 lg:inline-flex">
-        {scope === "ALL" ? <Building2 className="size-[18px] text-[#6D5BD0]" aria-hidden /> : <CompanyBadge code={scope} />}
+        {scope === "ALL" ? <Building2 className="size-[18px] text-vmh-text" aria-hidden /> : <CompanyBadge code={scope} />}
         <span className="min-w-0 flex-1 text-left whitespace-nowrap">{nameOf(scope)}</span>
         <ChevronDown className="size-4 text-ink-2" aria-hidden />
       </DropdownMenuTrigger>
@@ -44,7 +44,7 @@ export function CompanyDropdown({ scope, allowed }: SwitchProps) {
           <DropdownMenuItem key={s} onSelect={() => switchTo(s)} className="gap-2.5 text-sm">
             {s === "ALL" ? <Building2 className="size-4" /> : <CompanyBadge code={s} />}
             {nameOf(s)}
-            {s === scope && <Check className="ml-auto size-4 text-blue" />}
+            {s === scope && <Check className="ml-auto size-4 text-brand-text" />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -52,7 +52,7 @@ export function CompanyDropdown({ scope, allowed }: SwitchProps) {
   );
 }
 
-const FILLED: Record<Scope, string> = { ALL: "bg-blue text-white", VMH: "bg-vmh text-white", VTH: "bg-vth text-white" };
+const FILLED: Record<Scope, string> = { ALL: "bg-brand-strong text-white", VMH: "bg-vmh text-white", VTH: "bg-vth text-white" };
 
 export function CompanyPills({ scope, allowed }: SwitchProps) {
   const { switchTo } = useSwitchCompany();
@@ -112,7 +112,7 @@ export function SwitchCompanyCard({ scope, allowed, collapsed }: SwitchProps & {
             )}
           >
             {s === "ALL" ? (
-              <span className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-full bg-[#2F80ED] text-white">
+              <span className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-full bg-brand text-white">
                 <Check className="size-3.5" strokeWidth={3} aria-hidden />
               </span>
             ) : (
