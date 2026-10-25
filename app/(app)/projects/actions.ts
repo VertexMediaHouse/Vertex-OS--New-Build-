@@ -7,7 +7,7 @@ import { getRequestContext } from "@/lib/auth/context";
 import { assertCan } from "@/lib/auth/permissions";
 import { logActivity, notify } from "@/lib/activity";
 import { canSeeFile } from "@/lib/files/access";
-import { auth } from "@/lib/auth/server";
+import { invitePortalContact } from "@/lib/clients/portal-invite";
 import { PROJECT_STATUS } from "@/lib/status";
 import { projectProgress, TEMPLATES } from "@/lib/projects/templates";
 import type { ActionResult } from "@/lib/validation/result";
@@ -142,15 +142,9 @@ export async function inviteContact(contactId: string): Promise<ActionResult> {
   const { user } = await getRequestContext();
   const contact = await db.clientContact.findUniqueOrThrow({ where: { id: id.parse(contactId) }, include: { client: { include: { companies: true } } } });
   contact.client.companies.forEach((c) => assertCan(user, "update", "client", c.companyId));
-  if (!contact.email) return { ok: false, error: "Add an email for this contact first." };
-  const email = contact.email.toLowerCase();
-  const existing = await db.user.findUnique({ where: { email } });
-  if (existing && existing.kind !== "CLIENT") return { ok: false, error: "That email belongs to a staff account." };
-  const portalUser = existing ?? (await db.user.create({ data: { email, name: contact.name, kind: "CLIENT", emailVerified: true } }));
-  await db.clientContact.update({ where: { id: contact.id }, data: { portalAccess: true, userId: portalUser.id } });
-  await auth.api.requestPasswordReset({ body: { email, redirectTo: "/reset-password" } });
+  const res = await invitePortalContact(contact.id);
   refresh();
-  return { ok: true };
+  return res;
 }
 
 export async function revokeContact(contactId: string) {

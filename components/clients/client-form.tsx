@@ -34,7 +34,8 @@ export function ClientFormDialog({ companies, owners, client }: { companies: ("v
     start(async () => {
       const res = client ? await updateClient(client.id, input) : await createClient(input);
       if (!res.ok) return void toast.error(res.error);
-      toast.success(client ? "Client updated." : "Client added.");
+      if (res.warning) toast.warning(res.warning);
+      else toast.success(client ? "Client updated." : "Client added.");
       setOpen(false);
       if (!client) router.push(`/clients/${res.id}`);
     });

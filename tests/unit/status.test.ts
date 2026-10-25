@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { goalProgress, goalStatus } from "@/lib/metrics/goals";
 import { invoiceStatus, invoiceTotals } from "@/lib/invoices/status";
+import { LIST_TABS } from "@/lib/projects/templates";
 
 const ist = (s: string) => new Date(`${s}+05:30`);
 const oct = { startDate: ist("2026-10-01T00:00:00"), endDate: ist("2026-10-31T23:59:00") };
@@ -45,5 +46,27 @@ describe("invoice status", () => {
   it("totals line items with tax and discount", () => {
     expect(invoiceTotals([{ qty: 1, rate: 180000 }, { qty: 1, rate: 40000 }, { qty: 1, rate: 30000 }])).toEqual({ subtotal: 250000, taxAmount: 0, total: 250000 });
     expect(invoiceTotals([{ qty: 2, rate: 5000 }], 18, 1000)).toEqual({ subtotal: 10000, taxAmount: 1620, total: 10620 });
+  });
+});
+
+// The dashboard's project donut links each slice to ?list=<key>. If a key is renamed or a
+// status moves group, the link quietly starts showing the wrong rows.
+describe("project list filters behind the dashboard donut", () => {
+  it("has a group for every slice the donut counts", () => {
+    expect(Object.keys(LIST_TABS)).toEqual(expect.arrayContaining(["notStarted", "inProgress", "review", "onHold", "completed"]));
+  });
+  it("groups the same statuses projectSummary counts", () => {
+    expect(LIST_TABS.notStarted).toEqual(["NOT_STARTED", "PLANNING"]);
+    expect(LIST_TABS.inProgress).toEqual(["IN_PROGRESS", "EDITING", "DEVELOPMENT", "REVISION"]);
+    expect(LIST_TABS.review).toEqual(["IN_REVIEW", "CLIENT_REVIEW"]);
+    expect(LIST_TABS.onHold).toEqual(["ON_HOLD"]);
+    expect(LIST_TABS.completed).toEqual(["COMPLETED"]);
+  });
+  it("splits the active list into the slices exactly once, so nothing double-counts", () => {
+    const groups = [...LIST_TABS.notStarted, ...LIST_TABS.inProgress, ...LIST_TABS.onHold];
+    expect(new Set(groups).size).toBe(groups.length);
+    expect([...groups].sort()).toEqual([...LIST_TABS.active].sort());
+    // In review is its own slice and sits outside the active list.
+    expect(LIST_TABS.review.some((st) => (groups as string[]).includes(st))).toBe(false);
   });
 });

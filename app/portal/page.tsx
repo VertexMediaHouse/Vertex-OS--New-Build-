@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/context";
 import { db } from "@/lib/db";
 import { formatDate, formatFileSize, formatINR } from "@/lib/format";
-import { APPROVAL_STATUS, INVOICE_STATUS, PROJECT_STATUS } from "@/lib/status";
+import { APPROVAL_STATUS, INVOICE_STATUS, PROJECT_STATUS, TASK_STATUS } from "@/lib/status";
 import { Logo } from "@/components/shared/logo";
 import { Card, ProgressBar, SectionCard } from "@/components/shared/primitives";
 import { CardSkeleton, EmptyState } from "@/components/shared/layout";
@@ -27,11 +27,18 @@ async function Portal() {
   if (user.kind !== "CLIENT") redirect("/dashboard");
   const contact = await db.clientContact.findUnique({ where: { userId: user.id }, include: { client: true } });
   if (!contact?.portalAccess) return <p className="p-10 text-center text-sm">Your portal access has been turned off. Contact your account manager.</p>;
-  const [projects, approvals, files, invoices] = await Promise.all([
+  const [projects, approvals, files, invoices, tasks] = await Promise.all([
     db.project.findMany({ where: { clientId: contact.clientId }, include: { company: true, members: { include: { user: { select: { name: true } } } } }, orderBy: { startDate: "desc" } }),
     db.approval.findMany({ where: { project: { clientId: contact.clientId } }, include: { project: { select: { name: true } }, file: true }, orderBy: { requestedAt: "desc" }, take: 20 }),
     db.file.findMany({ where: { clientId: contact.clientId, deletedAt: null, sharedWithPortal: true }, orderBy: { updatedAt: "desc" }, take: 20 }),
     db.invoice.findMany({ where: { clientId: contact.clientId, status: { not: "DRAFT" } }, orderBy: { issueDate: "desc" }, take: 20 }),
+    // Most recently touched first, so a status change the team just made is at the top.
+    db.task.findMany({
+      where: { project: { clientId: contact.clientId } },
+      orderBy: { updatedAt: "desc" },
+      take: 12,
+      select: { id: true, title: true, status: true, progress: true, dueDate: true, completedAt: true, project: { select: { name: true } } },
+    }),
   ]);
   const brand = projects.every((p) => p.companyId === "vth") ? "vth" : "vmh";
   return (
@@ -52,6 +59,21 @@ async function Portal() {
                 <span className="w-32"><ProgressBar value={p.progress} /></span>
                 <span className="text-xs text-ink-muted">{p.dueDate ? `Due ${formatDate(p.dueDate)}` : ""}</span>
                 <span className="text-xs text-ink-muted">Manager: {p.members[0]?.user.name ?? "–"}</span>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+        <SectionCard title="Latest updates" subtitle="Where the work stands right now.">
+          {tasks.length === 0 && <EmptyState title="No updates yet" />}
+          <ul className="divide-y">
+            {tasks.map((t) => (
+              <li key={t.id} className="flex flex-wrap items-center gap-3 py-2.5 text-sm">
+                <span className="min-w-0 flex-1 text-ink">{t.title} <span className="text-ink-muted">· {t.project?.name}</span></span>
+                {t.progress > 0 && t.status !== "COMPLETED" && <span className="w-20"><ProgressBar value={t.progress} /></span>}
+                <EnumPill map={TASK_STATUS} value={t.status} size="xs" />
+                <span className="w-28 text-right text-xs text-ink-muted">
+                  {t.status === "COMPLETED" ? (t.completedAt ? `Done ${formatDate(t.completedAt)}` : "Done") : t.dueDate ? `Due ${formatDate(t.dueDate)}` : ""}
+                </span>
               </li>
             ))}
           </ul>

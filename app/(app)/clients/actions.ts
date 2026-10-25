@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { getRequestContext } from "@/lib/auth/context";
 import { assertCan } from "@/lib/auth/permissions";
 import { logActivity } from "@/lib/activity";
+import { invitePortalContact } from "@/lib/clients/portal-invite";
 import { clientSchema, CLIENT_STATUSES } from "@/lib/validation/client";
 import type { ActionResult } from "@/lib/validation/result";
 import { CLIENT_STATUS } from "@/lib/status";
@@ -41,6 +42,17 @@ export async function createClient(input: z.input<typeof clientSchema>): Promise
     await logActivity(tx, { companyId: companies.length === 1 ? companies[0]! : null, actorId: user.id, verb: "created", entityType: "CLIENT", entityId: client.id, summary: `New client added: ${client.name}` });
     return client;
   });
+  // Onboarding: the contact gets their own portal login and a link to set a password.
+  // A failure here must not undo the client, so it is reported, not thrown — the project's
+  // Client Access tab can send it again.
+  if (contactEmail) {
+    const contact = await db.clientContact.findFirst({ where: { clientId: client.id, isPrimary: true }, select: { id: true } });
+    const invited = contact && (await invitePortalContact(contact.id));
+    if (invited && !invited.ok) {
+      refresh();
+      return { ok: true, id: client.id, warning: `Client added, but the portal invite failed: ${invited.error}` };
+    }
+  }
   refresh();
   return { ok: true, id: client.id };
 }
