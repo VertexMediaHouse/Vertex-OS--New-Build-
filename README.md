@@ -1,4 +1,4 @@
-# Vertex Command Center
+# Vertex OS
 
 Internal operations platform for Vertex Media House (VMH, video editing) and Vertex Tech House (VTH, software).
 Design source of truth: `docs/vertex-design.pdf` (analysis in `docs/design-spec.md`, choices in `docs/decisions.md`).
