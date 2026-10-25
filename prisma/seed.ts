@@ -556,12 +556,16 @@ async function goals() {
   });
 }
 
+const folderRoot = (category: string, name: string, color: string) => ({ id: `folder_${category.toLowerCase()}`, name, category: category as never, color });
+
+/** Not demo data: every file lives under one of these, and createClient needs Client Files. */
+const FOLDER_ROOTS = [
+  folderRoot("CLIENT_FILES", "Client Files", "#007AFF"), folderRoot("PROJECT_FILES", "Project Files", "#5856D6"), folderRoot("DESIGN_ASSETS", "Design Assets", "#FF4D31"),
+  folderRoot("VIDEO_ASSETS", "Video Assets", "#FF9500"), folderRoot("DOCUMENTS", "Documents", "#34C759"), folderRoot("TEAM_RESOURCES", "Team Resources", "#8E8E93"),
+];
+
 async function files() {
-  const root = (category: string, name: string, color: string) => ({ id: `folder_${category.toLowerCase()}`, name, category: category as never, color });
-  const roots = [
-    root("CLIENT_FILES", "Client Files", "#308CFC"), root("PROJECT_FILES", "Project Files", "#902EFC"), root("DESIGN_ASSETS", "Design Assets", "#FC6C78"),
-    root("VIDEO_ASSETS", "Video Assets", "#FC9C0E"), root("DOCUMENTS", "Documents", "#04CC88"), root("TEAM_RESOURCES", "Team Resources", "#64748B"),
-  ];
+  const roots = FOLDER_ROOTS;
   const modified: Record<string, string> = { CLIENT_FILES: "2026-10-20", PROJECT_FILES: "2026-10-18", DESIGN_ASSETS: "2026-10-15", VIDEO_ASSETS: "2026-10-12", DOCUMENTS: "2026-10-10", TEAM_RESOURCES: "2026-09-30" };
   await db.folder.createMany({ data: roots.map((f) => ({ ...f, updatedAt: at(modified[f.category]!), createdAt: day(-300) })) });
 
@@ -698,8 +702,25 @@ async function campaignsAgendaActivity() {
   });
 }
 
+/** Everything the app needs to run, and nothing to look at. */
+async function fresh() {
+  await wipe();
+  await companies();
+  await users();
+  await db.folder.createMany({ data: FOLDER_ROOTS.map((f) => ({ ...f, createdAt: NOW, updatedAt: NOW })) });
+  // The demo numbering carried on from the PDF; a real first invoice is #1.
+  await db.company.updateMany({ data: { nextInvoiceNumber: 1 } });
+}
+
 async function main() {
   const started = Date.now();
+  if (process.argv.includes("--fresh")) {
+    await fresh();
+    const staff = await db.user.count();
+    console.log(`Empty OS ready in ${((Date.now() - started) / 1000).toFixed(1)}s: 2 companies, ${staff} staff logins, ${FOLDER_ROOTS.length} root folders, no other rows.`);
+    console.log(`Log in as dhrumil@vertexmediahouse.com / ${process.env.SEED_PASSWORD || "vertex123"}`);
+    return;
+  }
   await wipe();
   await companies();
   await users();

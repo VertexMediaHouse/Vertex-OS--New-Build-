@@ -13,6 +13,7 @@ cp .env.example .env          # then set BETTER_AUTH_SECRET to a long random str
 npm run services              # embedded Postgres on :5433 (leave running), or just use `npm run dev`
 npx prisma migrate deploy
 npm run db:seed               # demo data matching the design PDF
+npm run db:fresh              # or: an empty OS, just the two companies and the staff logins
 npm run dev                   # starts services + Next.js on http://localhost:3000
 ```
 
@@ -27,6 +28,7 @@ Other demo users: rohan@, priya@, aman@, dhruv@vertexmediahouse.com and neha@ver
 | `npm run services` | Local Postgres only |
 | `npm run db:migrate` | Create/apply a migration after editing `prisma/schema.prisma` |
 | `npm run db:seed` | Wipe and reseed the database in `DATABASE_URL` |
+| `npm run db:fresh` | Wipe to an empty, usable OS: two companies, the staff logins, the root folders, nothing else |
 | `npm run typecheck` / `lint` / `test` | Types, ESLint, Vitest unit tests |
 | `npm run test:e2e` | Playwright end-to-end tests (needs a seeded database) |
 | `npm run build` / `start` | Production build and server |
