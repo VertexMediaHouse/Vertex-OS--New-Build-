@@ -25,7 +25,7 @@ const coId = (c: F.Co) => c.toLowerCase();
 const uid = (k: F.TeamKey) => `user_${k}`;
 const NOW = now();
 const TODAY = startOfDayIST(NOW);
-const STAFF: F.TeamKey[] = ["rohan", "priya", "aman", "neha", "dhruv"];
+const STAFF: F.TeamKey[] = ["sheen", "hardik"];
 
 // Generated clients (page 4 says 68). Names are fictional.
 const PADDED_CLIENT_NAMES = [
@@ -72,7 +72,7 @@ async function users() {
         emailVerified: true,
         isOwner: t.isOwner ?? false,
         title: t.title,
-        weeklyCapacityHours: 40,
+        weeklyCapacityHours: Math.round(F.WEEK_TARGET_MIN[t.key] / 60),
         createdAt: day(-400),
         accounts: { create: { id: `acc_${t.key}`, providerId: "credential", accountId: uid(t.key), password: hash } },
         memberships: { create: t.companies.map((c) => ({ companyId: coId(c), role: t.role })) },
@@ -211,7 +211,7 @@ async function projects() {
 
   // Internal projects (no client): "VTH Internal / System Setup" on the timesheet.
   for (const [key, co, name] of [["vth_internal", "VTH", "System Setup"], ["vmh_internal", "VMH", "Operations"]] as const) {
-    projectIds.set(key, { id: `project_${key}`, co, members: ["dhrumil", ...STAFF] });
+    projectIds.set(key, { id: `project_${key}`, co, members: ["dhrumil"] });
     await db.project.create({
       data: {
         id: `project_${key}`, companyId: coId(co), clientId: null, name, typeLabel: "Internal", category: "OTHER", template: co,
@@ -390,7 +390,7 @@ async function tasks() {
   await db.comment.createMany({
     data: F.DRAWER_TASK.comments.map(([who, date, time, body]) => ({
       entityType: "TASK" as const, entityId: drawer, authorId: uid(who), body, createdAt: at(date, time),
-      mentions: body.includes("@Rohan") ? [uid("rohan")] : [],
+      mentions: body.includes("@Hardik") ? [uid("hardik")] : [],
     })),
   });
 }
@@ -422,7 +422,7 @@ async function timeEntries() {
       note, billable, status: billable && recent && r.next() < 0.5 ? "PENDING" : "APPROVED", approvedById: billable && recent ? null : uid("dhrumil"),
       category: !billable && project.endsWith("_internal") && note.toLowerCase().includes("meeting") ? "MEETINGS" : null,
     });
-    const bucket = `${p.co}_${billable ? "B" : "N"}` as keyof (typeof left)["rohan"];
+    const bucket = `${p.co}_${billable ? "B" : "N"}` as keyof (typeof left)["hardik"];
     left[who][bucket] -= minutes;
   };
 
@@ -434,11 +434,11 @@ async function timeEntries() {
   }
 
   // The drawer task's "Time (2h 30m)".
-  add("rohan", "bright_labs_shorts", "2026-10-19", "10:00", 90, true, "Rough cut + captions", taskIds.get(F.DRAWER_TASK.title));
-  add("rohan", "bright_labs_shorts", "2026-10-21", "10:00", 60, true, "Music and brand pass", taskIds.get(F.DRAWER_TASK.title));
+  add("hardik", "bright_labs_shorts", "2026-10-19", "10:00", 90, true, "Rough cut + captions", taskIds.get(F.DRAWER_TASK.title));
+  add("hardik", "bright_labs_shorts", "2026-10-21", "10:00", 60, true, "Music and brand pass", taskIds.get(F.DRAWER_TASK.title));
 
   // GreenBuild minutes come first out of the right buckets (page 6 Time Tracking card).
-  const gbPlan: [F.TeamKey, boolean, number][] = [["priya", true, 800 - 90], ["rohan", true, 650], ["neha", true, 845], ["dhrumil", false, 255]];
+  const gbPlan: [F.TeamKey, boolean, number][] = [["sheen", true, 800 - 90 + 845], ["hardik", true, 650], ["dhrumil", false, 255]];
   // This week first, up to each person's target (dashboard Team Workload), then earlier days, latest first.
   const days = weekdays("2026-10-01", "2026-10-21");
   const place = (who: F.TeamKey, minutes: number) => {
@@ -526,7 +526,7 @@ async function invoices() {
   }
   await db.comment.createMany({
     data: ["Sent to Raj with the CRM milestone summary.", "Raj confirmed ₹1,00,000 advance via bank transfer.", "Balance due after training & handover.", "Reminder scheduled for 30 Oct.", "Client asked for GST invoice copy, attached."].map((body, i) => ({
-      entityType: "INVOICE" as const, entityId: "invoice_vth_019", authorId: uid(i % 2 ? "priya" : "dhrumil"), body, createdAt: at("2026-10-18", `1${i}:00`),
+      entityType: "INVOICE" as const, entityId: "invoice_vth_019", authorId: uid(i % 2 ? "sheen" : "dhrumil"), body, createdAt: at("2026-10-18", `1${i}:00`),
     })),
   });
 }
@@ -598,7 +598,7 @@ async function files() {
   });
   // Drawer task's 3 files.
   F.DRAWER_TASK.files.forEach(([name, size, mime], i) =>
-    fileRows.push({ id: `file_task_${i}`, folderId: "folder_client_bright_labs", name, mime, ext: name.split(".").pop()!.toUpperCase(), size, storageKey: `seed/file_task_${i}/${name}`, companyId: "vmh", clientId: "client_bright_labs", projectId: "project_bright_labs_shorts", taskId: taskIds.get(F.DRAWER_TASK.title), uploadedById: uid("rohan"), createdAt: at("2026-10-18", "14:00"), updatedAt: at("2026-10-18", "14:00") }),
+    fileRows.push({ id: `file_task_${i}`, folderId: "folder_client_bright_labs", name, mime, ext: name.split(".").pop()!.toUpperCase(), size, storageKey: `seed/file_task_${i}/${name}`, companyId: "vmh", clientId: "client_bright_labs", projectId: "project_bright_labs_shorts", taskId: taskIds.get(F.DRAWER_TASK.title), uploadedById: uid("hardik"), createdAt: at("2026-10-18", "14:00"), updatedAt: at("2026-10-18", "14:00") }),
   );
 
   // Bulk files so the page-12 category cards add up (248 / 320 / 156 / 210 / 96).
@@ -620,7 +620,7 @@ async function files() {
   const shares: Prisma.FileShareCreateManyInput[] = [];
   F.FILE_ROWS.slice(0, 9).forEach((f, i) => {
     const id = i === 0 ? "file_project_brief" : `file_${slug(f.name)}`;
-    const people = i === 0 ? ["priya", "neha", "rohan", "aman", "dhruv"] : STAFF.slice(0, (i % 3) + 1);
+    const people = i === 0 ? ["sheen", "hardik"] : STAFF.slice(0, (i % 3) + 1);
     people.forEach((p) => shares.push({ fileId: id, userId: uid(p as F.TeamKey) }));
   });
   await db.fileShare.createMany({ data: shares });
@@ -646,36 +646,36 @@ async function campaignsAgendaActivity() {
     data: [
       ...F.AGENDA.map((e) => {
         const start = at("2026-10-22", e.time);
-        return { title: e.title, type: e.type, companyId: e.co ? coId(e.co) : null, start, end: new Date(start.getTime() + e.minutes * 60_000), clientId: e.client ? `client_${e.client}` : null, projectId: e.project ? `project_${e.project}` : null, attendeeIds: [uid("dhrumil"), uid("rohan")] };
+        return { title: e.title, type: e.type, companyId: e.co ? coId(e.co) : null, start, end: new Date(start.getTime() + e.minutes * 60_000), clientId: e.client ? `client_${e.client}` : null, projectId: e.project ? `project_${e.project}` : null, attendeeIds: [uid("dhrumil"), uid("hardik")] };
       }),
-      { title: "Sprint Planning - GreenBuild", type: "MEETING" as const, companyId: "vth", start: at("2026-10-23", "11:00"), end: at("2026-10-23", "12:00"), projectId: "project_greenbuild_crm", attendeeIds: [uid("neha"), uid("priya")] },
-      { title: "Content Review - Elite Creators", type: "REVIEW" as const, companyId: "vmh", start: at("2026-10-23", "15:00"), end: at("2026-10-23", "15:30"), clientId: "client_elite_creators", attendeeIds: [uid("aman")] },
+      { title: "Sprint Planning - GreenBuild", type: "MEETING" as const, companyId: "vth", start: at("2026-10-23", "11:00"), end: at("2026-10-23", "12:00"), projectId: "project_greenbuild_crm", attendeeIds: [uid("sheen"), uid("sheen")] },
+      { title: "Content Review - Elite Creators", type: "REVIEW" as const, companyId: "vmh", start: at("2026-10-23", "15:00"), end: at("2026-10-23", "15:30"), clientId: "client_elite_creators", attendeeIds: [uid("hardik")] },
     ],
   });
 
   // Recent Activity (page 1), goal activity (page 10), time log activity (page 8), plus history.
   await db.activity.createMany({
     data: [
-      { companyId: "vmh", actorId: uid("priya"), verb: "uploaded", entityType: "FILE" as const, entityId: "file_short_01_final_mp4", summary: "Priya uploaded final video for Alex Johnson", createdAt: minutesAgo(2) },
-      { companyId: "vth", actorId: uid("rohan"), verb: "completed", entityType: "TASK" as const, entityId: taskIds.get("Build Lead Module")!, summary: "Rohan marked task as completed", createdAt: minutesAgo(15) },
+      { companyId: "vmh", actorId: uid("sheen"), verb: "uploaded", entityType: "FILE" as const, entityId: "file_short_01_final_mp4", summary: "Priya uploaded final video for Alex Johnson", createdAt: minutesAgo(2) },
+      { companyId: "vth", actorId: uid("hardik"), verb: "completed", entityType: "TASK" as const, entityId: taskIds.get("Build Lead Module")!, summary: "Rohan marked task as completed", createdAt: minutesAgo(15) },
       { companyId: "vth", actorId: null, verb: "paid", entityType: "PAYMENT" as const, entityId: "invoice_vth_013", summary: "Payment received from Bright Labs (₹1,20,000)", createdAt: minutesAgo(60) },
       { companyId: null, actorId: uid("dhrumil"), verb: "created", entityType: "LEAD" as const, entityId: "lead_scaleup_co", summary: "New lead added: ScaleUp Co.", createdAt: minutesAgo(120) },
-      { companyId: "vth", actorId: uid("rohan"), verb: "updated", entityType: "GOAL" as const, entityId: "goal_vth_monthly_revenue", summary: "Rohan updated progress to 75%", createdAt: minutesAgo(125) },
-      { companyId: "vth", actorId: uid("priya"), verb: "completed", entityType: "GOAL" as const, entityId: "goal_vth_monthly_revenue", summary: "Priya marked milestone as completed", createdAt: minutesAgo(300) },
-      { companyId: "vth", actorId: uid("aman"), verb: "commented", entityType: "GOAL" as const, entityId: "goal_vth_monthly_revenue", summary: "Aman added a new comment", createdAt: at("2026-10-18", "10:30") },
-      { companyId: "vth", actorId: uid("neha"), verb: "status", entityType: "GOAL" as const, entityId: "goal_vth_monthly_revenue", summary: "Neha changed status to On Track", createdAt: at("2026-10-17", "16:15") },
-      { companyId: "vmh", actorId: uid("rohan"), verb: "timer_started", entityType: "TIME_ENTRY" as const, entityId: "edit_short_1", summary: "Rohan started tracking time", meta: { detail: "Edit Short #1 — Bright Labs" }, createdAt: at("2026-10-20", "10:00") },
-      { companyId: "vth", actorId: uid("priya"), verb: "timer_stopped", entityType: "TIME_ENTRY" as const, entityId: "ui_design", summary: "Priya stopped tracking time", meta: { detail: "UI Design — GreenBuild Infra" }, createdAt: at("2026-10-20", "13:15") },
-      { companyId: "vmh", actorId: uid("aman"), verb: "time_edited", entityType: "TIME_ENTRY" as const, entityId: "episode_edit", summary: "Aman edited time entry", meta: { detail: "Episode Edit — Bhaumik Podcast" }, createdAt: at("2026-10-19", "18:00") },
-      { companyId: "vth", actorId: uid("neha"), verb: "time_note", entityType: "TIME_ENTRY" as const, entityId: "workflow_setup", summary: "Neha added a note", meta: { detail: "“Completed workflow setup and tested.”" }, createdAt: at("2026-10-19", "17:45") },
-      { companyId: "vmh", actorId: uid("rohan"), verb: "moved", entityType: "LEAD" as const, entityId: "lead_elite_creators", summary: "Rohan moved Elite Creators to Negotiation", createdAt: day(-1, "15:00") },
-      { companyId: "vth", actorId: uid("neha"), verb: "completed", entityType: "TASK" as const, entityId: taskIds.get("Lead Module Completed")!, summary: "Neha completed Lead Module for GreenBuild Infra", createdAt: day(-1, "12:00") },
+      { companyId: "vth", actorId: uid("hardik"), verb: "updated", entityType: "GOAL" as const, entityId: "goal_vth_monthly_revenue", summary: "Rohan updated progress to 75%", createdAt: minutesAgo(125) },
+      { companyId: "vth", actorId: uid("sheen"), verb: "completed", entityType: "GOAL" as const, entityId: "goal_vth_monthly_revenue", summary: "Priya marked milestone as completed", createdAt: minutesAgo(300) },
+      { companyId: "vth", actorId: uid("hardik"), verb: "commented", entityType: "GOAL" as const, entityId: "goal_vth_monthly_revenue", summary: "Aman added a new comment", createdAt: at("2026-10-18", "10:30") },
+      { companyId: "vth", actorId: uid("sheen"), verb: "status", entityType: "GOAL" as const, entityId: "goal_vth_monthly_revenue", summary: "Neha changed status to On Track", createdAt: at("2026-10-17", "16:15") },
+      { companyId: "vmh", actorId: uid("hardik"), verb: "timer_started", entityType: "TIME_ENTRY" as const, entityId: "edit_short_1", summary: "Rohan started tracking time", meta: { detail: "Edit Short #1 — Bright Labs" }, createdAt: at("2026-10-20", "10:00") },
+      { companyId: "vth", actorId: uid("sheen"), verb: "timer_stopped", entityType: "TIME_ENTRY" as const, entityId: "ui_design", summary: "Sheen stopped tracking time", meta: { detail: "UI Design — GreenBuild Infra" }, createdAt: at("2026-10-20", "13:15") },
+      { companyId: "vmh", actorId: uid("hardik"), verb: "time_edited", entityType: "TIME_ENTRY" as const, entityId: "episode_edit", summary: "Hardik edited time entry", meta: { detail: "Episode Edit — Bhaumik Podcast" }, createdAt: at("2026-10-19", "18:00") },
+      { companyId: "vth", actorId: uid("sheen"), verb: "time_note", entityType: "TIME_ENTRY" as const, entityId: "workflow_setup", summary: "Sheen added a note", meta: { detail: "“Completed workflow setup and tested.”" }, createdAt: at("2026-10-19", "17:45") },
+      { companyId: "vmh", actorId: uid("hardik"), verb: "moved", entityType: "LEAD" as const, entityId: "lead_elite_creators", summary: "Hardik moved Elite Creators to Negotiation", createdAt: day(-1, "15:00") },
+      { companyId: "vth", actorId: uid("sheen"), verb: "completed", entityType: "TASK" as const, entityId: taskIds.get("Lead Module Completed")!, summary: "Sheen completed Lead Module for GreenBuild Infra", createdAt: day(-1, "12:00") },
     ],
   });
 
   // Project notes (page 5).
   await db.comment.createMany({
-    data: [["rohan", "2026-10-21", "10:30", "Looks great! Can we make the caption bold?"], ["priya", "2026-10-21", "11:15", "Sure, updating in next version."], ["dhrumil", "2026-10-20", "18:45", "Client approved Short #1. Moving to Short #2."]].map(([who, date, time, body]) => ({
+    data: [["hardik", "2026-10-21", "10:30", "Looks great! Can we make the caption bold?"], ["sheen", "2026-10-21", "11:15", "Sure, updating in next version."], ["dhrumil", "2026-10-20", "18:45", "Client approved Short #1. Moving to Short #2."]].map(([who, date, time, body]) => ({
       entityType: "PROJECT" as const, entityId: "project_bright_labs_shorts", authorId: uid(who as F.TeamKey), body: body!, createdAt: at(date!, time!),
     })),
   });
@@ -685,7 +685,7 @@ async function campaignsAgendaActivity() {
     data: [
       { userId: uid("dhrumil"), type: "approval", title: "Bright Labs approved Short #1", link: "/projects?id=project_bright_labs_shorts", createdAt: minutesAgo(30) },
       { userId: uid("dhrumil"), type: "invoice_paid", title: "Payment received: #VTH-013 (₹1,20,000)", link: "/invoices?id=invoice_vth_013", createdAt: minutesAgo(60) },
-      { userId: uid("dhrumil"), type: "over_capacity", title: "Priya is over capacity this week", link: "/team", createdAt: minutesAgo(180) },
+      { userId: uid("dhrumil"), type: "over_capacity", title: "Sheen is over capacity this week", link: "/team", createdAt: minutesAgo(180) },
       { userId: uid("dhrumil"), type: "lead_stage", title: "Elite Creators moved to Negotiation", link: "/leads", createdAt: day(-1), readAt: day(-1, "16:00") },
     ],
   });

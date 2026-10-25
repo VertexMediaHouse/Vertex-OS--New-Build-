@@ -42,6 +42,8 @@ async function Time({ searchParams }: { searchParams: Promise<SP> }) {
     ...(p.str("member") && { userId: p.str("member")! }),
     ...(p.str("project") && { projectId: p.str("project")! }),
     ...(p.str("status") === "NON_BILLABLE" ? { billable: false } : p.str("status") ? { status: p.str("status") as "APPROVED" } : {}),
+    // ?cat= is what the "Hours by Project Type" donut links to; MEETINGS lives on the entry.
+    ...(p.str("cat") === "MEETINGS" ? { category: "MEETINGS" as const } : p.str("cat") ? { project: { category: p.str("cat") as "DESIGN" } } : {}),
     ...(q && { OR: [{ note: { contains: q, mode: "insensitive" } }, { task: { title: { contains: q, mode: "insensitive" } } }, { project: { name: { contains: q, mode: "insensitive" } } }, { user: { name: { contains: q, mode: "insensitive" } } }] }),
   };
   const weekStart = startOfWeekIST(t);
@@ -79,7 +81,7 @@ async function Time({ searchParams }: { searchParams: Promise<SP> }) {
   const cats: Record<string, number> = {};
   for (const r of chartRows) { const c = r.category ?? r.project?.category ?? "OTHER"; cats[c] = (cats[c] ?? 0) + (r.durationMin ?? 0); }
   const catTotal = Object.values(cats).reduce((a, b) => a + b, 0) || 1;
-  const catData = ["VIDEO_EDITING", "WEBSITE_DEVELOPMENT", "CRM_ERP", "AUTOMATION", "DESIGN", "MEETINGS", "OTHER"].filter((c) => cats[c]).map((c) => ({ label: WORK_CATEGORY_LABELS[c]!, value: cats[c]!, color: WORK_CATEGORY_COLORS[c]! }));
+  const catData = ["VIDEO_EDITING", "WEBSITE_DEVELOPMENT", "CRM_ERP", "AUTOMATION", "DESIGN", "MEETINGS", "OTHER"].filter((c) => cats[c]).map((c) => ({ label: WORK_CATEGORY_LABELS[c]!, value: cats[c]!, color: WORK_CATEGORY_COLORS[c]!, href: `/time?cat=${c}` }));
   const chartMins = chartRows.reduce((a, r) => a + (r.durationMin ?? 0), 0);
   const canApprove = ctx.companyIds.some((c) => can(ctx.user, "approve", "time", c));
   const exportHref = `/time/export?${new URLSearchParams(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string"))}`;
@@ -97,8 +99,8 @@ async function Time({ searchParams }: { searchParams: Promise<SP> }) {
             <KpiCard icon={Users} tone="blue" label="Active Team Members" value={activeMembers()} split={split((co) => activeMembers(co))} />
           </div>
           <div className="grid gap-3.5 xl:grid-cols-[1.35fr_1fr]">
-            <SectionCard title="Hours Overview" action={<ChartLegend items={[{ label: `VMH (${formatDuration(chartRows.filter((r) => r.companyId === "vmh").reduce((a, r) => a + (r.durationMin ?? 0), 0))})`, color: COMPANY_COLORS.VMH }, { label: `VTH (${formatDuration(chartRows.filter((r) => r.companyId === "vth").reduce((a, r) => a + (r.durationMin ?? 0), 0))})`, color: COMPANY_COLORS.VTH }]} />}>
-              <BarsChart data={chart} xKey="day" series={[{ key: "VMH", label: "VMH", color: COMPANY_COLORS.VMH }, { key: "VTH", label: "VTH", color: COMPANY_COLORS.VTH }]} yFormat="hours" xTickLines={tickLines} height={180} />
+            <SectionCard title="Hours Overview" action={<ChartLegend items={[{ label: `VMH (${formatDuration(chartRows.filter((r) => r.companyId === "vmh").reduce((a, r) => a + (r.durationMin ?? 0), 0))})`, color: COMPANY_COLORS.VMH, href: "/time?co=vmh" }, { label: `VTH (${formatDuration(chartRows.filter((r) => r.companyId === "vth").reduce((a, r) => a + (r.durationMin ?? 0), 0))})`, color: COMPANY_COLORS.VTH, href: "/time?co=vth" }]} />}>
+              <BarsChart data={chart} xKey="day" series={[{ key: "VMH", label: "VMH", color: COMPANY_COLORS.VMH, href: "/time?co=vmh" }, { key: "VTH", label: "VTH", color: COMPANY_COLORS.VTH, href: "/time?co=vth" }]} yFormat="hours" xTickLines={tickLines} height={180} />
             </SectionCard>
             <SectionCard title="Hours by Project Type">
               <div className="flex items-center gap-4">

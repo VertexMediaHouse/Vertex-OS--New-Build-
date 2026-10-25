@@ -98,6 +98,7 @@ async function Leads({ searchParams }: { searchParams: Promise<SP> }) {
 
   const sources = ["FIVERR", "WEBSITE", "REFERRAL", "LINKEDIN", "EMAIL", "INSTAGRAM", "OTHER"].map((s) => ({
     source: SOURCE_LABEL[s]!,
+    href: `/leads?source=${s}`,
     VMH: leads.filter((l) => l.source === s && l.companyId === "vmh").length,
     VTH: leads.filter((l) => l.source === s && l.companyId === "vth").length,
   }));
@@ -137,13 +138,13 @@ async function Leads({ searchParams }: { searchParams: Promise<SP> }) {
 
       <div className="grid gap-3.5 xl:grid-cols-[1.6fr_1fr_2fr]">
         <SectionCard title="Leads by Source">
-          <ChartLegend items={[{ label: "VMH", color: COMPANY_COLORS.VMH }, { label: "VTH", color: COMPANY_COLORS.VTH }]} className="mb-2" />
+          <ChartLegend items={[{ label: "VMH", color: COMPANY_COLORS.VMH, href: "/leads?co=vmh" }, { label: "VTH", color: COMPANY_COLORS.VTH, href: "/leads?co=vth" }]} className="mb-2" />
           <BarsChart data={sources} xKey="source" stacked topLabels series={[{ key: "VMH", label: "VMH", color: COMPANY_COLORS.VMH }, { key: "VTH", label: "VTH", color: COMPANY_COLORS.VTH }]} height={170} barSize={38} />
         </SectionCard>
         <SectionCard title="Leads by Company">
-          <ChartLegend items={[{ label: "Vertex Media House", color: COMPANY_COLORS.VMH }, { label: "Vertex Tech House", color: COMPANY_COLORS.VTH }]} className="mb-3" />
+          <ChartLegend items={[{ label: "Vertex Media House", color: COMPANY_COLORS.VMH, href: "/leads?co=vmh" }, { label: "Vertex Tech House", color: COMPANY_COLORS.VTH, href: "/leads?co=vth" }]} className="mb-3" />
           <div className="flex items-center gap-5">
-            <DonutChart center={vmhCount + vthCount} centerLabel="Total Leads" size={130} thickness={20} data={[{ label: "VMH", value: vmhCount, color: COMPANY_COLORS.VMH }, { label: "VTH", value: vthCount, color: COMPANY_COLORS.VTH }]} />
+            <DonutChart center={vmhCount + vthCount} centerLabel="Total Leads" size={130} thickness={20} data={[{ label: "VMH", value: vmhCount, color: COMPANY_COLORS.VMH, href: "/leads?co=vmh" }, { label: "VTH", value: vthCount, color: COMPANY_COLORS.VTH, href: "/leads?co=vth" }]} />
             <ul className="space-y-3 text-sm">
               {[["VMH", vmhCount], ["VTH", vthCount]].map(([c, n]) => (
                 <li key={c} className="flex items-center gap-3">

@@ -78,7 +78,7 @@ function Detailed({ ctx, rows, sp, range, people, companies, toggle, t }: Props 
   };
   const line = months.map((m) => ({ m: formatMonthYear(addMonthsIST(m, -1)), ALL: avgAt(m), VMH: avgAt(m, "vmh"), VTH: avgAt(m, "vth") }));
   const cats = Object.keys(GOAL_CATEGORY_COLORS);
-  const catData = [...cats.map((c) => ({ label: GOAL_CATEGORY_LABELS[c]!, value: rows.filter((g) => g.category === c).length, color: GOAL_CATEGORY_COLORS[c]! })), { label: "Other", value: rows.filter((g) => !cats.includes(g.category)).length, color: OTHER_GREY }].filter((c) => c.value);
+  const catData = [...cats.map((c) => ({ label: GOAL_CATEGORY_LABELS[c]!, value: rows.filter((g) => g.category === c).length, color: GOAL_CATEGORY_COLORS[c]!, href: `/goals?category=${c}` })), { label: "Other", value: rows.filter((g) => !cats.includes(g.category)).length, color: OTHER_GREY, href: "/goals" }].filter((c) => c.value);
   const selected = rows.find((g) => g.id === p.str("id")) ?? filtered[0];
   return (
     <div className="space-y-3.5">
@@ -94,8 +94,8 @@ function Detailed({ ctx, rows, sp, range, people, companies, toggle, t }: Props 
           </div>
           <div className="grid gap-3.5 xl:grid-cols-[1.7fr_1fr]">
             <SectionCard title="Goal Progress Overview">
-              <ChartLegend className="mb-2 justify-center" items={[{ label: "All Goals", color: GOAL_LINE_COLORS.ALL, line: true }, { label: "VMH Goals", color: GOAL_LINE_COLORS.VMH, line: true }, { label: "VTH Goals", color: GOAL_LINE_COLORS.VTH, line: true }]} />
-              <LinesChart data={line} xKey="m" yFormat="percent" height={180} series={[{ key: "ALL", label: "All Goals", color: GOAL_LINE_COLORS.ALL }, { key: "VMH", label: "VMH Goals", color: GOAL_LINE_COLORS.VMH }, { key: "VTH", label: "VTH Goals", color: GOAL_LINE_COLORS.VTH }]} />
+              <ChartLegend className="mb-2 justify-center" items={[{ label: "All Goals", color: GOAL_LINE_COLORS.ALL, line: true, href: "/goals" }, { label: "VMH Goals", color: GOAL_LINE_COLORS.VMH, line: true, href: "/goals?co=vmh" }, { label: "VTH Goals", color: GOAL_LINE_COLORS.VTH, line: true, href: "/goals?co=vth" }]} />
+              <LinesChart data={line} xKey="m" yFormat="percent" height={180} series={[{ key: "ALL", label: "All Goals", color: GOAL_LINE_COLORS.ALL, href: "/goals" }, { key: "VMH", label: "VMH Goals", color: GOAL_LINE_COLORS.VMH, href: "/goals?co=vmh" }, { key: "VTH", label: "VTH Goals", color: GOAL_LINE_COLORS.VTH, href: "/goals?co=vth" }]} />
             </SectionCard>
             <SectionCard title="Goals by Category">
               <div className="flex items-center gap-4"><DonutChart data={catData} center={rows.length} centerLabel="Goals" size={130} thickness={20} /><DonutLegend items={catData.map((c) => ({ ...c, value: `${pct(c.value)}%` }))} /></div>

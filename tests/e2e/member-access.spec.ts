@@ -1,14 +1,14 @@
 import { expect, test } from "@playwright/test";
 import { login } from "./helpers";
 
-// Priya is a MEMBER in both companies: no leads, no invoices, and only her own projects.
-const PRIYA = { email: "priya@vertexmediahouse.com", password: process.env.SEED_PASSWORD ?? "vertex123" };
+// Hardik is the MEMBER of the three: no leads, no invoices, and only his own projects.
+const HARDIK = { email: "hardik@vertexmediahouse.com", password: process.env.SEED_PASSWORD ?? "vertex123" };
 // Seeded with no project members at all, so no member is on it.
 const NOT_HERS = "project_urban_longform";
 
 test("a member is kept out of leads and of projects they're not on", async ({ page }) => {
   test.setTimeout(120_000); // the dev server is slow when the suite runs in parallel
-  await login(page, PRIYA, "/dashboard");
+  await login(page, HARDIK, "/dashboard");
 
   // Role gate: the whole module, not just the menu item.
   await page.goto("/leads");

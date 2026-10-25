@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Bar,
   BarChart,
@@ -23,7 +25,38 @@ import { formatINR, formatINRCompact } from "@/lib/format";
 // Mark specs (dataviz skill): bars ≤ 24px with 4px rounded data-ends, 2px lines,
 // ≥ 8px markers with a 2px surface ring, hairline solid grid, 2px surface gaps.
 
-export type Series = { key: string; label: string; color: string };
+/**
+ * Anything a reader can click through to the rows it was counted from. It is a string,
+ * not a callback, because these charts are configured from Server Components.
+ */
+export type Series = { key: string; label: string; color: string; href?: string };
+export type Slice = { label: string; value: number; color: string; href?: string };
+
+/** Pull the href off whatever shape Recharts hands a click (bar row, pie sector). */
+function hrefOf(arg: unknown): string | undefined {
+  const a = arg as { href?: string; payload?: { href?: string; payload?: { href?: string } } } | null;
+  return a?.href ?? a?.payload?.href ?? a?.payload?.payload?.href;
+}
+
+/**
+ * The same destinations as the clickable marks, for keyboard and screen-reader users:
+ * a click handler on an SVG shape cannot be reached with a keyboard. Rendered outside
+ * the chart's role="img", whose subtree assistive technology does not enter.
+ */
+function ChartLinks({ items, label }: { items: { href?: string; label: string }[]; label: string }) {
+  const links = items.filter((i): i is { href: string; label: string } => Boolean(i.href));
+  if (!links.length) return null;
+  return (
+    <ul className="sr-only">
+      <li>{label}</li>
+      {links.map((i) => (
+        <li key={i.href}>
+          <Link href={i.href}>{i.label}</Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
 type Formatter = (v: number) => string;
 /** Formatters by name, so Server Components can choose one (functions can't cross to the client). */
 export type FormatName = "plain" | "inr" | "inrCompact" | "hours" | "percent";
@@ -31,21 +64,33 @@ const FORMATS: Record<FormatName, Formatter> = { plain: (v) => String(v), inr: f
 const plain = FORMATS.plain;
 
 /** Legend row above a chart: "● VMH ● VTH —●— Total". */
-export function ChartLegend({ items, className }: { items: { label: string; color: string; line?: boolean }[]; className?: string }) {
+export function ChartLegend({ items, className }: { items: { label: string; color: string; line?: boolean; href?: string }[]; className?: string }) {
   return (
     <ul className={cn("flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs text-ink-2", className)}>
-      {items.map((i) => (
-        <li key={i.label} className="inline-flex items-center gap-1.5">
-          {i.line ? (
-            <span className="relative inline-block h-0.5 w-4 rounded" style={{ background: i.color }} aria-hidden>
-              <span className="absolute top-1/2 left-1/2 size-1.5 -translate-1/2 rounded-full" style={{ background: i.color }} />
-            </span>
-          ) : (
-            <span className="size-2.5 rounded-[3px]" style={{ background: i.color }} aria-hidden />
-          )}
-          {i.label}
-        </li>
-      ))}
+      {items.map((i) => {
+        const swatch = i.line ? (
+          <span className="relative inline-block h-0.5 w-4 rounded" style={{ background: i.color }} aria-hidden>
+            <span className="absolute top-1/2 left-1/2 size-1.5 -translate-1/2 rounded-full" style={{ background: i.color }} />
+          </span>
+        ) : (
+          <span className="size-2.5 rounded-[3px]" style={{ background: i.color }} aria-hidden />
+        );
+        return (
+          <li key={i.label} className="inline-flex items-center gap-1.5">
+            {i.href ? (
+              <Link href={i.href} className="inline-flex items-center gap-1.5 hover:text-brand-text hover:underline">
+                {swatch}
+                {i.label}
+              </Link>
+            ) : (
+              <>
+                {swatch}
+                {i.label}
+              </>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -100,10 +145,18 @@ export function BarsChart({
   xTickLines?: Record<string, string>;
 }) {
   const yFormat = FORMATS[yName];
+  const router = useRouter();
   const tooltipFormat = tipName ? FORMATS[tipName] : undefined;
   const size = barSize ?? (stacked || series.length === 1 ? 20 : 14);
   const withTotals = topLabels ? data.map((d) => ({ ...d, __total: series.reduce((s, x) => s + Number(d[x.key] ?? 0), 0) })) : data;
+  // A row's own href wins; otherwise the series it belongs to decides where a bar goes.
+  const linked = data.some((d) => d.href) || series.some((s) => s.href);
+  const go = (arg: unknown, fallback?: string) => {
+    const href = hrefOf(arg) ?? fallback;
+    if (href) router.push(href);
+  };
   return (
+    <>
     <div style={{ height }} role="img" aria-label={`Chart: ${series.map((s) => s.label).join(", ")}`}>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={withTotals} margin={{ top: topLabels ? 18 : 6, right: 4, bottom: 0, left: 0 }} barGap={2} barCategoryGap="28%">
@@ -140,6 +193,8 @@ export function BarsChart({
               radius={!stacked || i === series.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
               stroke={stacked ? "var(--card-bg)" : undefined}
               strokeWidth={stacked ? 1 : 0}
+              cursor={linked ? "pointer" : undefined}
+              onClick={linked ? (arg: unknown) => go(arg, s.href) : undefined}
             >
               {topLabels && i === series.length - 1 && <LabelList dataKey="__total" position="top" fill="var(--text-2)" fontSize={11} fontWeight={600} />}
             </Bar>
@@ -148,6 +203,14 @@ export function BarsChart({
         </ComposedChart>
       </ResponsiveContainer>
     </div>
+    <ChartLinks
+      label={`Chart: ${series.map((s) => s.label).join(", ")}`}
+      items={[
+        ...data.map((d) => ({ href: d.href as string | undefined, label: String(d[xKey] ?? "") })),
+        ...series.map((s) => ({ href: s.href, label: s.label })),
+      ]}
+    />
+    </>
   );
 }
 
@@ -160,7 +223,7 @@ export function DonutChart({
   thickness = 16,
   format: fName = "plain",
 }: {
-  data: { label: string; value: number; color: string }[];
+  data: Slice[];
   center: React.ReactNode;
   centerLabel?: string;
   size?: number;
@@ -168,12 +231,27 @@ export function DonutChart({
   format?: FormatName;
 }) {
   const format = FORMATS[fName];
+  const router = useRouter();
   const shown = data.filter((d) => d.value > 0);
+  const linked = shown.some((d) => d.href);
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }} role="img" aria-label={data.map((d) => `${d.label} ${format(d.value)}`).join(", ")}>
       <ResponsiveContainer width="100%" height="100%">
         <RPieChart>
-          <Pie data={shown.length ? shown : [{ label: "None", value: 1, color: "var(--track)" }]} dataKey="value" nameKey="label" innerRadius={size / 2 - thickness} outerRadius={size / 2} startAngle={90} endAngle={-270} stroke="var(--card-bg)" strokeWidth={2} isAnimationActive={false}>
+          <Pie
+            data={shown.length ? shown : [{ label: "None", value: 1, color: "var(--track)" }]}
+            dataKey="value"
+            nameKey="label"
+            innerRadius={size / 2 - thickness}
+            outerRadius={size / 2}
+            startAngle={90}
+            endAngle={-270}
+            stroke="var(--card-bg)"
+            strokeWidth={2}
+            isAnimationActive={false}
+            cursor={linked ? "pointer" : undefined}
+            onClick={linked ? (arg: unknown) => { const h = hrefOf(arg); if (h) router.push(h); } : undefined}
+          >
             {(shown.length ? shown : [{ color: "var(--track)" }]).map((d, i) => (
               <Cell key={i} fill={d.color} />
             ))}
@@ -190,13 +268,27 @@ export function DonutChart({
 }
 
 /** Full pie (Reports "Project Type"). */
-export function PieChart({ data, size = 140, format: fName = "plain" }: { data: { label: string; value: number; color: string }[]; size?: number; format?: FormatName }) {
+export function PieChart({ data, size = 140, format: fName = "plain" }: { data: Slice[]; size?: number; format?: FormatName }) {
   const format = FORMATS[fName];
+  const router = useRouter();
+  const linked = data.some((d) => d.href);
   return (
     <div style={{ width: size, height: size }} className="shrink-0" role="img" aria-label={data.map((d) => `${d.label} ${format(d.value)}`).join(", ")}>
       <ResponsiveContainer width="100%" height="100%">
         <RPieChart>
-          <Pie data={data.filter((d) => d.value > 0)} dataKey="value" nameKey="label" outerRadius={size / 2} startAngle={90} endAngle={-270} stroke="var(--card-bg)" strokeWidth={2} isAnimationActive={false}>
+          <Pie
+            data={data.filter((d) => d.value > 0)}
+            dataKey="value"
+            nameKey="label"
+            outerRadius={size / 2}
+            startAngle={90}
+            endAngle={-270}
+            stroke="var(--card-bg)"
+            strokeWidth={2}
+            isAnimationActive={false}
+            cursor={linked ? "pointer" : undefined}
+            onClick={linked ? (arg: unknown) => { const h = hrefOf(arg); if (h) router.push(h); } : undefined}
+          >
             {data.filter((d) => d.value > 0).map((d) => (
               <Cell key={d.label} fill={d.color} />
             ))}
@@ -211,8 +303,11 @@ export function PieChart({ data, size = 140, format: fName = "plain" }: { data: 
 /** Lines with end-value chips (Goal Progress Overview). */
 export function LinesChart({ data, xKey, series, height = 200, yFormat: yName = "plain", endLabels = true }: { data: Record<string, string | number | null>[]; xKey: string; series: Series[]; height?: number; yFormat?: FormatName; endLabels?: boolean }) {
   const yFormat = FORMATS[yName];
+  const router = useRouter();
   const last = data.length - 1;
+  const linked = series.some((s) => s.href);
   return (
+    <>
     <div style={{ height }} role="img" aria-label={`Chart: ${series.map((s) => s.label).join(", ")}`}>
       <ResponsiveContainer width="100%" height="100%">
         <RLineChart data={data} margin={{ top: 10, right: endLabels ? 56 : 12, bottom: 0, left: 0 }}>
@@ -221,7 +316,17 @@ export function LinesChart({ data, xKey, series, height = 200, yFormat: yName = 
           <YAxis {...axisProps} width={40} tickFormatter={yFormat} domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} />
           <Tooltip content={(p) => <TooltipBox active={p.active} payload={p.payload} label={p.label} format={yFormat} />} />
           {series.map((s) => (
-            <Line key={s.key} dataKey={s.key} name={s.label} stroke={s.color} strokeWidth={2} isAnimationActive={false} dot={{ r: 4, fill: s.color, stroke: "var(--card-bg)", strokeWidth: 2 }} activeDot={{ r: 5 }}>
+            <Line
+              key={s.key}
+              dataKey={s.key}
+              name={s.label}
+              stroke={s.color}
+              strokeWidth={2}
+              isAnimationActive={false}
+              dot={{ r: 4, fill: s.color, stroke: "var(--card-bg)", strokeWidth: 2 }}
+              activeDot={{ r: 5, cursor: linked ? "pointer" : undefined }}
+              onClick={s.href ? () => router.push(s.href!) : undefined}
+            >
               {endLabels && (
                 <LabelList
                   dataKey={s.key}
@@ -242,21 +347,35 @@ export function LinesChart({ data, xKey, series, height = 200, yFormat: yName = 
         </RLineChart>
       </ResponsiveContainer>
     </div>
+    <ChartLinks label={`Chart: ${series.map((s) => s.label).join(", ")}`} items={series.map((s) => ({ href: s.href, label: s.label }))} />
+    </>
   );
 }
 
 /** HTML bar list: label (avatar/logo) + bar + value. Hours by member, top clients. */
-export function BarList({ rows, max, color = "var(--brand)", barClass }: { rows: { key: string; label: React.ReactNode; value: number; display: string }[]; max?: number; color?: string; barClass?: string }) {
+export function BarList({ rows, max, color = "var(--brand)", barClass }: { rows: { key: string; label: React.ReactNode; value: number; display: string; href?: string }[]; max?: number; color?: string; barClass?: string }) {
   const top = max ?? Math.max(1, ...rows.map((r) => r.value));
+  const cells = (r: (typeof rows)[number]) => (
+    <>
+      <div className="min-w-0 truncate text-xs text-ink">{r.label}</div>
+      <div className="h-2 overflow-hidden rounded-full bg-track">
+        <div className={cn("h-full rounded-full", barClass)} style={{ width: `${(r.value / top) * 100}%`, background: barClass ? undefined : color }} />
+      </div>
+      <span className="w-16 text-right text-xs font-medium text-ink tabular">{r.display}</span>
+    </>
+  );
+  const grid = "grid grid-cols-[minmax(0,140px)_minmax(0,1fr)_auto] items-center gap-3";
   return (
     <ul className="space-y-2.5">
       {rows.map((r) => (
-        <li key={r.key} className="grid grid-cols-[minmax(0,140px)_minmax(0,1fr)_auto] items-center gap-3">
-          <div className="min-w-0 truncate text-xs text-ink">{r.label}</div>
-          <div className="h-2 overflow-hidden rounded-full bg-track">
-            <div className={cn("h-full rounded-full", barClass)} style={{ width: `${(r.value / top) * 100}%`, background: barClass ? undefined : color }} />
-          </div>
-          <span className="w-16 text-right text-xs font-medium text-ink tabular">{r.display}</span>
+        <li key={r.key}>
+          {r.href ? (
+            <Link href={r.href} className={cn(grid, "rounded-md hover:bg-accent")}>
+              {cells(r)}
+            </Link>
+          ) : (
+            <div className={grid}>{cells(r)}</div>
+          )}
         </li>
       ))}
     </ul>
@@ -264,17 +383,30 @@ export function BarList({ rows, max, color = "var(--brand)", barClass }: { rows:
 }
 
 /** Legend list with counts/percents beside a donut. */
-export function DonutLegend({ items, className }: { items: { label: string; color: string; value: React.ReactNode; extra?: React.ReactNode }[]; className?: string }) {
+export function DonutLegend({ items, className }: { items: { label: string; color: string; value: React.ReactNode; extra?: React.ReactNode; href?: string }[]; className?: string }) {
   return (
     <ul className={cn("min-w-0 flex-1 space-y-1.5", className)}>
-      {items.map((i) => (
-        <li key={i.label} className="flex items-center gap-2 text-2xs text-ink-2">
-          <span className="size-2 shrink-0 rounded-full" style={{ background: i.color }} aria-hidden />
-          <span className="min-w-0 flex-1 truncate">{i.label}</span>
-          <span className="font-semibold text-ink tabular">{i.value}</span>
-          {i.extra !== undefined && <span className="w-9 text-right text-ink-muted tabular">{i.extra}</span>}
-        </li>
-      ))}
+      {items.map((i) => {
+        const row = (
+          <>
+            <span className="size-2 shrink-0 rounded-full" style={{ background: i.color }} aria-hidden />
+            <span className="min-w-0 flex-1 truncate">{i.label}</span>
+            <span className="font-semibold text-ink tabular">{i.value}</span>
+            {i.extra !== undefined && <span className="w-9 text-right text-ink-muted tabular">{i.extra}</span>}
+          </>
+        );
+        return (
+          <li key={i.label} className="text-2xs text-ink-2">
+            {i.href ? (
+              <Link href={i.href} className="flex items-center gap-2 rounded-md hover:text-brand-text hover:underline">
+                {row}
+              </Link>
+            ) : (
+              <span className="flex items-center gap-2">{row}</span>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

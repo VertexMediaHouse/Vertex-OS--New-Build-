@@ -109,6 +109,11 @@ function CompanyDashboard({ ctx, period }: { ctx: Ctx; period: P }) {
         <S><TasksOverview ctx={ctx} period={period} /></S>
         <S><WorkloadCard ctx={ctx} compact /></S>
       </div>
+      {/* The board for the company in scope: picking Tech House has to show its own numbers. */}
+      <div className="grid gap-3.5 xl:grid-cols-2">
+        <S h="h-48">{code === "VTH" ? <DeliveryCard /> : <ProductionCard period={period} />}</S>
+        <S h="h-48"><ApprovalsCard ctx={ctx} /></S>
+      </div>
       <div className="grid gap-3.5 xl:grid-cols-[1.2fr_1fr_1fr]">
         <S h="h-40"><LeadsPipelineCard ctx={ctx} /></S>
         <S h="h-40"><AgendaCard ctx={ctx} compact /></S>
@@ -123,7 +128,7 @@ async function RevenueTrend({ ctx }: { ctx: Ctx }) {
   const data = await M.revenueTrend(ctx);
   return (
     <SectionCard title={`Revenue Trend (${code})`} href="/reports">
-      <BarsChart data={data} xKey="month" series={[{ key: code, label: code, color: COMPANY_COLORS[code] }]} yFormat="inrCompact" tooltipFormat="inr" height={170} />
+      <BarsChart data={data} xKey="month" series={[{ key: code, label: code, color: COMPANY_COLORS[code], href: `/invoices?co=${code.toLowerCase()}` }]} yFormat="inrCompact" tooltipFormat="inr" height={170} />
     </SectionCard>
   );
 }

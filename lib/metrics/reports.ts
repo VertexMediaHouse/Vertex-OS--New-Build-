@@ -40,17 +40,17 @@ export async function reportData(s: ScopeFilter, p: Period) {
   const revenue = (c?: string) => payments.filter((x) => !c || x.invoice.companyId === c).reduce((a, x) => a + n(x.amount), 0);
   const weeks = weekBuckets(p);
 
-  const byMember = new Map<string, { name: string; image: string | null; minutes: number; billable: number; capacity: number }>();
+  const byMember = new Map<string, { id: string; name: string; image: string | null; minutes: number; billable: number; capacity: number }>();
   for (const t of time) {
     if (t.user.isOwner) continue;
-    const m = byMember.get(t.userId) ?? { name: t.user.name, image: t.user.image, minutes: 0, billable: 0, capacity: t.user.weeklyCapacityHours };
+    const m = byMember.get(t.userId) ?? { id: t.userId, name: t.user.name, image: t.user.image, minutes: 0, billable: 0, capacity: t.user.weeklyCapacityHours };
     m.minutes += t.durationMin ?? 0;
     if (t.billable) m.billable += t.durationMin ?? 0;
     byMember.set(t.userId, m);
   }
-  const byClient = new Map<string, { name: string; amount: number }>();
+  const byClient = new Map<string, { id: string; name: string; amount: number }>();
   for (const x of payments) {
-    const c = byClient.get(x.invoice.clientId) ?? { name: x.invoice.client.name, amount: 0 };
+    const c = byClient.get(x.invoice.clientId) ?? { id: x.invoice.clientId, name: x.invoice.client.name, amount: 0 };
     c.amount += n(x.amount);
     byClient.set(x.invoice.clientId, c);
   }

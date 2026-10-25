@@ -52,7 +52,7 @@ async function Clients({ searchParams }: { searchParams: Promise<SP> }) {
   const split = (f: (co: string) => React.ReactNode) => (ctx.scope === "ALL" ? [{ value: f("vmh"), label: "VMH" }, { value: f("vth"), label: "VTH" }] : undefined);
   const isNew = (c: (typeof all)[number]) => c.createdAt >= month;
   const newPrev = all.filter((c) => c.createdAt >= prevMonth && c.createdAt < month).length;
-  const segments = (["ACTIVE", "ON_HOLD", "COMPLETED", "INACTIVE"] as const).map((s) => ({ label: CLIENT_STATUS[s]!.label, value: count((c) => c.status === s), color: CLIENT_SEGMENT_COLORS[s] }));
+  const segments = (["ACTIVE", "ON_HOLD", "COMPLETED", "INACTIVE"] as const).map((s) => ({ label: CLIENT_STATUS[s]!.label, value: count((c) => c.status === s), color: CLIENT_SEGMENT_COLORS[s], href: `/clients?status=${s}` }));
   const top = [...all].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
   const recent = [...all].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 4);
   const [owners, tags] = await Promise.all([

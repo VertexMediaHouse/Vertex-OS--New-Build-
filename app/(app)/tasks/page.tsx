@@ -45,13 +45,17 @@ async function Tasks({ searchParams }: { searchParams: Promise<SP> }) {
     ...(p.str("priority") && { priority: p.str("priority") as "HIGH" }),
     ...(p.str("status") && { status: p.str("status") as "TODO" }),
     ...(q && { OR: [{ title: { contains: q, mode: "insensitive" } }, { project: { client: { name: { contains: q, mode: "insensitive" } } } }] }),
+    // ?due= matches the dashboard's own buckets, which are all about open tasks.
+    ...(p.str("due") === "today" && { status: { not: "COMPLETED" as const }, dueDate: { gte: today, lt: addDays(today, 1) } }),
+    ...(p.str("due") === "overdue" && { status: { not: "COMPLETED" as const }, dueDate: { lt: today } }),
+    ...(p.str("due") === "week" && { status: { not: "COMPLETED" as const }, dueDate: { gte: addDays(today, 1), lt: addDays(today, 8) } }),
   };
   const open = { ...base, status: { not: "COMPLETED" as const } };
   const month = startOfMonthIST(t);
   const view = p.str("view") ?? "kanban";
   // The board hides tasks completed over 30 days ago, so it doesn't grow without end. Search,
   // the status filter and the other views must still find them. AND, because `where` uses OR.
-  const recentOnly = view === "kanban" && !q && !p.str("status");
+  const recentOnly = view === "kanban" && !q && !p.str("status") && !p.str("due");
   const [tasks, projects, people, kpis, myTasks] = await Promise.all([
     db.task.findMany({
       where: recentOnly ? { ...where, AND: [{ OR: [{ status: { not: "COMPLETED" } }, { completedAt: { gte: addDays(t, -30) } }] }] } : where,
@@ -118,7 +122,7 @@ async function Tasks({ searchParams }: { searchParams: Promise<SP> }) {
         {!mine && <FilterSelect param="assignee" placeholder="All Assignees" options={people.map((x) => ({ value: x.id, label: x.name }))} />}
         <FilterSelect param="priority" placeholder="All Priority" options={Object.entries(PRIORITY).map(([value, m]) => ({ value, label: m.label }))} />
         <FilterSelect param="status" placeholder="All Status" options={Object.entries(TASK_STATUS).map(([value, m]) => ({ value, label: m.label }))} />
-        <ClearFilters params={["q", "co", "project", "assignee", "priority", "status"]} />
+        <ClearFilters params={["q", "co", "project", "assignee", "priority", "status", "due"]} />
       </Card>
 
       {view === "kanban" && <TaskBoard items={board} addHref={addHref} />}

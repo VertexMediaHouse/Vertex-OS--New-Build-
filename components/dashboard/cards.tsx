@@ -392,23 +392,24 @@ export async function LeadsPipelineCard({ ctx }: { ctx: Ctx }) {
   );
 }
 
+// Each slice links to the same statuses it counted (lib/projects/templates.ts LIST_TABS).
 export function donutData(p: Awaited<ReturnType<typeof M.projectSummary>>) {
   return [
-    { label: "Not started", value: p.notStarted, color: PROJECT_STATUS_COLORS.notStarted },
-    { label: "In progress", value: p.inProgress, color: PROJECT_STATUS_COLORS.inProgress },
-    { label: "In review", value: p.inReview, color: PROJECT_STATUS_COLORS.inReview },
-    { label: "On hold", value: p.onHold, color: PROJECT_STATUS_COLORS.onHold },
-    { label: "Delivered", value: p.delivered, color: PROJECT_STATUS_COLORS.delivered },
+    { label: "Not started", value: p.notStarted, color: PROJECT_STATUS_COLORS.notStarted, href: "/projects?list=notStarted" },
+    { label: "In progress", value: p.inProgress, color: PROJECT_STATUS_COLORS.inProgress, href: "/projects?list=inProgress" },
+    { label: "In review", value: p.inReview, color: PROJECT_STATUS_COLORS.inReview, href: "/projects?list=review" },
+    { label: "On hold", value: p.onHold, color: PROJECT_STATUS_COLORS.onHold, href: "/projects?list=onHold" },
+    { label: "Delivered", value: p.delivered, color: PROJECT_STATUS_COLORS.delivered, href: "/projects?list=completed" },
   ];
 }
 
 export function taskDonutData(t: Awaited<ReturnType<typeof M.taskSummary>>) {
   return [
-    { label: "Pending", value: t.pending, color: TASK_OVERVIEW_COLORS.pending },
-    { label: "Due today", value: t.dueToday, color: TASK_OVERVIEW_COLORS.dueToday },
-    { label: "Overdue", value: t.overdue, color: TASK_OVERVIEW_COLORS.overdue },
-    { label: "Completed", value: t.completedWeek, color: TASK_OVERVIEW_COLORS.completed },
-    { label: "Upcoming", value: t.upcoming, color: TASK_OVERVIEW_COLORS.upcoming },
+    { label: "Pending", value: t.pending, color: TASK_OVERVIEW_COLORS.pending, href: "/tasks?status=TODO" },
+    { label: "Due today", value: t.dueToday, color: TASK_OVERVIEW_COLORS.dueToday, href: "/tasks?due=today" },
+    { label: "Overdue", value: t.overdue, color: TASK_OVERVIEW_COLORS.overdue, href: "/tasks?due=overdue" },
+    { label: "Completed", value: t.completedWeek, color: TASK_OVERVIEW_COLORS.completed, href: "/tasks?status=COMPLETED" },
+    { label: "Upcoming", value: t.upcoming, color: TASK_OVERVIEW_COLORS.upcoming, href: "/tasks?due=week" },
   ];
 }
 

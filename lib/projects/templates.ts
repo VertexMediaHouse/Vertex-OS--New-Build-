@@ -27,6 +27,10 @@ export const LIST_TABS = {
   active: ["NOT_STARTED", "PLANNING", "IN_PROGRESS", "EDITING", "DEVELOPMENT", "REVISION", "ON_HOLD"],
   review: ["IN_REVIEW", "CLIENT_REVIEW"],
   completed: ["COMPLETED"],
+  // Not tabs: the groups the dashboard donut counts, so a slice can link to its own rows.
+  notStarted: ["NOT_STARTED", "PLANNING"],
+  inProgress: ["IN_PROGRESS", "EDITING", "DEVELOPMENT", "REVISION"],
+  onHold: ["ON_HOLD"],
 } as const;
 
 /**

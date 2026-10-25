@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowUp, Clock, Download, FileText, Folder, IndianRupee, Lightbulb, Trophy, Users } from "lucide-react";
 import { getRequestContext } from "@/lib/auth/context";
@@ -33,13 +34,15 @@ async function Reports({ searchParams }: { searchParams: Promise<SP> }) {
   const tab = p.str("tab") ?? "overview";
   const d = await reportData(ctx, p.period);
   const split = <T,>(o: { vmh: T; vth: T }, f: (v: T) => React.ReactNode = (v) => String(v)) => (ctx.scope === "ALL" ? [{ value: f(o.vmh), label: "VMH" }, { value: f(o.vth), label: "VTH" }] : undefined);
-  const statusData = (Object.keys(REPORT_STATUS_COLORS) as (keyof typeof REPORT_STATUS_COLORS)[]).map((k) => ({ label: PROJECT_STATUS[k]!.label, value: d.status[k], color: REPORT_STATUS_COLORS[k] }));
+  // The same status groups the projects list can filter by, so a slice opens its own rows.
+  const STATUS_LIST = { COMPLETED: "completed", IN_PROGRESS: "inProgress", ON_HOLD: "onHold", NOT_STARTED: "notStarted" } as const;
+  const statusData = (Object.keys(REPORT_STATUS_COLORS) as (keyof typeof REPORT_STATUS_COLORS)[]).map((k) => ({ label: PROJECT_STATUS[k]!.label, value: d.status[k], color: REPORT_STATUS_COLORS[k], href: `/projects?list=${STATUS_LIST[k]}` }));
   const statusTotal = statusData.reduce((a, s) => a + s.value, 0) || 1;
   const catTotal = Object.values(d.categories).reduce((a, b) => a + b, 0) || 1;
-  const catData = Object.entries(d.categories).map(([k, v]) => ({ label: WORK_CATEGORY_LABELS[k] ?? k, value: v, color: WORK_CATEGORY_COLORS[k] ?? OTHER_GREY })).sort((a, b) => b.value - a.value);
+  const catData = Object.entries(d.categories).map(([k, v]) => ({ label: WORK_CATEGORY_LABELS[k] ?? k, value: v, color: WORK_CATEGORY_COLORS[k] ?? OTHER_GREY, href: `/time?cat=${k}` })).sort((a, b) => b.value - a.value);
   const ticks = Object.fromEntries(d.revenueWeeks.map((w) => [w.week, `${formatShortDate(w.range.from)} - ${formatShortDate(lastDay({ ...p.period, to: w.range.to }))}`]));
   const exportHref = `/reports/export?${new URLSearchParams(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string"))}`;
-  const companyLegend = <ChartLegend items={[{ label: "VMH", color: COMPANY_COLORS.VMH }, { label: "VTH", color: COMPANY_COLORS.VTH }]} />;
+  const legendTo = (base: string) => <ChartLegend items={[{ label: "VMH", color: COMPANY_COLORS.VMH, href: `${base}?co=vmh` }, { label: "VTH", color: COMPANY_COLORS.VTH, href: `${base}?co=vth` }]} />;
 
   return (
     <div className="space-y-3.5">
@@ -55,14 +58,14 @@ async function Reports({ searchParams }: { searchParams: Promise<SP> }) {
             <KpiCard icon={Users} tone="pink" label="Active Clients" value={d.kpis.clients.total} split={split(d.kpis.clients)} />
           </div>
           <div className="grid gap-3.5 xl:grid-cols-[1.15fr_1fr_1.05fr]">
-            <SectionCard title="Revenue Overview" action={companyLegend}><BarsChart data={d.revenueWeeks} xKey="week" series={[{ key: "VMH", label: "VMH", color: COMPANY_COLORS.VMH }, { key: "VTH", label: "VTH", color: COMPANY_COLORS.VTH }]} yFormat="inrCompact" tooltipFormat="inr" xTickLines={ticks} height={180} /></SectionCard>
+            <SectionCard title="Revenue Overview" action={legendTo("/invoices")}><BarsChart data={d.revenueWeeks} xKey="week" series={[{ key: "VMH", label: "VMH", color: COMPANY_COLORS.VMH, href: "/invoices?co=vmh" }, { key: "VTH", label: "VTH", color: COMPANY_COLORS.VTH, href: "/invoices?co=vth" }]} yFormat="inrCompact" tooltipFormat="inr" xTickLines={ticks} height={180} /></SectionCard>
             <SectionCard title="Project Status"><div className="flex items-center gap-5"><DonutChart data={statusData} center={statusTotal} centerLabel="Projects" size={140} thickness={22} /><DonutLegend items={statusData.map((s) => ({ ...s, value: `${s.value} (${Math.round((s.value / statusTotal) * 100)}%)` }))} /></div></SectionCard>
-            <SectionCard title="Hours by Team Member"><BarList rows={d.members.slice(0, 5).map((m) => ({ key: m.name, label: <span className="flex items-center gap-2"><Avatar person={m} size={22} />{m.name}</span>, value: m.minutes, display: formatDuration(m.minutes) }))} /></SectionCard>
+            <SectionCard title="Hours by Team Member"><BarList rows={d.members.slice(0, 5).map((m) => ({ key: m.name, label: <span className="flex items-center gap-2"><Avatar person={m} size={22} />{m.name}</span>, value: m.minutes, display: formatDuration(m.minutes), href: `/team/${m.id}` }))} /></SectionCard>
           </div>
           <div className="grid gap-3.5 xl:grid-cols-3">
-            <SectionCard title="Top Clients by Revenue"><BarList rows={d.topClients.map((c) => ({ key: c.name, label: <span className="flex items-center gap-2"><span className="inline-flex size-5 items-center justify-center rounded text-[10px] font-bold" style={{ background: `${logoColor(c.name)}1F`, color: logoColor(c.name) }}>{c.name[0]}</span>{c.name}</span>, value: c.amount, display: formatINR(c.amount) }))} /></SectionCard>
+            <SectionCard title="Top Clients by Revenue"><BarList rows={d.topClients.map((c) => ({ key: c.name, label: <span className="flex items-center gap-2"><span className="inline-flex size-5 items-center justify-center rounded text-[10px] font-bold" style={{ background: `${logoColor(c.name)}1F`, color: logoColor(c.name) }}>{c.name[0]}</span>{c.name}</span>, value: c.amount, display: formatINR(c.amount), href: `/clients/${c.id}` }))} /></SectionCard>
             <SectionCard title="Project Type"><div className="flex items-center gap-5"><PieChart data={catData} size={130} /><DonutLegend items={catData.map((c) => ({ ...c, value: `${Math.round((c.value / catTotal) * 100)}%` }))} /></div></SectionCard>
-            <SectionCard title="Monthly Hours" action={companyLegend}><BarsChart data={d.hoursWeeks} xKey="week" series={[{ key: "VMH", label: "VMH", color: COMPANY_COLORS.VMH }, { key: "VTH", label: "VTH", color: COMPANY_COLORS.VTH }]} yFormat="hours" xTickLines={ticks} height={170} /></SectionCard>
+            <SectionCard title="Monthly Hours" action={legendTo("/time")}><BarsChart data={d.hoursWeeks} xKey="week" series={[{ key: "VMH", label: "VMH", color: COMPANY_COLORS.VMH, href: "/time?co=vmh" }, { key: "VTH", label: "VTH", color: COMPANY_COLORS.VTH, href: "/time?co=vth" }]} yFormat="hours" xTickLines={ticks} height={170} /></SectionCard>
           </div>
           <div className="grid gap-3.5 xl:grid-cols-[1fr_250px]">
             <SectionCard title="Recent Projects Report" href="/reports?tab=projects">
@@ -109,10 +112,15 @@ async function ProjectsTab({ ctx }: { ctx: Awaited<ReturnType<typeof getRequestC
 
 async function FinancialTab({ ctx }: { ctx: Awaited<ReturnType<typeof getRequestContext>> }) {
   const a = await arAgeing(ctx);
-  const rows: [string, number][] = [["Not yet due", a.current], ["0–30 days overdue", a.d0_30], ["31–60 days overdue", a.d31_60], ["60+ days overdue", a.d60plus]];
+  const rows: [string, number, string][] = [
+    ["Not yet due", a.current, "/invoices?status=PENDING"],
+    ["0–30 days overdue", a.d0_30, "/invoices?status=OVERDUE"],
+    ["31–60 days overdue", a.d31_60, "/invoices?status=OVERDUE"],
+    ["60+ days overdue", a.d60plus, "/invoices?status=OVERDUE"],
+  ];
   return (
     <SectionCard title="Accounts receivable ageing">
-      <BarList rows={rows.map(([k, v]) => ({ key: k, label: k, value: v, display: formatINR(v) }))} color="var(--danger)" />
+      <BarList rows={rows.map(([k, v, href]) => ({ key: k, label: k, value: v, display: formatINR(v), href }))} color="var(--danger)" />
     </SectionCard>
   );
 }
@@ -126,10 +134,10 @@ async function ClientsTab({ ctx }: { ctx: Awaited<ReturnType<typeof getRequestCo
   const sources = [...new Set(leads.map((l) => l.source))].map((s) => { const all = leads.filter((l) => l.source === s); const won = all.filter((l) => l.stage === "WON"); return { s, leads: all.reduce((a, l) => a + l._count, 0), won: won.reduce((a, l) => a + l._count, 0), wonValue: won.reduce((a, l) => a + Number(l._sum.value ?? 0), 0) }; });
   return (
     <div className="grid gap-3.5 xl:grid-cols-2">
-      <SectionCard title="Client lifetime value (collected)"><BarList rows={paid.map((x) => ({ key: x.clientId, label: names.find((c) => c.id === x.clientId)?.name ?? "", value: Number(x._sum.paidAmount ?? 0), display: formatINR(x._sum.paidAmount ?? 0) }))} /></SectionCard>
+      <SectionCard title="Client lifetime value (collected)"><BarList rows={paid.map((x) => ({ key: x.clientId, label: names.find((c) => c.id === x.clientId)?.name ?? "", value: Number(x._sum.paidAmount ?? 0), display: formatINR(x._sum.paidAmount ?? 0), href: `/clients/${x.clientId}` }))} /></SectionCard>
       <SectionCard title="Lead source performance">
         <table className="w-full text-xs"><thead><tr className="text-left text-ink-2">{["Source", "Leads", "Won", "Win rate", "Won value"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium">{h}</th>)}</tr></thead>
-          <tbody>{sources.map((x) => <tr key={x.s} className="border-b"><td className="px-2 py-2">{x.s[0] + x.s.slice(1).toLowerCase()}</td><td className="px-2 py-2">{x.leads}</td><td className="px-2 py-2">{x.won}</td><td className="px-2 py-2">{x.leads ? Math.round((x.won / x.leads) * 100) : 0}%</td><td className="px-2 py-2">{formatINR(x.wonValue)}</td></tr>)}</tbody>
+          <tbody>{sources.map((x) => <tr key={x.s} className="border-b"><td className="px-2 py-2"><Link href={`/leads?source=${x.s}`} className="font-medium text-brand-text hover:underline">{x.s[0] + x.s.slice(1).toLowerCase()}</Link></td><td className="px-2 py-2">{x.leads}</td><td className="px-2 py-2">{x.won}</td><td className="px-2 py-2">{x.leads ? Math.round((x.won / x.leads) * 100) : 0}%</td><td className="px-2 py-2">{formatINR(x.wonValue)}</td></tr>)}</tbody>
         </table>
       </SectionCard>
     </div>
