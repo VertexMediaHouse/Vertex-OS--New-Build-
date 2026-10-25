@@ -72,7 +72,7 @@ async function users() {
         emailVerified: true,
         isOwner: t.isOwner ?? false,
         title: t.title,
-        weeklyCapacityHours: Math.round(F.WEEK_TARGET_MIN[t.key] / 60),
+        weeklyCapacityHours: 40,
         createdAt: day(-400),
         accounts: { create: { id: `acc_${t.key}`, providerId: "credential", accountId: uid(t.key), password: hash } },
         memberships: { create: t.companies.map((c) => ({ companyId: coId(c), role: t.role })) },
@@ -438,7 +438,7 @@ async function timeEntries() {
   add("hardik", "bright_labs_shorts", "2026-10-21", "10:00", 60, true, "Music and brand pass", taskIds.get(F.DRAWER_TASK.title));
 
   // GreenBuild minutes come first out of the right buckets (page 6 Time Tracking card).
-  const gbPlan: [F.TeamKey, boolean, number][] = [["sheen", true, 800 - 90 + 845], ["hardik", true, 650], ["dhrumil", false, 255]];
+  const gbPlan: [F.TeamKey, boolean, number][] = [["sheen", true, 800 - 90], ["hardik", true, 650], ["dhrumil", false, 255]];
   // This week first, up to each person's target (dashboard Team Workload), then earlier days, latest first.
   const days = weekdays("2026-10-01", "2026-10-21");
   const place = (who: F.TeamKey, minutes: number) => {

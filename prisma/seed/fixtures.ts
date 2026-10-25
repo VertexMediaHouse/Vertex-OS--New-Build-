@@ -15,7 +15,7 @@ export const TEAM: {
 }[] = [
   { key: "dhrumil", name: "Dhrumil", email: "dhrumil@vertexmediahouse.com", isOwner: true, title: "Owner (Super Admin)", companies: ["VMH", "VTH"], role: "ADMIN" },
   { key: "sheen", name: "Sheen", email: "sheen@vertexmediahouse.com", title: "Operations & Delivery", companies: ["VMH", "VTH"], role: "MANAGER" },
-  { key: "hardik", name: "Hardik", email: "hardik@vertexmediahouse.com", title: "Editor & Developer", companies: ["VMH", "VTH"], role: "MEMBER" },
+  { key: "hardik", name: "Hardik", email: "hardik@vertexmediahouse.com", title: "Editor & Developer", companies: ["VMH", "VTH"], role: "MANAGER" },
 ];
 
 // ── Clients (page 4 table, pages 3, 5, 6, 9, 13) ───────────────────────────────
@@ -303,15 +303,15 @@ export const TIME_ROWS: { date: string; who: TeamKey; project: string; task: str
  */
 export const TIME_BUCKETS: Record<TeamKey, { VMH_B: number; VMH_N: number; VTH_B: number; VTH_N: number }> = {
   dhrumil: { VMH_B: 300, VMH_N: 490, VTH_B: 320, VTH_N: 600 },
-  hardik: { VMH_B: 3300, VMH_N: 350, VTH_B: 1250, VTH_N: 440 },
-  sheen: { VMH_B: 1960, VMH_N: 100, VTH_B: 2005, VTH_N: 75 },
+  hardik: { VMH_B: 1500, VMH_N: 250, VTH_B: 650, VTH_N: 150 },
+  sheen: { VMH_B: 1200, VMH_N: 100, VTH_B: 800, VTH_N: 75 },
 };
 
 /** Minutes logged Mon 19 – Wed 21 Oct, so dashboard workload reads like page 1 (70% / Over / Idle / 60%). */
-export const WEEK_TARGET_MIN: Record<TeamKey, number> = { dhrumil: 600, hardik: 3360, sheen: 3300 };
+export const WEEK_TARGET_MIN: Record<TeamKey, number> = { dhrumil: 600, hardik: 2700, sheen: 1680 };
 
 /** Planned minutes on open tasks due this week (adds to workload). */
-export const WEEK_PLANNED_MIN: Partial<Record<TeamKey, number>> = { sheen: 1020 };
+export const WEEK_PLANNED_MIN: Partial<Record<TeamKey, number>> = { sheen: 900 };
 
 /** GreenBuild CRM: 42h 30m logged, 38h 15m billable (page 6 Time Tracking card). */
 export const GREENBUILD_MINUTES = { billable: 2295, nonBillable: 255 };
