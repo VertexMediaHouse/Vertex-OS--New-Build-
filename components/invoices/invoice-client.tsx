@@ -1,14 +1,20 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@/lib/nav";
 import { CreditCard, Plus, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createInvoice, recordPayment, sendReminder, setInvoiceState } from "@/app/(app)/invoices/actions";
+import { api, call } from "@/web/api";
+
+const createInvoice = (json: Record<string, unknown>) => call(api.api.invoices.$post({ json: json as never }));
+const recordPayment = (id: string, json: { amount: number; date: Date; method: string; reference?: string }) => call(api.api.invoices[":id"].payments.$post({ param: { id }, json: json as never }));
+const sendReminder = (id: string) => call(api.api.invoices[":id"].reminder.$post({ param: { id } }));
+const setInvoiceState = (id: string, state: "SEND" | "CANCEL") => call(api.api.invoices[":id"].state.$post({ param: { id }, json: { state } }));
 import { invoiceTotals } from "@/lib/invoices/status";
 import { addDays } from "@/lib/clock";
 import { dayKey } from "@/lib/period";
@@ -18,10 +24,12 @@ import { Field } from "@/components/shared/layout";
 export function InvoiceActions({ id, status, balance, currency }: { id: string; status: string; balance: number; currency: string }) {
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
   const run = (fn: () => Promise<unknown>, ok: string) => start(async () => {
     const r = (await fn()) as { ok: boolean; error?: string } | undefined;
     if (r && !r.ok) return void toast.error(r.error);
     toast.success(ok);
+    await queryClient.invalidateQueries({ queryKey: ["invoices"] });
   });
   return (
     <div className="flex flex-wrap gap-2">
@@ -66,7 +74,7 @@ export function InvoiceBuilder({ companies, clients, projects, entries, defaults
   entries: (Entry & { companyId: string; clientId: string | null })[];
   defaults: { companyId?: string; projectId?: string };
 }) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [pending, start] = useTransition();
   const firstProject = projects.find((p) => p.id === defaults.projectId);
   const [companyId, setCompany] = useState<"vmh" | "vth">((firstProject?.companyId as "vmh") ?? (defaults.companyId as "vmh") ?? companies[0]!.id);
@@ -97,7 +105,7 @@ export function InvoiceBuilder({ companies, clients, projects, entries, defaults
     const r = await createInvoice({ companyId, clientId, projectId, issueDate: new Date(issue), dueDate: new Date(due), currency, taxRate, discount, notes: notes || `Thank you for your business. Payment is due by ${new Date(due).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}.`, draft, lines, timeEntryIds: picked });
     if (!r.ok) return void toast.error(r.error);
     toast.success(draft ? "Draft saved." : "Invoice created.");
-    router.push(`/invoices?id=${r.id}`);
+    navigate(`/invoices?id=${r.id}`);
   });
   const sel = "h-9 w-full rounded-lg border bg-card px-2 text-sm";
   return (

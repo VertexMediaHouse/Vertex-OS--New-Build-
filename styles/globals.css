@@ -104,6 +104,11 @@
   --sidebar-ring: var(--brand);
 }
 
+:root {
+  /* Loaded from Google Fonts in index.html. */
+  --font-app: "Inter Tight";
+}
+
 @theme inline {
   /* SF on Apple devices, Inter Tight (its closest match) everywhere else. */
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-app), ui-sans-serif, system-ui, sans-serif;

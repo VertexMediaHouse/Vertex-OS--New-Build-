@@ -1,15 +1,20 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@/lib/nav";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createClient, updateClient } from "@/app/(app)/clients/actions";
+import { api, call } from "@/web/api";
 import { Field as L } from "@/components/shared/layout";
+
+type ClientInput = Record<string, unknown>;
+const createClient = (json: ClientInput) => call(api.api.clients.$post({ json }));
+const updateClient = (id: string, input: ClientInput) => call(api.api.clients.update.$post({ json: { id, input } }));
 
 export type ClientFormValues = {
   id: string; name: string; domain: string; type: string; status: "ACTIVE"; companies: ("vmh" | "vth")[];
@@ -20,7 +25,8 @@ export type ClientFormValues = {
 export function ClientFormDialog({ companies, owners, client }: { companies: ("vmh" | "vth")[]; owners: { id: string; name: string }[]; client?: ClientFormValues }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
-  const router = useRouter();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -37,7 +43,8 @@ export function ClientFormDialog({ companies, owners, client }: { companies: ("v
       if (res.warning) toast.warning(res.warning);
       else toast.success(client ? "Client updated." : "Client added.");
       setOpen(false);
-      if (!client) router.push(`/clients/${res.id}`);
+      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      if (!client) navigate(`/clients/${res.id}`);
     });
   };
   return (

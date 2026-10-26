@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { KanbanBoard, KanbanCard, type KanbanColumn } from "@/components/shared/kanban";
@@ -11,8 +12,18 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Field as F } from "@/components/shared/layout";
-import { deleteContent, moveContent, saveContent } from "@/app/(app)/content/actions";
+import { api, call } from "@/web/api";
 import { CHANNELS } from "@/lib/content";
+
+/** Replaces refresh(): the page's query is the source of truth. */
+function useRefresh() {
+  const queryClient = useQueryClient();
+  return () => void queryClient.invalidateQueries({ queryKey: ["content"] });
+}
+
+const saveContent = (itemId: string | null, input: unknown) => call(api.api.content.save.$post({ json: { itemId, input } }));
+const moveContent = async (itemId: string, stage: string, beforeId: string | null) => void (await call(api.api.content.move.$post({ json: { itemId, stage, beforeId } })));
+const deleteContent = (itemId: string) => call(api.api.content.delete.$post({ json: { itemId } }));
 
 export type ContentCard = {
   id: string; title: string; co: CompanyBadgeCode; channel: string; stage: string; hook: string | null;
@@ -43,6 +54,7 @@ export function ContentDialog({
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [co, setCo] = useState<"vmh" | "vth">((item?.companyId as "vmh") ?? companies[0] ?? "vmh");
+  const refresh = useRefresh();
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -62,6 +74,7 @@ export function ContentDialog({
       if (!res.ok) return void toast.error(res.error);
       toast.success(item ? "Content updated." : "Added to the board.");
       setOpen(false);
+      refresh();
     });
   };
   return (
@@ -118,6 +131,7 @@ export function ContentDialog({
                     if (!res.ok) return void toast.error(res.error);
                     toast.success("Deleted.");
                     setOpen(false);
+                    refresh();
                   })
                 }
               >
@@ -139,11 +153,12 @@ export function ContentBoard({
   companies: ("vmh" | "vth")[];
   people: { id: string; name: string }[];
 }) {
+  const refresh = useRefresh();
   return (
     <KanbanBoard
       columns={COLUMNS}
       items={items}
-      onMove={moveContent}
+      onMove={async (a, b, c) => { await moveContent(a, b, c); refresh(); }}
       limit={4}
       moreLabel={(n) => `+ ${n} more`}
       renderCard={(c) => (

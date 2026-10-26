@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useNavigate, useSearchParams } from "@/lib/nav";
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { createColumnHelper, rowSelectionFeature, tableFeatures, useTable, type RowData, type RowSelectionState } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
@@ -51,7 +51,7 @@ export function DataTable<T extends RowData & { id: string }>({
     onRowSelectionChange: setRowSelection,
   });
   const params = useSearchParams();
-  const router = useRouter();
+  const navigate = useNavigate();
   const hrefWith = useHrefWith();
   const sort = params.get("sort");
   const dir = params.get("dir") === "asc" ? "asc" : "desc";
@@ -59,7 +59,7 @@ export function DataTable<T extends RowData & { id: string }>({
 
   const toggleSort = (id: string) => {
     const nextDir = sort === id && dir === "desc" ? "asc" : "desc";
-    router.replace(hrefWith({ sort: id, dir: nextDir, page: null }), { scroll: false });
+    navigate(hrefWith({ sort: id, dir: nextDir, page: null }), { replace: true, preventScrollReset: true });
   };
 
   const cellPad = rowHeight === "sm" ? "py-2" : rowHeight === "md" ? "py-2.5" : "py-4";

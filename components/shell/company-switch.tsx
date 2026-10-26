@@ -1,26 +1,31 @@
 "use client";
 
 import { useTransition } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "@/lib/nav";
 import { Building2, Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { COMPANY_META, SCOPE_PARAM, type CompanyCode, type Scope } from "@/lib/scope";
+import { api, call } from "@/web/api";
+import { COMPANY_META, type CompanyCode, type Scope } from "@/lib/scope";
 import { CompanyBadge } from "@/components/shared/pills";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 /** One switching function for the dropdown, the pills and the sidebar card. */
 export function useSwitchCompany() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const params = useSearchParams();
+  const [params, setParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const [pending, startTransition] = useTransition();
   const switchTo = (scope: Scope) => {
-    const next = new URLSearchParams(params.toString());
-    next.set(SCOPE_PARAM, scope.toLowerCase());
     // A page number or open record from another company makes no sense after switching.
+    const next = new URLSearchParams(params);
     next.delete("page");
     next.delete("id");
-    startTransition(() => router.push(`${pathname}?${next.toString()}`, { scroll: false }));
+    startTransition(async () => {
+      await call(api.api.scope.$post({ json: { company: scope } }));
+      setParams(next, { replace: true, preventScrollReset: true });
+      // The scope cookie decides what every query returns.
+      await queryClient.invalidateQueries();
+    });
   };
   return { switchTo, pending };
 }

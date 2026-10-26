@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Link from "@/components/ui/link";
+import { usePathname, useNavigate, useSearchParams } from "@/lib/nav";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Tone } from "@/lib/status";
@@ -150,11 +150,11 @@ export function SegmentedControl({
 // ── Pagination: "Showing 1 to 10 of 68 clients" + ‹ 1 2 3 4 5 … 7 › ────
 export function Pagination({ page, pageSize, total, noun, className }: { page: number; pageSize: number; total: number; noun: string; className?: string }) {
   const hrefWith = useHrefWith();
-  const router = useRouter();
+  const navigate = useNavigate();
   const pages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(total, page * pageSize);
-  const go = (p: number) => router.push(hrefWith({ page: p === 1 ? null : p }), { scroll: false });
+  const go = (p: number) => navigate(hrefWith({ page: p === 1 ? null : p }), { preventScrollReset: true });
   const box = "inline-flex size-[30px] items-center justify-center rounded-md border text-xs font-medium transition-colors";
   return (
     <div className={cn("flex items-center justify-between gap-4", className)}>

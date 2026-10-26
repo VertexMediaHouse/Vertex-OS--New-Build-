@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter_Tight } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
-import "./globals.css";
+import "@/styles/globals.css";
 
 // Inter Tight: the closest match to the PDF lettering (docs/decisions.md).
 const font = Inter_Tight({ variable: "--font-app", subsets: ["latin"] });

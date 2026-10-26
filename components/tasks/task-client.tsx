@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
+import Link from "@/components/ui/link";
 import { CalendarDays, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { KanbanBoard, KanbanCard } from "@/components/shared/kanban";
@@ -12,8 +13,27 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { addChecklistItem, addTaskComment, createTask, deleteRoutine, moveTask, reviewTask, saveRoutine, submitForReview, toggleChecklist, toggleRoutine, updateTask } from "@/app/(app)/tasks/actions";
+import { api, call } from "@/web/api";
 import { Field as F } from "@/components/shared/layout";
+
+/** Replaces refresh(): the page's query is the source of truth. */
+function useRefresh() {
+  const queryClient = useQueryClient();
+  return () => void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+}
+
+const createTask = (json: { title: string; companyId: string; projectId?: string; assigneeId?: string; priority: string; status: string; dueDate?: Date; estimatedMinutes?: number; description?: string }) =>
+  call(api.api.tasks.$post({ json: { ...json, dueDate: json.dueDate?.toISOString() } }));
+const moveTask = async (taskId: string, status: string, beforeId: string | null) => void (await call(api.api.tasks.move.$post({ json: { taskId, status, beforeId } })));
+const updateTask = async (taskId: string, patch: Record<string, unknown>) => void (await call(api.api.tasks.update.$post({ json: { taskId, patch } })));
+const toggleChecklist = async (itemId: string, done: boolean) => void (await call(api.api.tasks.checklist.toggle.$post({ json: { itemId, done } })));
+const addChecklistItem = async (taskId: string, text: string) => void (await call(api.api.tasks.checklist.add.$post({ json: { taskId, text } })));
+const addTaskComment = async (taskId: string, body: string) => void (await call(api.api.tasks.comment.$post({ json: { taskId, body } })));
+const submitForReview = (taskId: string, note: string) => call(api.api.tasks["submit-review"].$post({ json: { taskId, note } }));
+const reviewTask = (taskId: string, decision: "approve" | "rework", note: string) => call(api.api.tasks.review.$post({ json: { taskId, decision, note } }));
+const saveRoutine = (routineId: string | null, input: unknown) => call(api.api.tasks.routines.save.$post({ json: { routineId, input } }));
+const toggleRoutine = (routineId: string, active: boolean) => call(api.api.tasks.routines.toggle.$post({ json: { routineId, active } }));
+const deleteRoutine = (routineId: string) => call(api.api.tasks.routines.delete.$post({ json: { routineId } }));
 
 export type BoardTask = { id: string; title: string; co: CompanyBadgeCode; client: string | null; priority: string; due: string | null; progress: number; assignee: string | null };
 
@@ -27,12 +47,13 @@ const COLS = [
 
 export function TaskBoard({ items, addHref }: { items: Record<string, BoardTask[]>; addHref: string }) {
   const hrefWith = useHrefWith();
+  const refresh = useRefresh();
   return (
     <KanbanBoard
       countStyle="chip"
       limit={5}
       moreLabel={(n) => `+ ${n} more tasks`}
-      onMove={moveTask}
+      onMove={async (a, b, d) => { await moveTask(a, b, d); refresh(); }}
       items={items}
       columns={COLS.map((c) => ({
         ...c,
@@ -67,6 +88,7 @@ export function NewTaskDialog({ companies, projects, people, open: initialOpen, 
   const [open, setOpen] = useState(Boolean(initialOpen));
   const [pending, start] = useTransition();
   const [co, setCo] = useState(companies[0]!);
+  const refresh = useRefresh();
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Button className="h-10 px-4 text-md font-semibold"><Plus className="size-4" /> Add Task</Button></DialogTrigger>
@@ -82,6 +104,7 @@ export function NewTaskDialog({ companies, projects, people, open: initialOpen, 
               if (!res.ok) return void toast.error(res.error);
               toast.success("Task added.");
               setOpen(false);
+              refresh();
             });
           }}
         >
@@ -106,18 +129,19 @@ export function NewTaskDialog({ companies, projects, people, open: initialOpen, 
 export function ChecklistControls({ taskId, items }: { taskId: string; items: { id: string; text: string; done: boolean; assignee: string | null }[] }) {
   const [pending, start] = useTransition();
   const [text, setText] = useState("");
+  const refresh = useRefresh();
   return (
     <div>
       <ul>
         {items.map((i) => (
           <li key={i.id} className="flex items-center gap-2.5 py-1.5 text-xs">
-            <input type="checkbox" checked={i.done} disabled={pending} onChange={(e) => start(() => toggleChecklist(i.id, e.target.checked))} className="size-4 accent-blue" aria-label={i.text} />
+            <input type="checkbox" checked={i.done} disabled={pending} onChange={(e) => start(async () => { await toggleChecklist(i.id, e.target.checked); refresh(); })} className="size-4 accent-blue" aria-label={i.text} />
             <span className={`flex-1 ${i.done ? "text-ink-muted line-through" : "text-ink"}`}>{i.text}</span>
             {i.assignee && <Avatar person={{ name: i.assignee }} size={22} />}
           </li>
         ))}
       </ul>
-      <form onSubmit={(e) => { e.preventDefault(); start(async () => { await addChecklistItem(taskId, text); setText(""); }); }} className="mt-1 flex gap-2">
+      <form onSubmit={(e) => { e.preventDefault(); start(async () => { await addChecklistItem(taskId, text); setText(""); refresh(); }); }} className="mt-1 flex gap-2">
         <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Add item" className="h-8 text-xs" aria-label="New checklist item" />
         <Button size="sm" type="submit" disabled={pending || !text.trim()}>Add</Button>
       </form>
@@ -128,8 +152,9 @@ export function ChecklistControls({ taskId, items }: { taskId: string; items: { 
 export function CommentBox({ taskId }: { taskId: string }) {
   const [pending, start] = useTransition();
   const [text, setText] = useState("");
+  const refresh = useRefresh();
   return (
-    <form onSubmit={(e) => { e.preventDefault(); start(async () => { await addTaskComment(taskId, text); setText(""); }); }} className="mt-2 flex gap-2">
+    <form onSubmit={(e) => { e.preventDefault(); start(async () => { await addTaskComment(taskId, text); setText(""); refresh(); }); }} className="mt-2 flex gap-2">
       <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Comment… @name to mention" className="h-8 text-xs" aria-label="New comment" />
       <Button size="sm" type="submit" disabled={pending || !text.trim()}>Send</Button>
     </form>
@@ -138,8 +163,9 @@ export function CommentBox({ taskId }: { taskId: string }) {
 
 export function TaskFieldSelect({ taskId, field, value, options }: { taskId: string; field: "priority" | "assigneeId"; value: string; options: { value: string; label: string }[] }) {
   const [pending, start] = useTransition();
+  const refresh = useRefresh();
   return (
-    <select aria-label={field} disabled={pending} defaultValue={value} onChange={(e) => start(() => updateTask(taskId, { [field]: e.target.value || null }))} className="h-8 rounded-lg border bg-card px-2 text-xs">
+    <select aria-label={field} disabled={pending} defaultValue={value} onChange={(e) => start(async () => { await updateTask(taskId, { [field]: e.target.value || null }); refresh(); })} className="h-8 rounded-lg border bg-card px-2 text-xs">
       {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   );
@@ -147,8 +173,9 @@ export function TaskFieldSelect({ taskId, field, value, options }: { taskId: str
 
 export function TaskStatusSelect({ taskId, value }: { taskId: string; value: string }) {
   const [pending, start] = useTransition();
+  const refresh = useRefresh();
   return (
-    <select aria-label="Status" disabled={pending} defaultValue={value} onChange={(e) => start(() => moveTask(taskId, e.target.value, null))} className="h-7 rounded-full bg-info-soft px-2 text-xs font-medium text-info-text">
+    <select aria-label="Status" disabled={pending} defaultValue={value} onChange={(e) => start(async () => { await moveTask(taskId, e.target.value, null); refresh(); })} className="h-7 rounded-full bg-info-soft px-2 text-xs font-medium text-info-text">
       {COLS.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
     </select>
   );
@@ -162,12 +189,14 @@ export function TaskStatusSelect({ taskId, value }: { taskId: string; value: str
 export function TaskReview({ taskId, mode }: { taskId: string; mode: "do" | "review" }) {
   const [open, setOpen] = useState<null | "done" | "approve" | "rework">(null);
   const [pending, start] = useTransition();
+  const refresh = useRefresh();
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, ok: string) =>
     start(async () => {
       const res = await fn();
       if (!res.ok) return void toast.error(res.error ?? "Something went wrong.");
       toast.success(ok);
       setOpen(null);
+      refresh();
     });
   const note = (form: HTMLFormElement) => String(new FormData(form).get("note") || "");
 
@@ -243,6 +272,7 @@ export function RoutinesDialog({
   const [editing, setEditing] = useState<Routine | null>(null);
   const [pending, start] = useTransition();
   const [co, setCo] = useState<"vmh" | "vth">(companies[0] ?? "vmh");
+  const refresh = useRefresh();
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, ok: string) =>
     start(async () => {
@@ -250,6 +280,7 @@ export function RoutinesDialog({
       if (!res.ok) return void toast.error(res.error ?? "Something went wrong.");
       toast.success(ok);
       setEditing(null);
+      refresh();
     });
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {

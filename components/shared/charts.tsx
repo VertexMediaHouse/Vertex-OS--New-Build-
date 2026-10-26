@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from "@/components/ui/link";
+import { useNavigate } from "@/lib/nav";
 import {
   Bar,
   BarChart,
@@ -145,7 +145,7 @@ export function BarsChart({
   xTickLines?: Record<string, string>;
 }) {
   const yFormat = FORMATS[yName];
-  const router = useRouter();
+  const navigate = useNavigate();
   const tooltipFormat = tipName ? FORMATS[tipName] : undefined;
   const size = barSize ?? (stacked || series.length === 1 ? 20 : 14);
   const withTotals = topLabels ? data.map((d) => ({ ...d, __total: series.reduce((s, x) => s + Number(d[x.key] ?? 0), 0) })) : data;
@@ -153,7 +153,7 @@ export function BarsChart({
   const linked = data.some((d) => d.href) || series.some((s) => s.href);
   const go = (arg: unknown, fallback?: string) => {
     const href = hrefOf(arg) ?? fallback;
-    if (href) router.push(href);
+    if (href) navigate(href);
   };
   return (
     <>
@@ -231,7 +231,7 @@ export function DonutChart({
   format?: FormatName;
 }) {
   const format = FORMATS[fName];
-  const router = useRouter();
+  const navigate = useNavigate();
   const shown = data.filter((d) => d.value > 0);
   const linked = shown.some((d) => d.href);
   return (
@@ -250,7 +250,7 @@ export function DonutChart({
             strokeWidth={2}
             isAnimationActive={false}
             cursor={linked ? "pointer" : undefined}
-            onClick={linked ? (arg: unknown) => { const h = hrefOf(arg); if (h) router.push(h); } : undefined}
+            onClick={linked ? (arg: unknown) => { const h = hrefOf(arg); if (h) navigate(h); } : undefined}
           >
             {(shown.length ? shown : [{ color: "var(--track)" }]).map((d, i) => (
               <Cell key={i} fill={d.color} />
@@ -270,7 +270,7 @@ export function DonutChart({
 /** Full pie (Reports "Project Type"). */
 export function PieChart({ data, size = 140, format: fName = "plain" }: { data: Slice[]; size?: number; format?: FormatName }) {
   const format = FORMATS[fName];
-  const router = useRouter();
+  const navigate = useNavigate();
   const linked = data.some((d) => d.href);
   return (
     <div style={{ width: size, height: size }} className="shrink-0" role="img" aria-label={data.map((d) => `${d.label} ${format(d.value)}`).join(", ")}>
@@ -287,7 +287,7 @@ export function PieChart({ data, size = 140, format: fName = "plain" }: { data: 
             strokeWidth={2}
             isAnimationActive={false}
             cursor={linked ? "pointer" : undefined}
-            onClick={linked ? (arg: unknown) => { const h = hrefOf(arg); if (h) router.push(h); } : undefined}
+            onClick={linked ? (arg: unknown) => { const h = hrefOf(arg); if (h) navigate(h); } : undefined}
           >
             {data.filter((d) => d.value > 0).map((d) => (
               <Cell key={d.label} fill={d.color} />
@@ -303,7 +303,7 @@ export function PieChart({ data, size = 140, format: fName = "plain" }: { data: 
 /** Lines with end-value chips (Goal Progress Overview). */
 export function LinesChart({ data, xKey, series, height = 200, yFormat: yName = "plain", endLabels = true }: { data: Record<string, string | number | null>[]; xKey: string; series: Series[]; height?: number; yFormat?: FormatName; endLabels?: boolean }) {
   const yFormat = FORMATS[yName];
-  const router = useRouter();
+  const navigate = useNavigate();
   const last = data.length - 1;
   const linked = series.some((s) => s.href);
   return (
@@ -325,7 +325,7 @@ export function LinesChart({ data, xKey, series, height = 200, yFormat: yName = 
               isAnimationActive={false}
               dot={{ r: 4, fill: s.color, stroke: "var(--card-bg)", strokeWidth: 2 }}
               activeDot={{ r: 5, cursor: linked ? "pointer" : undefined }}
-              onClick={s.href ? () => router.push(s.href!) : undefined}
+              onClick={s.href ? () => navigate(s.href!) : undefined}
             >
               {endLabels && (
                 <LabelList

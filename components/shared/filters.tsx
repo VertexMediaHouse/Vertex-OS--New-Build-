@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import Link from "@/components/ui/link";
+import { useNavigate, useSearchParams } from "@/lib/nav";
 import { CalendarDays, ChevronDown, Search } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,7 @@ import { useHrefWith } from "./nav";
 /** Search box bound to ?{param}= (debounced). variant="filled" = grey, borderless (PDF search inputs). */
 export function SearchInput({ placeholder, param = "q", className, variant = "filled" }: { placeholder: string; param?: string; className?: string; variant?: "filled" | "outline" }) {
   const params = useSearchParams();
-  const router = useRouter();
+  const navigate = useNavigate();
   const hrefWith = useHrefWith();
   const urlValue = params.get(param) ?? "";
   const [value, setValue] = useState(urlValue);
@@ -33,7 +33,7 @@ export function SearchInput({ placeholder, param = "q", className, variant = "fi
   useEffect(() => {
     // Already what the URL says (first render, or the URL changed on its own): nothing to push.
     if (value.trim() === urlValue) return;
-    const t = setTimeout(() => startTransition(() => router.replace(hrefWith({ [param]: value.trim() || null, page: null }), { scroll: false })), 300);
+    const t = setTimeout(() => startTransition(() => navigate(hrefWith({ [param]: value.trim() || null, page: null }), { replace: true, preventScrollReset: true })), 300);
     return () => clearTimeout(t);
     // hrefWith changes every render; only typing should trigger navigation
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -60,11 +60,11 @@ export function SearchInput({ placeholder, param = "q", className, variant = "fi
 /** Dropdown bound to ?{param}=. The first option ("All Sources") clears the param. */
 export function FilterSelect({ param, options, placeholder, className }: { param: string; options: { value: string; label: string }[]; placeholder: string; className?: string }) {
   const params = useSearchParams();
-  const router = useRouter();
+  const navigate = useNavigate();
   const hrefWith = useHrefWith();
   const current = params.get(param) ?? "__all";
   return (
-    <Select value={current} onValueChange={(v) => router.replace(hrefWith({ [param]: v === "__all" ? null : v, page: null }), { scroll: false })}>
+    <Select value={current} onValueChange={(v) => navigate(hrefWith({ [param]: v === "__all" ? null : v, page: null }), { replace: true, preventScrollReset: true })}>
       <SelectTrigger aria-label={placeholder} className={cn("h-9! min-w-[116px] bg-card text-xs text-ink-2", className)}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
@@ -95,7 +95,7 @@ export function ClearFilters({ params: keys }: { params: string[] }) {
  * `to` inclusive) so the label is right on first render. variant="card" = dashboard two-line card.
  */
 export function DateRangePicker({ from, to, preset, variant = "button", className }: { from: string; to: string; preset: string; variant?: "button" | "card"; className?: string }) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const hrefWith = useHrefWith();
   const [open, setOpen] = useState(false);
   const fromDate = parseDay(from)!;
@@ -105,7 +105,7 @@ export function DateRangePicker({ from, to, preset, variant = "button", classNam
 
   const apply = (patch: Record<string, string | null>) => {
     setOpen(false);
-    router.replace(hrefWith({ ...patch, page: null }), { scroll: false });
+    navigate(hrefWith({ ...patch, page: null }), { replace: true, preventScrollReset: true });
   };
 
   return (

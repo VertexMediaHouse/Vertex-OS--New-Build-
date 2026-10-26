@@ -1,5 +1,7 @@
 // Dashboard cards shared by the owner (page 1) and company (page 2) layouts.
-import Link from "next/link";
+// These used to be async server components that each awaited one metric; the metrics
+// now arrive together from GET /api/dashboard and come in as props.
+import Link from "@/components/ui/link";
 import { CalendarDays, CircleCheck, Folder, Lightbulb, ReceiptIndianRupee, Send, StickyNote, Target, Users, UsersRound, Video } from "lucide-react";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { Card, IconTile, Inset, ProgressBar, SectionCard, SegmentedBar, ViewAll, type TileTone } from "@/components/shared/primitives";
@@ -12,7 +14,6 @@ import { now, startOfDayIST } from "@/lib/clock";
 import { workloadState } from "@/lib/metrics/workload";
 import { PRIORITY } from "@/lib/status";
 import type { ScopeFilter } from "@/lib/db/scope";
-import type { Period } from "@/lib/period";
 import * as M from "@/lib/metrics/dashboard";
 import { LEAD_STAGE_COLORS, PROJECT_STATUS_COLORS, TASK_OVERVIEW_COLORS } from "@/lib/chart-colors";
 import { CrossSellActions } from "./cross-sell-actions";
@@ -20,9 +21,15 @@ import { CrossSellActions } from "./cross-sell-actions";
 type Ctx = ScopeFilter & { scope: "ALL" | "VMH" | "VTH" };
 const suffix = (s: Ctx) => (s.scope === "ALL" ? "" : ` (${s.scope})`);
 
+// JSON turns the metric Dates into strings; these are the same shapes otherwise.
+type Json<T> = T extends Date ? string : T extends (infer U)[] ? Json<U>[] : T extends object ? { [K in keyof T]: Json<T[K]> } : T;
+export type Revenue = Json<Awaited<ReturnType<typeof M.revenueSummary>>>;
+export type Projects = Json<Awaited<ReturnType<typeof M.projectSummary>>>;
+export type Tasks = Json<Awaited<ReturnType<typeof M.taskSummary>>>;
+export type Leads = Json<Awaited<ReturnType<typeof M.leadSummary>>>;
+
 // ── KPI row ─────────────────────────────────────────────────────────────
-export async function RevenueKpi({ ctx, period, owner }: { ctx: Ctx; period: Period; owner?: boolean }) {
-  const r = await M.revenueSummary(ctx, period);
+export function RevenueKpi({ ctx, r, owner }: { ctx: Ctx; r: Revenue; owner?: boolean }) {
   return (
     <KpiCard
       href="/invoices"
@@ -38,8 +45,7 @@ export async function RevenueKpi({ ctx, period, owner }: { ctx: Ctx; period: Per
   );
 }
 
-export async function ProjectsKpi({ ctx, period, owner }: { ctx: Ctx; period: Period; owner?: boolean }) {
-  const p = await M.projectSummary(ctx, period);
+export function ProjectsKpi({ ctx, p, owner }: { ctx: Ctx; p: Projects; owner?: boolean }) {
   const legend = donutData(p);
   return (
     <KpiCard href="/projects" icon={Folder} tone="blue" label="Active Projects" value={p.active} trend={p.delta} trendUnit="" split={owner || ctx.scope !== "ALL" ? undefined : [{ value: p.vmh, label: "VMH" }, { value: p.vth, label: "VTH" }]}>
@@ -60,8 +66,7 @@ export async function ProjectsKpi({ ctx, period, owner }: { ctx: Ctx; period: Pe
   );
 }
 
-export async function TasksKpi({ ctx, period, owner }: { ctx: Ctx; period: Period; owner?: boolean }) {
-  const t = await M.taskSummary(ctx, period);
+export function TasksKpi({ ctx, t, owner }: { ctx: Ctx; t: Tasks; owner?: boolean }) {
   const rows = [
     { label: "Pending", value: t.pending, color: TASK_OVERVIEW_COLORS.pending },
     { label: "Due today", value: t.dueToday, color: TASK_OVERVIEW_COLORS.dueToday },
@@ -88,8 +93,7 @@ export async function TasksKpi({ ctx, period, owner }: { ctx: Ctx; period: Perio
 
 const STAGE_LABEL: Record<string, string> = { NEW: "New", CONTACTED: "Contacted", PROPOSAL: "Proposal", NEGOTIATION: "Negotiation", WON: "Won" };
 
-export async function LeadsKpi({ ctx, period, owner }: { ctx: Ctx; period: Period; owner?: boolean }) {
-  const l = await M.leadSummary(ctx, period);
+export function LeadsKpi({ ctx, l, owner }: { ctx: Ctx; l: Leads; owner?: boolean }) {
   return (
     <KpiCard href="/leads" icon={Users} tone="pink" label="Ongoing Leads" value={l.total} trend={l.delta} trendUnit="" split={owner || ctx.scope !== "ALL" ? undefined : [{ value: l.vmh, label: "VMH" }, { value: l.vth, label: "VTH" }]}>
       {owner && (
@@ -121,12 +125,13 @@ const TASK_FILTERS: [M.TaskFilter, string, string][] = [
   ["all", "All open", "/tasks"],
 ];
 
-export async function OpenTasksCard({ ctx, filter, sp }: { ctx: Ctx; filter: M.TaskFilter; sp: Record<string, string | string[] | undefined> }) {
-  const tasks = await M.openTasks(ctx, filter);
+type OpenTask = Json<Awaited<ReturnType<typeof M.openTasks>>>[number];
+
+export function OpenTasksCard({ tasks, filter, sp }: { tasks: OpenTask[]; filter: M.TaskFilter; sp: Record<string, string> }) {
   const t = now();
   const today = startOfDayIST(t);
   // Keep the rest of the query string (date range, company) when switching filter.
-  const keep = Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string" && e[0] !== "tasks");
+  const keep = Object.entries(sp).filter(([k]) => k !== "tasks");
   const tabHref = (f: M.TaskFilter) => `/dashboard?${new URLSearchParams([...keep, ["tasks", f]])}`;
   const current = TASK_FILTERS.find(([f]) => f === filter)!;
   return (
@@ -153,7 +158,8 @@ export async function OpenTasksCard({ ctx, filter, sp }: { ctx: Ctx; filter: M.T
       <ul className="divide-y">
         {tasks.length === 0 && <li className="py-6 text-center text-xs text-ink-muted">Nothing {current[1].toLowerCase()}.</li>}
         {tasks.map((tk) => {
-          const overdue = tk.dueDate !== null && tk.dueDate < today && tk.status !== "COMPLETED";
+          const due = tk.dueDate ? new Date(tk.dueDate) : null;
+          const overdue = due !== null && due < today && tk.status !== "COMPLETED";
           return (
             <li key={tk.id} className="py-1.5">
               <Link href={`/tasks?id=${tk.id}`} className="flex items-center gap-2.5 rounded-md text-xs hover:bg-accent">
@@ -164,7 +170,7 @@ export async function OpenTasksCard({ ctx, filter, sp }: { ctx: Ctx; filter: M.T
                 </span>
                 {tk.assignee && <Avatar person={tk.assignee} size={20} />}
                 <span className={`w-16 text-right ${overdue ? "font-semibold text-danger-text" : "text-ink-muted"}`}>
-                  {tk.dueDate ? formatShortDate(tk.dueDate) : "—"}
+                  {due ? formatShortDate(due) : "—"}
                 </span>
               </Link>
             </li>
@@ -175,8 +181,7 @@ export async function OpenTasksCard({ ctx, filter, sp }: { ctx: Ctx; filter: M.T
   );
 }
 
-export async function TeamTasksCard({ ctx }: { ctx: Ctx }) {
-  const people = await M.tasksByPerson(ctx);
+export function TeamTasksCard({ ctx, people }: { ctx: Ctx; people: Json<Awaited<ReturnType<typeof M.tasksByPerson>>> }) {
   return (
     <SectionCard title={`Tasks by Person${suffix(ctx)}`} icon={UsersRound} tone="purple" href="/tasks">
       <table className="w-full text-2xs">
@@ -216,8 +221,7 @@ export async function TeamTasksCard({ ctx }: { ctx: Ctx }) {
   );
 }
 
-export async function NotesCard({ ctx, userId }: { ctx: Ctx; userId: string }) {
-  const rows = await M.notes(ctx, userId);
+export function NotesCard({ ctx, rows }: { ctx: Ctx; rows: { id: string; title: string | null; body: string; pinned: boolean; companyId: string | null }[] }) {
   const companies = ctx.companyIds.filter((c): c is "vmh" | "vth" => c === "vmh" || c === "vth");
   return (
     <SectionCard title="Notebook" icon={StickyNote} tone="amber" action={<NewNoteButton companies={companies} />}>
@@ -227,8 +231,7 @@ export async function NotesCard({ ctx, userId }: { ctx: Ctx; userId: string }) {
 }
 
 // ── Owner rows ──────────────────────────────────────────────────────────
-export async function CampaignsCard({ ctx }: { ctx: Ctx }) {
-  const list = await M.activeCampaigns(ctx);
+export function CampaignsCard({ list }: { list: Json<Awaited<ReturnType<typeof M.activeCampaigns>>> }) {
   const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
   return (
     <SectionCard title="Email Campaigns" icon={Send} tone="blue" subtitle={`${list.length} Active Campaigns`} href="/campaigns">
@@ -259,8 +262,7 @@ function Metric({ value, label, className }: { value: string; label: string; cla
   );
 }
 
-export async function GoalsCard({ ctx }: { ctx: Ctx }) {
-  const goals = await M.goalsProgress(ctx);
+export function GoalsCard({ goals }: { goals: Json<Awaited<ReturnType<typeof M.goalsProgress>>> }) {
   const fmt = (g: (typeof goals)[number], v: unknown) => (g.unit === "CURRENCY" ? formatINR(Number(v)) : String(Number(v)));
   return (
     <SectionCard title="Goals Progress" icon={Target} tone="green" href="/goals">
@@ -286,13 +288,12 @@ export async function GoalsCard({ ctx }: { ctx: Ctx }) {
   );
 }
 
-export async function WorkloadCard({ ctx, compact }: { ctx: Ctx; compact?: boolean }) {
-  const team = (await M.teamWorkload(ctx)).slice(0, 4);
+export function WorkloadCard({ ctx, team, compact }: { ctx: Ctx; team: Json<Awaited<ReturnType<typeof M.teamWorkload>>>; compact?: boolean }) {
   const tone = { over: "danger", idle: "warning", ok: "success" } as const;
   return (
     <SectionCard title={`Team Workload${suffix(ctx)}`} icon={compact ? undefined : UsersRound} tone="orange" href="/team">
       <div className="space-y-2.5">
-        {team.map((u) => {
+        {team.slice(0, 4).map((u) => {
           const st = workloadState(u.pct);
           return (
             <Link key={u.id} href={`/team/${u.id}`} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_40px_36px] items-center gap-3 rounded-lg hover:bg-accent">
@@ -314,15 +315,14 @@ export async function WorkloadCard({ ctx, compact }: { ctx: Ctx; compact?: boole
   );
 }
 
-export async function AgendaCard({ ctx, compact }: { ctx: Ctx; compact?: boolean }) {
-  const events = await M.todaysAgenda(ctx);
+export function AgendaCard({ ctx, events, compact }: { ctx: Ctx; events: Json<Awaited<ReturnType<typeof M.todaysAgenda>>>; compact?: boolean }) {
   return (
     <SectionCard title={`Today's Agenda${suffix(ctx)}`} icon={compact ? undefined : CalendarDays} tone="blue" href="/calendar">
       <ul className="space-y-1">
         {events.length === 0 && <li className="py-4 text-center text-xs text-ink-muted">Nothing scheduled today.</li>}
         {events.map((e) => (
           <li key={e.id} className="flex items-center gap-3 py-1 text-xs">
-            <span className="w-16 text-ink-muted tabular">{formatTimePadded(e.start)}</span>
+            <span className="w-16 text-ink-muted tabular">{formatTimePadded(new Date(e.start))}</span>
             <span className={`inline-flex size-5 items-center justify-center rounded-full ${e.type === "MEETING" ? "bg-review-soft text-review-text" : "bg-info-soft text-info-text"}`}>
               <Video className="size-3" aria-hidden />
             </span>
@@ -335,8 +335,7 @@ export async function AgendaCard({ ctx, compact }: { ctx: Ctx; compact?: boolean
   );
 }
 
-export async function CrossSellCard({ ctx }: { ctx: Ctx }) {
-  const alerts = await M.crossSellAlerts(ctx);
+export function CrossSellCard({ alerts }: { alerts: Json<Awaited<ReturnType<typeof M.crossSellAlerts>>> }) {
   return (
     <SectionCard title="Cross-Sell Alerts" icon={Lightbulb} tone="amber" href="/clients">
       <div className="space-y-4">
@@ -359,8 +358,7 @@ export async function CrossSellCard({ ctx }: { ctx: Ctx }) {
 }
 
 // ── Company layout (page 2) ────────────────────────────────────────────
-export async function LeadsPipelineCard({ ctx }: { ctx: Ctx }) {
-  const l = await M.leadSummary(ctx, { from: new Date(0), to: new Date(0), prevFrom: new Date(0), prevTo: new Date(0), preset: "month" });
+export function LeadsPipelineCard({ ctx, l }: { ctx: Ctx; l: Leads }) {
   return (
     <SectionCard title={`Leads Pipeline${suffix(ctx)}`} href="/leads">
       <div className="flex items-stretch gap-3">
@@ -382,7 +380,7 @@ export async function LeadsPipelineCard({ ctx }: { ctx: Ctx }) {
 }
 
 // Each slice links to the same statuses it counted (lib/projects/templates.ts LIST_TABS).
-export function donutData(p: Awaited<ReturnType<typeof M.projectSummary>>) {
+export function donutData(p: Projects) {
   return [
     { label: "Not started", value: p.notStarted, color: PROJECT_STATUS_COLORS.notStarted, href: "/projects?list=notStarted" },
     { label: "In progress", value: p.inProgress, color: PROJECT_STATUS_COLORS.inProgress, href: "/projects?list=inProgress" },
@@ -392,7 +390,7 @@ export function donutData(p: Awaited<ReturnType<typeof M.projectSummary>>) {
   ];
 }
 
-export function taskDonutData(t: Awaited<ReturnType<typeof M.taskSummary>>) {
+export function taskDonutData(t: Tasks) {
   return [
     { label: "Pending", value: t.pending, color: TASK_OVERVIEW_COLORS.pending, href: "/tasks?status=TODO" },
     { label: "Due today", value: t.dueToday, color: TASK_OVERVIEW_COLORS.dueToday, href: "/tasks?due=today" },

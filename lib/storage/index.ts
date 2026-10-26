@@ -42,7 +42,9 @@ const hmac = (data: string) => crypto.createHmac("sha256", secret()).update(data
 const same = (a: string, b: string) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 
 export function signLocal(op: "put" | "get", key: string, expires = Math.floor(Date.now() / 1000) + TTL) {
-  return `/api/storage?${new URLSearchParams({ op, key, expires: String(expires), sig: hmac(`${op}:${key}:${expires}`) })}`;
+  // Absolute: the browser is on the SPA origin, these URLs point at the API.
+  const base = process.env.API_URL ?? `http://localhost:${process.env.API_PORT ?? 4000}`;
+  return `${base}/api/storage?${new URLSearchParams({ op, key, expires: String(expires), sig: hmac(`${op}:${key}:${expires}`) })}`;
 }
 
 export function verifyLocal(op: string, key: string, expires: string, sig: string): boolean {

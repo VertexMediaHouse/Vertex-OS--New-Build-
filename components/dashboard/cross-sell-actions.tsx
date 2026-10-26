@@ -1,17 +1,29 @@
 "use client";
 
 import { useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { toast } from "sonner";
-import { createOpportunity, dismissAlert } from "@/app/(app)/dashboard/actions";
+import { api, call } from "@/web/api";
+
+/** The buttons below catch a throw, so failures have to reject rather than return. */
+async function must(p: Promise<Response>) {
+  const r = await call(p);
+  if (!r.ok) throw new Error(r.error);
+}
+
+const createOpportunity = (alertId: string) => must(api.api.dashboard.opportunities.$post({ json: { alertId } }));
+const dismissAlert = (alertId: string) => must(api.api.dashboard.alerts.dismiss.$post({ json: { alertId } }));
 
 export function CrossSellActions({ alertId }: { alertId: string }) {
   const [pending, start] = useTransition();
+  const queryClient = useQueryClient();
   const run = (fn: () => Promise<void>, ok: string) =>
     start(async () => {
       try {
         await fn();
         toast.success(ok);
+        await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       } catch {
         toast.error("Something went wrong. Try again.");
       }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@/lib/nav";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ export function DeleteButton({
 }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
-  const router = useRouter();
+  const navigate = useNavigate();
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
@@ -63,7 +63,7 @@ export function DeleteButton({
                 if (!res.ok) return void toast.error(res.error);
                 toast.success(`${noun[0]!.toUpperCase()}${noun.slice(1)} deleted.`);
                 setOpen(false);
-                if (redirectTo) router.push(redirectTo);
+                if (redirectTo) navigate(redirectTo);
               });
             }}
           >

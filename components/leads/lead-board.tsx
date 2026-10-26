@@ -1,12 +1,13 @@
 "use client";
 
-import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
+import Link from "@/components/ui/link";
 import { KanbanBoard, KanbanCard, type KanbanColumn } from "@/components/shared/kanban";
 import { CompanyBadge, type CompanyBadgeCode } from "@/components/shared/pills";
 import { Avatar } from "@/components/shared/primitives";
 import { useHrefWith } from "@/components/shared/nav";
 import { formatINR } from "@/lib/format";
-import { moveLead } from "@/app/(app)/leads/actions";
+import { api, call } from "@/web/api";
 
 export type BoardLead = { id: string; name: string; service: string; value: number; co: CompanyBadgeCode; owner: string | null; ago: string | null };
 
@@ -21,6 +22,12 @@ const COLUMNS: (Omit<KanbanColumn, "meta"> & { more: string })[] = [
 
 export function LeadBoard({ items, showLost }: { items: Record<string, BoardLead[]>; showLost: boolean }) {
   const hrefWith = useHrefWith();
+  const queryClient = useQueryClient();
+  const moveLead = async (id: string, stage: string, beforeId: string | null) => {
+    const r = await call(api.api.leads.move.$post({ json: { id, stage, beforeId } }));
+    if (!r.ok) throw new Error(r.error);
+    await queryClient.invalidateQueries({ queryKey: ["leads"] });
+  };
   const total = (id: string) => (items[id] ?? []).reduce((a, l) => a + l.value, 0);
   const columns = COLUMNS.filter((c) => showLost || c.id !== "LOST").map((c) => ({
     ...c,

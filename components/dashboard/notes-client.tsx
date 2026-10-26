@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Pin, PinOff, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,11 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Field as L } from "@/components/shared/layout";
-import { deleteNote, pinNote, saveNote } from "@/app/(app)/dashboard/actions";
+import { api, call } from "@/web/api";
+
+const saveNote = (noteId: string | null, input: { title?: string; body: string; companyId?: string }) => call(api.api.dashboard.notes.$post({ json: { noteId, input } }));
+const deleteNote = (noteId: string) => call(api.api.dashboard.notes.delete.$post({ json: { noteId } }));
+const pinNote = (noteId: string, pinned: boolean) => call(api.api.dashboard.notes.pin.$post({ json: { noteId, pinned } }));
 
 export type NoteRow = { id: string; title: string | null; body: string; pinned: boolean; companyId: string | null };
 
@@ -16,6 +21,8 @@ export type NoteRow = { id: string; title: string | null; body: string; pinned: 
 function NoteDialog({ note, trigger, companies }: { note?: NoteRow; trigger: React.ReactNode; companies: ("vmh" | "vth")[] }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
+  const queryClient = useQueryClient();
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -28,6 +35,7 @@ function NoteDialog({ note, trigger, companies }: { note?: NoteRow; trigger: Rea
       if (!res.ok) return void toast.error(res.error);
       toast.success(note ? "Note saved." : "Note added.");
       setOpen(false);
+      await refresh();
     });
   };
   return (
@@ -60,6 +68,7 @@ function NoteDialog({ note, trigger, companies }: { note?: NoteRow; trigger: Rea
                     if (!res.ok) return void toast.error(res.error);
                     toast.success("Note deleted.");
                     setOpen(false);
+                    await refresh();
                   })
                 }
               >
@@ -90,6 +99,7 @@ export function NewNoteButton({ companies }: { companies: ("vmh" | "vth")[] }) {
 /** Sticky notes: click one to edit it, pin the ones that should stay on top. */
 export function NoteBoard({ notes, companies }: { notes: NoteRow[]; companies: ("vmh" | "vth")[] }) {
   const [, start] = useTransition();
+  const queryClient = useQueryClient();
   if (notes.length === 0) {
     return <p className="py-6 text-center text-xs text-ink-muted">No notes yet. Jot down anything you need to remember.</p>;
   }
@@ -112,7 +122,7 @@ export function NoteBoard({ notes, companies }: { notes: NoteRow[]; companies: (
             aria-label={n.pinned ? "Unpin note" : "Pin note"}
             title={n.pinned ? "Unpin" : "Pin to the top"}
             className="absolute top-2 right-2 rounded-md p-1 text-ink-muted hover:bg-black/5 hover:text-ink"
-            onClick={() => start(async () => void (await pinNote(n.id, !n.pinned)))}
+            onClick={() => start(async () => { await pinNote(n.id, !n.pinned); await queryClient.invalidateQueries({ queryKey: ["dashboard"] }); })}
           >
             {n.pinned ? <Pin className="size-3.5 fill-current" /> : <PinOff className="size-3.5" />}
           </button>

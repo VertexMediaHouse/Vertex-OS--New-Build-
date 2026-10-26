@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@/lib/nav";
 import { Search } from "lucide-react";
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { globalSearch, type SearchHit } from "@/app/(app)/actions/search";
+import { api, query } from "@/web/api";
+import type { SearchHit } from "@/server/routes/search";
 
 /** Topbar search field that opens the ⌘K / Ctrl+K command palette. */
 export function GlobalSearch({ placeholder }: { placeholder: string }) {
@@ -12,7 +13,7 @@ export function GlobalSearch({ placeholder }: { placeholder: string }) {
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [, start] = useTransition();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -23,7 +24,7 @@ export function GlobalSearch({ placeholder }: { placeholder: string }) {
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => start(async () => setHits(q.trim().length >= 2 ? await globalSearch(q) : [])), 200);
+    const t = setTimeout(() => start(async () => setHits(q.trim().length >= 2 ? await query(api.api.search.$get({ query: { q } })) : [])), 200);
     return () => clearTimeout(t);
   }, [q]);
 
@@ -42,7 +43,7 @@ export function GlobalSearch({ placeholder }: { placeholder: string }) {
           {groups.map((g) => (
             <CommandGroup key={g} heading={g}>
               {hits.filter((h) => h.group === g).map((h) => (
-                <CommandItem key={h.href} value={h.href} onSelect={() => { setOpen(false); router.push(h.href); }}>
+                <CommandItem key={h.href} value={h.href} onSelect={() => { setOpen(false); navigate(h.href); }}>
                   <span className="font-medium">{h.label}</span>
                   {h.sub && <span className="ml-2 text-ink-muted">{h.sub}</span>}
                 </CommandItem>

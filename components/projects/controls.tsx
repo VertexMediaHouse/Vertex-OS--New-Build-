@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@/lib/nav";
 import { Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,18 +12,33 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { EnumPill, StatusPill } from "@/components/shared/pills";
 import { PROJECT_STATUS } from "@/lib/status";
-import { addProjectNote, createProject, inviteContact, requestApproval, revokeContact, setMilestoneStatus, setProjectStatus, shareProject, unshareProject, updateDeliverable, updateProject } from "@/app/(app)/projects/actions";
+import { api, call } from "@/web/api";
 import type { ActionResult } from "@/lib/validation/result";
 import { Field as L } from "@/components/shared/layout";
 
+const createProject = (json: Record<string, unknown>) => call(api.api.projects.$post({ json }));
+const updateProject = (projectId: string, input: Record<string, unknown>) => call(api.api.projects.update.$post({ json: { projectId, input } }));
+const setProjectStatus = (projectId: string, status: string) => call(api.api.projects.status.$post({ json: { projectId, status } }));
+const updateDeliverable = (deliverableId: string, value: number) => call(api.api.projects.deliverable.$post({ json: { deliverableId, value } }));
+const setMilestoneStatus = (milestoneId: string, status: string) => call(api.api.projects.milestone.$post({ json: { milestoneId, status } }));
+const addProjectNote = (projectId: string, body: string) => call(api.api.projects.note.$post({ json: { projectId, body } }));
+const requestApproval = (projectId: string, title: string, fileId?: string) => call(api.api.projects.approval.$post({ json: { projectId, title, fileId } }));
+const inviteContact = (contactId: string, projectId?: string) => call(api.api.projects.contacts.invite.$post({ json: { contactId, projectId } }));
+const shareProject = (contactId: string, projectId: string) => call(api.api.projects.contacts.share.$post({ json: { contactId, projectId } }));
+const unshareProject = (contactId: string, projectId: string) => call(api.api.projects.contacts.unshare.$post({ json: { contactId, projectId } }));
+const revokeContact = (contactId: string) => call(api.api.projects.contacts.revoke.$post({ json: { contactId } }));
+
 function useAction() {
   const [pending, start] = useTransition();
+  const queryClient = useQueryClient();
   const run = (fn: () => Promise<unknown>, ok?: string) =>
     start(async () => {
       try {
         const res = (await fn()) as ActionResult | undefined;
         if (res && "ok" in res && !res.ok) return void toast.error(res.error);
         if (ok) toast.success(ok);
+        // Replaces refresh(): the page's query is the source of truth.
+        await queryClient.invalidateQueries({ queryKey: ["projects"] });
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Something went wrong.");
       }
@@ -143,15 +159,15 @@ export type ProjectFormValues = { id: string; companyId: "vmh" | "vth"; clientId
 export function NewProjectDialog({ companies, clients, brandGreen, project, trigger }: { companies: ("vmh" | "vth")[]; clients: { id: string; name: string }[]; brandGreen?: boolean; project?: ProjectFormValues; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const { pending, run } = useAction();
-  const router = useRouter();
+  const navigate = useNavigate();
   const [co, setCo] = useState(project?.companyId ?? companies[0]!);
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
-    const values = { companyId: co, clientId: f.clientId!, name: f.name!, typeLabel: f.typeLabel!, category: f.category as "OTHER", billingType: f.billingType as "FIXED_SCOPE", value: Number(f.value || 0), retainerHours: f.retainerHours ? Number(f.retainerHours) : undefined, startDate: new Date(f.startDate!), dueDate: f.dueDate ? new Date(f.dueDate) : undefined, priority: f.priority as "MEDIUM", summary: f.summary, description: f.description };
+    const values = { companyId: co, clientId: f.clientId!, name: f.name!, typeLabel: f.typeLabel!, category: f.category as "OTHER", billingType: f.billingType as "FIXED_SCOPE", value: Number(f.value || 0), retainerHours: f.retainerHours ? Number(f.retainerHours) : undefined, startDate: f.startDate!, dueDate: f.dueDate || undefined, priority: f.priority as "MEDIUM", summary: f.summary, description: f.description };
     run(async () => {
       const res = project ? await updateProject(project.id, values) : await createProject(values);
-      if (res.ok) { setOpen(false); if (!project) router.push(`/projects?id=${res.id}`); }
+      if (res.ok) { setOpen(false); if (!project) navigate(`/projects?id=${res.id}`); }
       return res;
     }, project ? "Project updated." : "Project created.");
   };

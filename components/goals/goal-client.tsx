@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -8,8 +9,19 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { GOAL_CATEGORY_LABELS } from "@/lib/chart-colors";
-import { addGoalMilestone, createGoal, toggleGoalMilestone, updateGoalProgress } from "@/app/(app)/goals/actions";
+import { api, call } from "@/web/api";
 import { Field as F } from "@/components/shared/layout";
+
+/** The two milestone call sites await a void promise, so those throw on failure. */
+async function must(p: Promise<Response>) {
+  const r = await call(p);
+  if (!r.ok) throw new Error(r.error);
+}
+
+const createGoal = (json: Record<string, unknown>) => call(api.api.goals.$post({ json: json as never }));
+const updateGoalProgress = (id: string, value: number) => call(api.api.goals[":id"].progress.$post({ param: { id }, json: { value } }));
+const addGoalMilestone = (id: string, title: string, date: string) => must(api.api.goals[":id"].milestones.$post({ param: { id }, json: { title, date } }));
+const toggleGoalMilestone = (milestoneId: string, done: boolean) => must(api.api.goals.milestones[":milestoneId"].toggle.$post({ param: { milestoneId }, json: { done } }));
 
 const METRICS = [["MANUAL", "Manual (I update it)"], ["REVENUE", "Revenue collected"], ["NEW_CLIENTS", "New clients"], ["PROJECTS_COMPLETED", "Projects completed"], ["VIDEOS_DELIVERED", "Videos delivered"], ["LEADS_WON", "Leads won"], ["BILLABLE_HOURS", "Billable hours"]];
 const UNIT_FOR: Record<string, string> = { REVENUE: "CURRENCY", BILLABLE_HOURS: "HOURS" };
@@ -18,6 +30,7 @@ export function GoalDialog({ label, companies, people }: { label: string; compan
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [metric, setMetric] = useState("MANUAL");
+  const queryClient = useQueryClient();
   const sel = "h-9 w-full rounded-lg border bg-card px-2 text-sm";
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -32,6 +45,7 @@ export function GoalDialog({ label, companies, people }: { label: string; compan
             const r = await createGoal({ title: f.title!, subtitle: f.subtitle, description: f.description, companyId: f.companyId as "", scope: f.scope as "TEAM", category: f.category as "REVENUE_SALES", metricType: metric as "MANUAL", unit: (UNIT_FOR[metric] ?? f.unit) as "COUNT", targetValue: Number(f.target), startDate: new Date(f.start!), endDate: new Date(f.end!), memberIds: fd.getAll("members").map(String) });
             if (!r.ok) return void toast.error(r.error);
             toast.success("Goal created."); setOpen(false);
+            await queryClient.invalidateQueries({ queryKey: ["goals"] });
           });
         }}>
           <F label="Title" className="col-span-2"><Input name="title" required /></F>
@@ -57,8 +71,9 @@ export function GoalDialog({ label, companies, people }: { label: string; compan
 export function ProgressEditor({ goalId, value }: { goalId: string; value: number }) {
   const [pending, start] = useTransition();
   const [v, setV] = useState(String(value));
+  const queryClient = useQueryClient();
   return (
-    <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); start(async () => { const r = await updateGoalProgress(goalId, Number(v)); if (!r.ok) toast.error(r.error); else toast.success("Progress updated."); }); }}>
+    <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); start(async () => { const r = await updateGoalProgress(goalId, Number(v)); if (!r.ok) toast.error(r.error); else { toast.success("Progress updated."); await queryClient.invalidateQueries({ queryKey: ["goals"] }); } }); }}>
       <Input type="number" min={0} step="any" value={v} onChange={(e) => setV(e.target.value)} className="h-8 w-32 text-xs" aria-label="Current value" />
       <Button size="sm" type="submit" disabled={pending}>Update</Button>
     </form>
@@ -67,15 +82,17 @@ export function ProgressEditor({ goalId, value }: { goalId: string; value: numbe
 
 export function MilestoneCheck({ id, done, label }: { id: string; done: boolean; label: string }) {
   const [pending, start] = useTransition();
-  return <input type="checkbox" checked={done} disabled={pending} aria-label={label} onChange={(e) => start(() => toggleGoalMilestone(id, e.target.checked))} className="size-4 accent-success" />;
+  const queryClient = useQueryClient();
+  return <input type="checkbox" checked={done} disabled={pending} aria-label={label} onChange={(e) => start(async () => { await toggleGoalMilestone(id, e.target.checked); await queryClient.invalidateQueries({ queryKey: ["goals"] }); })} className="size-4 accent-success" />;
 }
 
 export function AddMilestone({ goalId }: { goalId: string }) {
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
   if (!open) return <button type="button" onClick={() => setOpen(true)} className="text-xs font-medium text-brand-text">+ Add Milestone</button>;
   return (
-    <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.currentTarget); start(async () => { await addGoalMilestone(goalId, String(f.get("title")), String(f.get("date"))); setOpen(false); }); }}>
+    <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.currentTarget); start(async () => { await addGoalMilestone(goalId, String(f.get("title")), String(f.get("date"))); setOpen(false); await queryClient.invalidateQueries({ queryKey: ["goals"] }); }); }}>
       <Input name="title" required placeholder="Milestone" className="h-8 text-xs" />
       <Input name="date" type="date" required className="h-8 w-36 text-xs" />
       <Button size="sm" type="submit" disabled={pending}>Add</Button>

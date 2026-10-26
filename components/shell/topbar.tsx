@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import Link from "@/components/ui/link";
+import { usePathname, useNavigate } from "@/lib/nav";
 import { Bell, ChevronDown, LogOut, Menu, Settings } from "lucide-react";
 import { Avatar } from "@/components/shared/primitives";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { authClient } from "@/lib/auth/client";
-import { markAllNotificationsRead } from "@/app/(app)/actions/notifications";
+import { api, call } from "@/web/api";
 import { CompanyDropdown, CompanyPills } from "./company-switch";
 import { SidebarContent, type NavProps } from "./sidebar";
 import { MiniTimer } from "@/components/time/time-client";
@@ -38,7 +39,8 @@ export function Topbar({
   timer,
 }: NavProps & { user: { name: string; image: string | null; role: string }; notifications: TopbarNotification[]; unread: number; timer: { startedAt: string; label: string } | null }) {
   const pathname = usePathname();
-  const router = useRouter();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
   const placeholder = SEARCH_PLACEHOLDER.find(([p]) => pathname.startsWith(p))?.[1] ?? "Search anything...";
 
@@ -70,7 +72,14 @@ export function Topbar({
             <div className="flex items-center justify-between px-2 py-1.5">
               <DropdownMenuLabel className="p-0 text-sm"><Link href="/notifications" className="hover:underline">Notifications</Link></DropdownMenuLabel>
               {unread > 0 && (
-                <button type="button" onClick={() => markAllNotificationsRead()} className="text-xs font-medium text-brand-text hover:underline">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await call(api.api.notifications["read-all"].$post());
+                    await queryClient.invalidateQueries({ queryKey: ["shell"] });
+                  }}
+                  className="text-xs font-medium text-brand-text hover:underline"
+                >
                   Mark all read
                 </button>
               )}
@@ -110,8 +119,8 @@ export function Topbar({
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={async () => {
                 await authClient.signOut();
-                router.replace("/login");
-                router.refresh();
+                queryClient.clear();
+                navigate("/login", { replace: true });
               }}>
               <LogOut className="size-4" /> Log out
             </DropdownMenuItem>

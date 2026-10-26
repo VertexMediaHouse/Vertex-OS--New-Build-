@@ -10,7 +10,20 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/shared/layout";
-import { addManualEntry, deleteEntry, reviewEntries, setBillable, startTimer, stopTimer } from "@/app/(app)/time/actions";
+import { api, call } from "@/web/api";
+
+/** The call sites below either branch on `ok` or catch a throw, so both shapes stay. */
+async function must(p: Promise<Response>) {
+  const r = await call(p);
+  if (!r.ok) throw new Error(r.error);
+}
+
+const startTimer = (json: { projectId: string; taskId?: string; note?: string }) => call(api.api.time.start.$post({ json }));
+const stopTimer = () => call(api.api.time.stop.$post());
+const addManualEntry = (json: { projectId: string; taskId?: string; date: string; start: string; end: string; note: string; billable: boolean }) => call(api.api.time.entries.$post({ json }));
+const setBillable = (entryId: string, billable: boolean) => must(api.api.time.billable.$post({ json: { entryId, billable } }));
+const reviewEntries = (ids: string[], decision: "APPROVED" | "REJECTED") => must(api.api.time.review.$post({ json: { ids, decision } }));
+const deleteEntry = (entryId: string) => must(api.api.time.delete.$post({ json: { entryId } }));
 
 type Project = { id: string; label: string; tasks: { id: string; title: string }[] };
 
@@ -108,7 +121,7 @@ export function MiniTimer({ startedAt, label }: { startedAt: string; label: stri
       <span className="size-2 animate-pulse rounded-full bg-danger" aria-hidden />
       <span className="max-w-32 truncate">{label}</span>
       <span className="font-semibold tabular">{hms}</span>
-      <button type="button" disabled={pending} onClick={() => start(() => stopTimer())} aria-label="Stop timer" className="rounded p-0.5 hover:bg-white/60"><Square className="size-3.5 fill-current" /></button>
+      <button type="button" disabled={pending} onClick={() => start(async () => { await stopTimer(); })} aria-label="Stop timer" className="rounded p-0.5 hover:bg-white/60"><Square className="size-3.5 fill-current" /></button>
     </div>
   );
 }

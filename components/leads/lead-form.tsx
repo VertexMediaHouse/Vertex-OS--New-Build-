@@ -10,8 +10,12 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/shared/layout";
+import { useQueryClient } from "@tanstack/react-query";
 import { leadSchema, SOURCES, type LeadInput } from "@/lib/validation/lead";
-import { createLead, updateLead } from "@/app/(app)/leads/actions";
+import { api, call } from "@/web/api";
+
+const createLead = (json: LeadInput) => call(api.api.leads.$post({ json }));
+const updateLead = (id: string, input: LeadInput) => call(api.api.leads.update.$post({ json: { id, input } }));
 
 const SOURCE_LABEL: Record<string, string> = { FIVERR: "Fiverr", WEBSITE: "Website", REFERRAL: "Referral", LINKEDIN: "LinkedIn", EMAIL: "Email", INSTAGRAM: "Instagram", OTHER: "Other" };
 const field = "h-9 w-full rounded-lg border border-input bg-card px-3 text-sm";
@@ -19,6 +23,7 @@ const field = "h-9 w-full rounded-lg border border-input bg-card px-3 text-sm";
 export function LeadFormDialog({ owners, companies, lead, trigger }: { owners: { id: string; name: string }[]; companies: ("vmh" | "vth")[]; lead?: LeadInput & { id: string }; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
+  const queryClient = useQueryClient();
   const form = useForm<LeadInput>({
     resolver: zodResolver(leadSchema),
     defaultValues: lead ?? { name: "", service: "", value: 0, companyId: companies[0], source: "WEBSITE", ownerId: "", contactName: "", email: "", phone: "", notes: "" },
@@ -31,6 +36,7 @@ export function LeadFormDialog({ owners, companies, lead, trigger }: { owners: {
       toast.success(lead ? "Lead updated." : "Lead added.");
       setOpen(false);
       form.reset();
+      await queryClient.invalidateQueries({ queryKey: ["leads"] });
     }),
   );
   return (

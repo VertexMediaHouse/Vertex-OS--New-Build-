@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "@/components/ui/link";
+import { usePathname } from "@/lib/nav";
 import {
   ChartColumn, Clapperboard, Clock, FileText, Files, FolderKanban, House, Mail, Settings, SquareCheck, SquareCheckBig, UserRound, Users, UsersRound,
   type LucideIcon,

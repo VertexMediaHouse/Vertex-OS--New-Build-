@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { Inbox, X } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/ui/link";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, IconTile } from "./primitives";

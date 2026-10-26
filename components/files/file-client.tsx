@@ -1,12 +1,27 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { FolderPlus, Star, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { completeUpload, createFolder, requestUpload, shareFile, toggleStar, trashFile, updateFile } from "@/app/(app)/files/actions";
+import { api, call, query } from "@/web/api";
+
+/** FileMenuActions and StarButton await void promises, so those throw on failure. */
+async function must(p: Promise<Response>) {
+  const r = await call(p);
+  if (!r.ok) throw new Error(r.error);
+}
+
+const requestUpload = (json: { name: string; size: number; mime: string }) => query(api.api.files["upload-url"].$post({ json }));
+const completeUpload = (json: { name: string; size: number; mime: string; key: string; keySig: string; folderId?: string | null; fileId?: string | null; projectId?: string | null; taskId?: string | null }) => call(api.api.files.complete.$post({ json: json as never }));
+const createFolder = (name: string, parentId: string | null) => call(api.api.files.folders.$post({ json: { name, parentId } }));
+const toggleStar = (id: string) => must(api.api.files[":id"].star.$post({ param: { id } }));
+const updateFile = (id: string, patch: { name?: string; folderId?: string | null; description?: string; status?: string | null; tags?: string[]; sharedWithPortal?: boolean }) => must(api.api.files[":id"].update.$post({ param: { id }, json: patch as never }));
+const shareFile = (id: string, userIds: string[]) => must(api.api.files[":id"].share.$post({ param: { id }, json: { userIds } }));
+const trashFile = (id: string, restore = false) => must(api.api.files[":id"].trash.$post({ param: { id }, json: { restore } }));
 
 /** PUT with progress (fetch has no upload progress). */
 function put(url: string, file: File, onProgress: (p: number) => void) {
@@ -27,6 +42,7 @@ export function UploadButton({ folderId, fileId, label = "Upload File", projectI
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
   const upload = async (files: FileList | File[]) => {
     setBusy(true);
     for (const file of Array.from(files)) {
@@ -44,6 +60,7 @@ export function UploadButton({ folderId, fileId, label = "Upload File", projectI
     setBusy(false);
     setProgress({});
     setOpen(false);
+    await queryClient.invalidateQueries({ queryKey: ["files"] });
   };
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -72,12 +89,13 @@ export function UploadButton({ folderId, fileId, label = "Upload File", projectI
 export function NewFolderButton({ parentId }: { parentId: string | null }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
+  const queryClient = useQueryClient();
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Button variant="outline" className="h-10 px-4 text-md"><FolderPlus className="size-4" /> New Folder</Button></DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader><DialogTitle>New folder</DialogTitle></DialogHeader>
-        <form onSubmit={(e) => { e.preventDefault(); const name = String(new FormData(e.currentTarget).get("name")); start(async () => { const r = await createFolder(name, parentId); if (r.ok) { toast.success("Folder created."); setOpen(false); } }); }} className="space-y-3">
+        <form onSubmit={(e) => { e.preventDefault(); const name = String(new FormData(e.currentTarget).get("name")); start(async () => { const r = await createFolder(name, parentId); if (r.ok) { toast.success("Folder created."); setOpen(false); await queryClient.invalidateQueries({ queryKey: ["files"] }); } }); }} className="space-y-3">
           <Input name="name" required placeholder="Folder name" />
           <DialogFooter><Button type="submit" disabled={pending}>Create</Button></DialogFooter>
         </form>
@@ -88,12 +106,14 @@ export function NewFolderButton({ parentId }: { parentId: string | null }) {
 
 export function StarButton({ id, starred }: { id: string; starred: boolean }) {
   const [pending, start] = useTransition();
-  return <button type="button" disabled={pending} onClick={() => start(() => toggleStar(id))} aria-label={starred ? "Unstar" : "Star"} className="rounded p-1 hover:bg-accent"><Star className={`size-4 ${starred ? "fill-warning text-warning" : "text-ink-muted"}`} /></button>;
+  const queryClient = useQueryClient();
+  return <button type="button" disabled={pending} onClick={() => start(async () => { await toggleStar(id); await queryClient.invalidateQueries({ queryKey: ["files"] }); })} aria-label={starred ? "Unstar" : "Star"} className="rounded p-1 hover:bg-accent"><Star className={`size-4 ${starred ? "fill-warning text-warning" : "text-ink-muted"}`} /></button>;
 }
 
 export function FileMenuActions({ id, trashed, status, portal, people, shared }: { id: string; trashed: boolean; status: string | null; portal: boolean; people: { id: string; name: string }[]; shared: string[] }) {
   const [pending, start] = useTransition();
-  const run = (fn: () => Promise<void>, ok: string) => start(async () => { try { await fn(); toast.success(ok); } catch (e) { toast.error(e instanceof Error ? e.message : "Failed."); } });
+  const queryClient = useQueryClient();
+  const run = (fn: () => Promise<void>, ok: string) => start(async () => { try { await fn(); toast.success(ok); await queryClient.invalidateQueries({ queryKey: ["files"] }); } catch (e) { toast.error(e instanceof Error ? e.message : "Failed."); } });
   const [picked, setPicked] = useState(shared);
   return (
     <div className="space-y-3 text-xs">

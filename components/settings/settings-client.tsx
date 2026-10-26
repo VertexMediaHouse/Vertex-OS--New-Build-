@@ -1,18 +1,24 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { setMemberModules, updateCompany, updateProfile } from "@/app/(app)/settings/actions";
+import { api, call } from "@/web/api";
 import type { CompanySettings } from "@/lib/settings";
 import { Field as F } from "@/components/shared/layout";
+
+const updateProfile = (json: { name: string; timezone: string }) => call(api.api.settings.profile.$post({ json }));
+const updateCompany = (companyId: string, input: Record<string, unknown>) => call(api.api.settings.company.$post({ json: { companyId, input } }));
+const setMemberModules = (userId: string, companyId: string, modules: string[]) => call(api.api.settings.modules.$post({ json: { userId, companyId, modules } }));
 
 
 export function ProfileForm({ name, timezone }: { name: string; timezone: string }) {
   const [pending, start] = useTransition();
+  const queryClient = useQueryClient();
   return (
-    <form className="grid max-w-md gap-3" onSubmit={(e) => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>; start(async () => { const r = await updateProfile({ name: f.name!, timezone: f.timezone! }); r.ok ? toast.success("Profile saved.") : toast.error(r.error); }); }}>
+    <form className="grid max-w-md gap-3" onSubmit={(e) => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>; start(async () => { const r = await updateProfile({ name: f.name!, timezone: f.timezone! }); if (!r.ok) return void toast.error(r.error); toast.success("Profile saved."); await queryClient.invalidateQueries(); }); }}>
       <F label="Name"><Input name="name" defaultValue={name} required /></F>
       <F label="Timezone"><Input name="timezone" defaultValue={timezone} /></F>
       <Button type="submit" disabled={pending} className="w-fit">Save profile</Button>
@@ -22,6 +28,7 @@ export function ProfileForm({ name, timezone }: { name: string; timezone: string
 
 export function CompanyForm({ c }: { c: { id: string; name: string; address: string | null; gstin: string | null; invoicePrefix: string; nextInvoiceNumber: number; currency: string; bank: Record<string, string | undefined>; settings: CompanySettings } }) {
   const [pending, start] = useTransition();
+  const queryClient = useQueryClient();
   const s = c.settings;
   return (
     <form className="grid gap-3 md:grid-cols-3" onSubmit={(e) => {
@@ -33,7 +40,9 @@ export function CompanyForm({ c }: { c: { id: string; name: string; address: str
           name: f.name!, address: f.address, gstin: f.gstin, invoicePrefix: f.invoicePrefix!, nextInvoiceNumber: n("nextInvoiceNumber"), currency: f.currency as "INR", upi: f.upi, accountName: f.accountName, accountNumber: f.accountNumber, ifsc: f.ifsc,
           settings: { goalThresholds: { onTrack: n("onTrack") / 100, atRisk: n("atRisk") / 100 }, turnaroundTargetHours: { min: n("tMin"), max: n("tMax") }, revenueBasis: f.revenueBasis as "INVOICED", defaultTaxRate: n("tax"), defaultHourlyRate: n("rate"), paymentTermsDays: n("terms"), defaultWeeklyCapacityHours: n("capacity") },
         });
-        r.ok ? toast.success("Company settings saved.") : toast.error(r.error);
+        if (!r.ok) return void toast.error(r.error);
+        toast.success("Company settings saved.");
+        await queryClient.invalidateQueries({ queryKey: ["settings"] });
       });
     }}>
       <F label="Name"><Input name="name" defaultValue={c.name} /></F>
@@ -74,6 +83,7 @@ export function ModuleAccess({
   resources: { value: string; label: string }[];
 }) {
   const [pending, start] = useTransition();
+  const queryClient = useQueryClient();
   const [picked, setPicked] = useState<string[]>(modules);
   const all = picked.length === 0;
   const toggle = (value: string) =>
@@ -87,6 +97,7 @@ export function ModuleAccess({
           const r = await setMemberModules(userId, companyId, picked);
           if (!r.ok) return void toast.error(r.error);
           toast.success("Access updated.");
+          await queryClient.invalidateQueries({ queryKey: ["settings"] });
         });
       }}
     >
