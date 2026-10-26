@@ -92,3 +92,7 @@ export const PRODUCTION_STAGE_COLORS: Record<string, string> = {
 };
 
 export const AXIS = { grid: "#E5E5EA", text: "#8E8E93" } as const;
+
+const LOGO_COLORS = ["#2563EB", "#10B981", "#0F172A", "#7C3AED", "#DB2777", "#F59E0B", "#0EA5E9", "#EF4444"];
+/** Stable per-client accent, from the name alone. */
+export const logoColor = (name: string) => LOGO_COLORS[[...name].reduce((a, c) => a + c.charCodeAt(0), 0) % LOGO_COLORS.length]!;

@@ -10,8 +10,12 @@ export const api = hc<AppType>(API_URL, { init: { credentials: "include" } });
 /**
  * Reads: unwrap or throw, so React Query sees an error. Dates arrive as ISO strings
  * (server components used to hand down real Dates), so call sites parse them.
+ *
+ * The status/format generics stay loose so a handler that answers with more than one
+ * shape (a permission-gated page: `{canView:false}` or the data) infers as that union.
  */
-export async function query<T>(p: Promise<ClientResponse<T>>): Promise<T> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function query<T>(p: Promise<ClientResponse<T, any, any>>): Promise<T> {
   const res = await p;
   if (res.status === 401) {
     window.location.assign(`/login?next=${encodeURIComponent(location.pathname + location.search)}`);

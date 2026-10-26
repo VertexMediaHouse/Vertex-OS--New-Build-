@@ -12,7 +12,7 @@ import { Card, ProgressBar } from "@/components/shared/primitives";
 import { InvoiceActions } from "@/components/invoices/invoice-client";
 import Link from "@/components/ui/link";
 import { now } from "@/lib/clock";
-import { logoColor } from "@/lib/clients";
+import { logoColor } from "@/lib/chart-colors";
 import { formatDate, formatDaysLeft, formatMoney, formatRelative } from "@/lib/format";
 import { useSearchParams } from "@/lib/nav";
 import { INVOICE_STATUS } from "@/lib/status";

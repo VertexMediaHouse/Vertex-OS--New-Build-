@@ -1,19 +1,25 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@/lib/nav";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/shared/layout";
-import { createCampaign, markRecipient, setCampaignStatus } from "@/app/(app)/campaigns/actions";
+import { api, call } from "@/web/api";
 
 type Step = { subject: string; body: string; delayDays: number };
 
+const createCampaign = (json: Record<string, unknown>) => call(api.api.campaigns.$post({ json }));
+const setCampaignStatus = (campaignId: string, status: "ACTIVE" | "PAUSED" | "COMPLETED") => call(api.api.campaigns.status.$post({ json: { campaignId, status } }));
+const markRecipient = (recipientId: string, what: "replied" | "meeting") => call(api.api.campaigns.recipient.$post({ json: { recipientId, what } }));
+
 export function CampaignBuilder({ companies }: { companies: ("vmh" | "vth")[] }) {
-  const router = useRouter();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [pending, start] = useTransition();
   const [name, setName] = useState("");
   const [companyId, setCompany] = useState<string>(companies.length > 1 ? "" : companies[0]!);
@@ -27,7 +33,8 @@ export function CampaignBuilder({ companies }: { companies: ("vmh" | "vth")[] })
     const r = await createCampaign({ name, companyId, audience: { source, companies: companyId ? [companyId.toUpperCase() as "VMH"] : [], stages: source === "leads" ? stages : [], tags: tags.split(",").map((t) => t.trim()).filter(Boolean) }, steps, scheduledAt: scheduledAt || undefined, activate });
     if (!r.ok) return void toast.error(r.error);
     toast.success(activate ? "Campaign started." : "Draft saved.");
-    router.push(`/campaigns?id=${r.id}`);
+    await queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+    navigate(`/campaigns?id=${r.id}`);
   });
   const sel = "h-9 w-full rounded-lg border bg-card px-2 text-sm";
   return (
@@ -70,7 +77,8 @@ export function CampaignBuilder({ companies }: { companies: ("vmh" | "vth")[] })
 
 export function CampaignStatusButtons({ id, status }: { id: string; status: string }) {
   const [pending, start] = useTransition();
-  const go = (s: "ACTIVE" | "PAUSED" | "COMPLETED") => start(async () => { await setCampaignStatus(id, s); toast.success("Updated."); });
+  const queryClient = useQueryClient();
+  const go = (s: "ACTIVE" | "PAUSED" | "COMPLETED") => start(async () => { await setCampaignStatus(id, s); toast.success("Updated."); await queryClient.invalidateQueries({ queryKey: ["campaigns"] }); });
   return (
     <div className="flex gap-2">
       {status !== "ACTIVE" && status !== "COMPLETED" && <Button size="sm" disabled={pending} onClick={() => go("ACTIVE")}>Start</Button>}
@@ -82,10 +90,12 @@ export function CampaignStatusButtons({ id, status }: { id: string; status: stri
 
 export function RecipientButtons({ id, replied, meeting }: { id: string; replied: boolean; meeting: boolean }) {
   const [pending, start] = useTransition();
+  const queryClient = useQueryClient();
+  const mark = (what: "replied" | "meeting") => start(async () => { await markRecipient(id, what); await queryClient.invalidateQueries({ queryKey: ["campaigns"] }); });
   return (
     <span className="flex gap-2 text-2xs">
-      {!replied && <button disabled={pending} onClick={() => start(() => markRecipient(id, "replied"))} className="text-brand-text hover:underline">Mark replied</button>}
-      {!meeting && <button disabled={pending} onClick={() => start(() => markRecipient(id, "meeting"))} className="text-brand-text hover:underline">Meeting booked</button>}
+      {!replied && <button disabled={pending} onClick={() => mark("replied")} className="text-brand-text hover:underline">Mark replied</button>}
+      {!meeting && <button disabled={pending} onClick={() => mark("meeting")} className="text-brand-text hover:underline">Meeting booked</button>}
     </span>
   );
 }

@@ -108,3 +108,13 @@ export const TONE_CLASSES: Record<Tone, { pill: string; dot: string; bar: string
   review: { pill: "bg-review-soft text-review-text", dot: "bg-review", bar: "bg-review" },
   neutral: { pill: "bg-neutral-soft text-neutral-text", dot: "bg-neutral", bar: "bg-neutral" },
 };
+
+/** Rule-based sentences from the report metric deltas (unit-tested). */
+export function insightSentences(i: { revenueChange: number | null; newClients: number; hoursChange: number | null; hours: number; completed: number }): { tone: "up" | "clients" | "time" | "trophy"; text: string }[] {
+  const out: { tone: "up" | "clients" | "time" | "trophy"; text: string }[] = [];
+  if (i.revenueChange !== null) out.push({ tone: "up", text: `Revenue ${i.revenueChange >= 0 ? "increased" : "decreased"} by ${Math.abs(Math.round(i.revenueChange))}% compared to last period.` });
+  out.push({ tone: "clients", text: `${i.newClients} new client${i.newClients === 1 ? "" : "s"} added this period.` });
+  if (i.hoursChange !== null) out.push({ tone: "time", text: `Team productivity ${i.hoursChange >= 0 ? "up" : "down"} by ${Math.abs(Math.round(i.hoursChange))}% (${Math.round(i.hours / 60)}h this period).` });
+  out.push({ tone: "trophy", text: `${i.completed} project${i.completed === 1 ? "" : "s"} completed this period.` });
+  return out;
+}

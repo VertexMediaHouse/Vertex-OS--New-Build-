@@ -80,15 +80,9 @@ export async function reportData(s: ScopeFilter, p: Period) {
   };
 }
 
-/** Rule-based sentences from the metric deltas (unit-tested). */
-export function insightSentences(i: { revenueChange: number | null; newClients: number; hoursChange: number | null; hours: number; completed: number }): { tone: "up" | "clients" | "time" | "trophy"; text: string }[] {
-  const out: { tone: "up" | "clients" | "time" | "trophy"; text: string }[] = [];
-  if (i.revenueChange !== null) out.push({ tone: "up", text: `Revenue ${i.revenueChange >= 0 ? "increased" : "decreased"} by ${Math.abs(Math.round(i.revenueChange))}% compared to last period.` });
-  out.push({ tone: "clients", text: `${i.newClients} new client${i.newClients === 1 ? "" : "s"} added this period.` });
-  if (i.hoursChange !== null) out.push({ tone: "time", text: `Team productivity ${i.hoursChange >= 0 ? "up" : "down"} by ${Math.abs(Math.round(i.hoursChange))}% (${Math.round(i.hours / 60)}h this period).` });
-  out.push({ tone: "trophy", text: `${i.completed} project${i.completed === 1 ? "" : "s"} completed this period.` });
-  return out;
-}
+// Lives in status.ts (pure) so client code can use it without pulling in this
+// server-only module — re-exported here for the existing callers and tests.
+export { insightSentences } from "@/lib/status";
 
 /** Financial tab: receivables by age of the due date. */
 export async function arAgeing(s: ScopeFilter) {

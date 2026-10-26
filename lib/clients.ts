@@ -4,8 +4,9 @@ import { scopedClientWhere } from "@/lib/db/scope";
 import { formatRelative } from "@/lib/format";
 import { now } from "@/lib/clock";
 
-const LOGO_COLORS = ["#2563EB", "#10B981", "#0F172A", "#7C3AED", "#DB2777", "#F59E0B", "#0EA5E9", "#EF4444"];
-export const logoColor = (name: string) => LOGO_COLORS[[...name].reduce((a, c) => a + c.charCodeAt(0), 0) % LOGO_COLORS.length]!;
+// Lives in chart-colors (pure) so client code can use it without pulling in this
+// server-only module — re-exported here for the server callers that already import it.
+export { logoColor } from "@/lib/chart-colors";
 
 export type ClientFilters = { companyIds: string[]; q?: string | null; status?: string | null; tag?: string | null; owner?: string | null; archived?: boolean };
 
