@@ -7,15 +7,19 @@ export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
 export const api = hc<AppType>(API_URL, { init: { credentials: "include" } });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type JsonOf<T> = T extends ClientResponse<infer D, any, any> ? D : never;
+
 /**
  * Reads: unwrap or throw, so React Query sees an error. Dates arrive as ISO strings
  * (server components used to hand down real Dates), so call sites parse them.
  *
- * The status/format generics stay loose so a handler that answers with more than one
- * shape (a permission-gated page: `{canView:false}` or the data) infers as that union.
+ * JsonOf distributes over the response union a handler with several c.json() shapes
+ * produces, so a permission-gated page infers as `{denied} | {data}` instead of just
+ * the first branch.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function query<T>(p: Promise<ClientResponse<T, any, any>>): Promise<T> {
+export async function query<T extends ClientResponse<any, any, any>>(p: Promise<T>): Promise<JsonOf<T>> {
   const res = await p;
   if (res.status === 401) {
     window.location.assign(`/login?next=${encodeURIComponent(location.pathname + location.search)}`);
@@ -25,7 +29,7 @@ export async function query<T>(p: Promise<ClientResponse<T, any, any>>): Promise
     const body = (await res.json().catch(() => null)) as { error?: string } | null;
     throw new Error(body?.error ?? "Request failed.");
   }
-  return (await res.json()) as T;
+  return (await res.json()) as JsonOf<T>;
 }
 
 /** Writes: always resolves to the ActionResult shape the call sites already branch on. */
