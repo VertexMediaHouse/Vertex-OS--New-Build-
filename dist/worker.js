@@ -86490,7 +86490,7 @@ var account_default = [
     userId: "user_dhrumil",
     accountId: "user_dhrumil",
     providerId: "credential",
-    password: "0bcdbbb75b0790a6b85fd477f0a1d2a1:9dbbdca122b1216eb828fba5113646e1e49077a85e4976ecc56bceb6d04b9757430cca155fe68bc509b08c5603ef3b170642ff8300d268be4abfeacbfba520e3",
+    password: "e95f0749b8a1a9d313fd8940d82b4b5e:4e072be6cd2b08fc34dbe3851a50a89b8d5082fb2d91377107dd4483368159dfef3ff76007156a27dbc992ccffcf0069ef025835b2daea5c22571c21b2b2745d",
     accessToken: null,
     refreshToken: null,
     idToken: null,
@@ -86505,7 +86505,7 @@ var account_default = [
     userId: "user_sheen",
     accountId: "user_sheen",
     providerId: "credential",
-    password: "0bcdbbb75b0790a6b85fd477f0a1d2a1:9dbbdca122b1216eb828fba5113646e1e49077a85e4976ecc56bceb6d04b9757430cca155fe68bc509b08c5603ef3b170642ff8300d268be4abfeacbfba520e3",
+    password: "e95f0749b8a1a9d313fd8940d82b4b5e:4e072be6cd2b08fc34dbe3851a50a89b8d5082fb2d91377107dd4483368159dfef3ff76007156a27dbc992ccffcf0069ef025835b2daea5c22571c21b2b2745d",
     accessToken: null,
     refreshToken: null,
     idToken: null,
@@ -86520,7 +86520,7 @@ var account_default = [
     userId: "user_hardik",
     accountId: "user_hardik",
     providerId: "credential",
-    password: "0bcdbbb75b0790a6b85fd477f0a1d2a1:9dbbdca122b1216eb828fba5113646e1e49077a85e4976ecc56bceb6d04b9757430cca155fe68bc509b08c5603ef3b170642ff8300d268be4abfeacbfba520e3",
+    password: "e95f0749b8a1a9d313fd8940d82b4b5e:4e072be6cd2b08fc34dbe3851a50a89b8d5082fb2d91377107dd4483368159dfef3ff76007156a27dbc992ccffcf0069ef025835b2daea5c22571c21b2b2745d",
     accessToken: null,
     refreshToken: null,
     idToken: null,
@@ -129063,15 +129063,21 @@ var authOptions = {
 // server/auth.ts
 var auth = betterAuth({
   ...authOptions,
-  baseURL: process.env.API_URL ?? `http://localhost:${process.env.API_PORT ?? 4e3}`,
-  // The SPA lives on a different origin than the API.
-  trustedOrigins: [
-    process.env.WEB_ORIGIN ?? "http://localhost:5173",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000"
-  ]
+  baseURL: process.env.BETTER_AUTH_URL ?? process.env.API_URL ?? `http://localhost:${process.env.API_PORT ?? 4e3}`,
+  // In dev the SPA (5173) and the API (4000) are different origins. Deployed, the
+  // Cloudflare Worker serves both from one origin (wrangler.json's run_worker_first),
+  // so there's no single known production URL to list ahead of time — trust whatever
+  // origin the request actually arrived on, which is exactly that one shared domain.
+  trustedOrigins: (request) => {
+    const dev = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000", process.env.WEB_ORIGIN].filter(
+      (x2) => Boolean(x2)
+    );
+    try {
+      return [...dev, new URL(request.url).origin];
+    } catch {
+      return dev;
+    }
+  }
 });
 
 // node_modules/hono/dist/helper/factory/index.js

@@ -2,8 +2,12 @@ import { hc, type ClientResponse } from "hono/client";
 import type { AppType } from "@/server/app";
 import type { ActionResult } from "@/lib/validation/result";
 
-/** Also used for plain hrefs (CSV exports, file downloads, PDFs). */
-export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+// Also used for plain hrefs (CSV exports, file downloads, PDFs).
+// In dev, Vite (5173) and the API (4000) are separate processes — see scripts/dev.mjs.
+// Everywhere else (the deployed Cloudflare Worker), one origin serves both the static
+// assets and /api/* (wrangler.json's run_worker_first), so same-origin is correct and
+// the deploy doesn't need VITE_API_URL set at all.
+export const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:4000" : window.location.origin);
 
 export const api = hc<AppType>(API_URL, { init: { credentials: "include" } });
 
