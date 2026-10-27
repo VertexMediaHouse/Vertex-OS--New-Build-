@@ -30,7 +30,7 @@ export default function TeamPage() {
                 <div className="flex items-center gap-3">
                   <Avatar person={u} size={44} />
                   <div className="min-w-0 flex-1"><p className="font-semibold text-ink">{u.name}{!u.active && <span className="ml-2 text-2xs text-danger-text">inactive</span>}</p><p className="text-xs text-ink-muted">{roleLabel({ ...u, memberships: u.memberships, kind: "STAFF" })}</p></div>
-                  <CompanyBadges codes={u.memberships.map((m) => (m.companyId === "vmh" ? "VMH" : "VTH") as "VMH").sort()} />
+                  <CompanyBadges codes={u.memberships.map((m: any) => (m.companyId === "vmh" ? "VMH" : "VTH") as "VMH").sort()} />
                 </div>
                 {w && (
                   <div className="mt-4 space-y-1.5 text-xs">

@@ -7,6 +7,7 @@ import { logActivity } from "@/lib/activity";
 import { assertCan, can, isMemberOnly, type CurrentUser } from "@/lib/auth/permissions";
 import { addDays, now, startOfDayIST, startOfWeekIST } from "@/lib/clock";
 import { toCsv } from "@/lib/csv";
+import { withLock } from "@/lib/concurrency";
 import { db, type Prisma } from "@/lib/db";
 import { formatShortDate } from "@/lib/format";
 import { dayKey, resolvePeriod } from "@/lib/period";
@@ -140,17 +141,22 @@ export const time = new Hono<Env>()
     const d = z.object({ projectId: id, taskId: id.optional().or(z.literal("")), note: z.string().trim().max(500).optional() }).parse(await c.req.json());
     const project = await db.project.findUniqueOrThrow({ where: { id: d.projectId }, include: { client: { select: { name: true } } } });
     assertCan(user, "create", "time", project.companyId);
-    await stopRunning(user.id);
     const task = d.taskId ? await db.task.findFirst({ where: { id: d.taskId, projectId: project.id } }) : null;
-    await db.$transaction(async (tx) => {
-      const e = await tx.timeEntry.create({ data: { userId: user.id, companyId: project.companyId, projectId: project.id, taskId: task?.id, start: new Date(), status: "RUNNING", note: d.note, billable: Boolean(project.clientId) } });
-      await logActivity(tx, { companyId: project.companyId, actorId: user.id, verb: "timer_started", entityType: "TIME_ENTRY", entityId: e.id, summary: `${user.name} started tracking time`, meta: { detail: `${task?.title ?? project.name} — ${project.client?.name ?? "Internal"}` } });
+    // Stop-then-create must run as one turn per user, or two concurrent /start calls can
+    // each pass stopRunning() and both create a RUNNING entry (Postgres used to block this
+    // with a partial unique index; see withLock).
+    await withLock(`timer:${user.id}`, async () => {
+      await stopRunning(user.id);
+      await db.$transaction(async (tx) => {
+        const e = await tx.timeEntry.create({ data: { userId: user.id, companyId: project.companyId, projectId: project.id, taskId: task?.id, start: new Date(), status: "RUNNING", note: d.note, billable: Boolean(project.clientId) } });
+        await logActivity(tx, { companyId: project.companyId, actorId: user.id, verb: "timer_started", entityType: "TIME_ENTRY", entityId: e.id, summary: `${user.name} started tracking time`, meta: { detail: `${task?.title ?? project.name} — ${project.client?.name ?? "Internal"}` } });
+      });
     });
     return c.json<ActionResult>({ ok: true });
   })
   .post("/stop", async (c) => {
     const user = c.get("user");
-    const stopped = await stopRunning(user.id);
+    const stopped = await withLock(`timer:${user.id}`, () => stopRunning(user.id));
     if (stopped) await logActivity(db, { companyId: stopped.companyId, actorId: user.id, verb: "timer_stopped", entityType: "TIME_ENTRY", entityId: stopped.id, summary: `${user.name} stopped tracking time`, meta: { detail: stopped.task?.title ?? stopped.project?.name ?? "" } });
     return c.json<ActionResult>({ ok: true });
   })

@@ -188,7 +188,7 @@ function LeadDrawer({ id, owners, companies }: { id: string; owners: { id: strin
         {lead.notes && <p className="rounded-lg bg-surface-muted p-3 text-xs text-ink-2">{lead.notes}</p>}
         <div className="flex flex-wrap gap-2">
           {companies.includes(lead.companyId as "vmh") && (
-            <LeadFormDialog owners={owners} companies={companies} lead={{ id: lead.id, name: lead.name, service: lead.service, value: Number(lead.value), companyId: lead.companyId as "vmh", source: lead.source, ownerId: lead.ownerId ?? "", contactName: lead.contactName ?? "", email: lead.email ?? "", phone: lead.phone ?? "", notes: lead.notes ?? "" }} trigger={<button className="h-9 rounded-lg border px-3 text-sm font-medium">Edit</button>} />
+            <LeadFormDialog owners={owners} companies={companies} lead={{ id: lead.id, name: lead.name, service: lead.service, value: Number(lead.value), companyId: lead.companyId as "vmh", source: lead.source as "FIVERR" | "WEBSITE" | "REFERRAL" | "LINKEDIN" | "EMAIL" | "INSTAGRAM" | "OTHER", ownerId: lead.ownerId ?? "", contactName: lead.contactName ?? "", email: lead.email ?? "", phone: lead.phone ?? "", notes: lead.notes ?? "" }} trigger={<button className="h-9 rounded-lg border px-3 text-sm font-medium">Edit</button>} />
           )}
           {canDelete && (
             <DeleteButton action={async () => { const r = await deleteLead(lead.id); if (r.ok) await queryClient.invalidateQueries({ queryKey: ["leads"] }); return r; }} noun="lead" name={lead.name} redirectTo="/leads" />

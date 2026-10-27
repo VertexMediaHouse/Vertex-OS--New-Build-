@@ -28,7 +28,7 @@ export async function runCrossSellRules(db: PrismaClient): Promise<number> {
   const clients = (await db.client.findMany({
     where: { archivedAt: null },
     select: { id: true, notes: true, tags: true, companies: { select: { companyId: true } }, projects: { select: { companyId: true } } },
-  })) as CrossSellClient[];
+  })) as unknown as CrossSellClient[];
   const data = clients.flatMap((c) =>
     matchRules({ notes: c.notes, tags: c.tags, companyIds: c.companies.map((x) => x.companyId), projectCompanyIds: c.projects.map((p) => p.companyId) }).map((r) => ({
       clientId: c.id, fromCompanyId: r.from, toCompanyId: r.to, rule: r.id, reason: r.reason,

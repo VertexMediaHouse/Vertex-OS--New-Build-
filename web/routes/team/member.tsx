@@ -28,7 +28,7 @@ export default function TeamMemberPage() {
       <Card className="flex flex-wrap items-center gap-4 p-5">
         <Avatar person={u} size={56} />
         <div className="flex-1"><h1 className="text-3xl font-bold text-ink">{u.name}</h1><p className="text-sm text-ink-muted">{roleLabel({ ...u, kind: "STAFF", memberships: u.memberships })} · {u.email}</p></div>
-        <CompanyBadges codes={u.memberships.map((m) => (m.companyId === "vmh" ? "VMH" : "VTH") as "VMH").sort()} />
+        <CompanyBadges codes={u.memberships.map((m: any) => (m.companyId === "vmh" ? "VMH" : "VTH") as "VMH").sort()} />
         <div className="text-right"><p className="text-xl font-bold">{formatDuration(data.weekMin)}</p><p className="text-2xs text-ink-muted">this week of {u.weeklyCapacityHours}h</p></div>
       </Card>
       <div className="grid gap-3.5 xl:grid-cols-3">
@@ -36,7 +36,7 @@ export default function TeamMemberPage() {
         <SectionCard title="Recent time">{data.time.map((e) => <div key={e.id} className="flex justify-between border-b py-2 text-xs last:border-0"><span>{formatDate(new Date(e.start))} · {e.project?.name}</span><b>{formatDuration(e.durationMin ?? 0)}</b></div>)}</SectionCard>
         <SectionCard title="Goals">{data.goals.map((g) => <div key={g.id} className="py-2 text-xs"><div className="flex justify-between"><span>{g.title}</span><EnumPill map={GOAL_STATUS} value={g.status} size="xs" /></div><ProgressBar value={goalProgress(g)} className="mt-1" /></div>)}{data.goals.length === 0 && <EmptyState title="No goals" />}</SectionCard>
         <SectionCard title="Activity">{data.activity.map((a) => <ActivityRow key={a.id} text={a.summary} time={formatRelative(new Date(a.createdAt), t)} />)}</SectionCard>
-        {data.editable && <SectionCard title="Access & capacity"><EditMember userId={u.id} title={u.title ?? ""} capacity={u.weeklyCapacityHours} active={u.active} memberships={u.memberships.map((m) => ({ companyId: m.companyId, role: m.role }))} companies={data.companyIds} /></SectionCard>}
+        {data.editable && <SectionCard title="Access & capacity"><EditMember userId={u.id} title={u.title ?? ""} capacity={u.weeklyCapacityHours} active={u.active} memberships={u.memberships.map((m: any) => ({ companyId: m.companyId, role: m.role }))} companies={data.companyIds} /></SectionCard>}
       </div>
     </div>
   );

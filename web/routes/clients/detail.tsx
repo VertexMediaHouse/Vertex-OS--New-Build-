@@ -22,8 +22,8 @@ export default function ClientDetailPage() {
   if (!data) return <CardSkeleton className="h-96" />;
   const { client, activity, notes, owners, color, billed, editable, editableCompanies } = data;
   const t = now();
-  const codes = client.companies.map((c) => (c.companyId === "vmh" ? "VMH" : "VTH") as "VMH" | "VTH").sort();
-  const revenue = client.projects.reduce((a, p) => a + Number(p.value), 0);
+  const codes = client.companies.map((c: any) => (c.companyId === "vmh" ? "VMH" : "VTH") as "VMH" | "VTH").sort();
+  const revenue = client.projects.reduce((a: any, p: any) => a + Number(p.value), 0);
 
   return (
     <div className="space-y-3.5">
@@ -48,7 +48,7 @@ export default function ClientDetailPage() {
             // Every company the user may edit, so a company can be added here too.
             companies={editableCompanies}
             owners={owners}
-            client={{ id: client.id, name: client.name, domain: client.domain ?? "", type: client.type ?? "", status: client.status as "ACTIVE", companies: client.companies.map((c) => c.companyId as "vmh"), ownerId: client.ownerId ?? "", tags: client.tags, notes: client.notes ?? "", address: client.address ?? "" }}
+            client={{ id: client.id, name: client.name, domain: client.domain ?? "", type: client.type ?? "", status: client.status as "ACTIVE", companies: client.companies.map((c: any) => c.companyId as "vmh"), ownerId: client.ownerId ?? "", tags: client.tags, notes: client.notes ?? "", address: client.address ?? "" }}
           />
         )}
       </Card>
@@ -61,7 +61,7 @@ export default function ClientDetailPage() {
         <SectionCard title="Contacts">
           {client.contacts.length === 0 && <EmptyState title="No contacts yet" />}
           <ul className="space-y-3">
-            {client.contacts.map((c) => (
+            {client.contacts.map((c: any) => (
               <li key={c.id} className="flex items-start gap-3">
                 <Avatar person={c} size={32} />
                 <div className="min-w-0 text-xs">
@@ -84,7 +84,7 @@ export default function ClientDetailPage() {
         <SectionCard title="Projects" href={`/projects?client=${client.id}`}>
           {client.projects.length === 0 && <EmptyState title="No projects yet" />}
           <ul className="divide-y">
-            {client.projects.map((p) => (
+            {client.projects.map((p: any) => (
               <li key={p.id} className="flex items-center gap-3 py-2 text-xs">
                 <Link href={`/projects?id=${p.id}&company=${p.companyId}`} className="min-w-0 flex-1 truncate font-semibold text-ink hover:underline">{p.name}</Link>
                 <CompanyBadges codes={[p.companyId === "vmh" ? "VMH" : "VTH"]} />
@@ -98,7 +98,7 @@ export default function ClientDetailPage() {
         <SectionCard title="Invoices" href={`/invoices?client=${client.id}`}>
           {client.invoices.length === 0 && <EmptyState title="No invoices yet" />}
           <ul className="divide-y">
-            {client.invoices.map((i) => (
+            {client.invoices.map((i: any) => (
               <li key={i.id} className="flex items-center gap-3 py-2 text-xs">
                 <Link href={`/invoices?id=${i.id}`} className="w-20 font-semibold text-ink hover:underline">#{i.number}</Link>
                 <span className="flex-1 text-ink-muted">{formatDate(new Date(i.issueDate))}</span>
@@ -111,7 +111,7 @@ export default function ClientDetailPage() {
         <SectionCard title="Files" href={`/files?client=${client.id}`}>
           {client.files.length === 0 && <EmptyState title="No files yet" />}
           <ul className="divide-y">
-            {client.files.map((f) => (
+            {client.files.map((f: any) => (
               <li key={f.id} className="flex items-center gap-3 py-2 text-xs">
                 <FileIcon ext={f.ext} size={26} />
                 <span className="min-w-0 flex-1 truncate text-ink">{f.name}</span>

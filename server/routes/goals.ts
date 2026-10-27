@@ -32,7 +32,7 @@ const goalSchema = z.object({
 
 async function goalFor(user: CurrentUser, goalId: string) {
   const goal = await db.goal.findUniqueOrThrow({ where: { id: id.parse(goalId) }, include: { members: true } });
-  const mine = goal.ownerId === user.id || goal.members.some((m) => m.userId === user.id);
+  const mine = goal.ownerId === user.id || goal.members.some((m: any) => m.userId === user.id);
   if (!mine) assertCan(user, "update", "goal", goal.companyId ?? undefined);
   return goal;
 }

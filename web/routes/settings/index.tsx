@@ -42,7 +42,7 @@ export default function SettingsPage() {
               {data.staff.map((u) => (
                 <div key={u.id} className="space-y-2">
                   <p className="text-xs font-semibold text-ink">{u.name} <span className="font-normal text-ink-muted">· {u.email}</span></p>
-                  {u.memberships.filter((m) => data.editable.includes(m.companyId)).map((m) => (
+                  {u.memberships.filter((m: any) => data.editable.includes(m.companyId)).map((m: any) => (
                     <ModuleAccess
                       key={m.companyId}
                       userId={u.id}

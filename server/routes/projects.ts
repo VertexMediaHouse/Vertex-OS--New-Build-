@@ -43,7 +43,8 @@ const projectSchema = z.object({
 
 async function recomputeProgress(projectId: string) {
   const p = await db.project.findUniqueOrThrow({ where: { id: projectId }, include: { deliverables: true, milestones: true } });
-  await db.project.update({ where: { id: projectId }, data: { progress: projectProgress(p) } });
+  const input = p as unknown as { template: "VMH" | "VTH"; deliverables: { targetCount: number | null; completedCount: number | null; percent: number | null }[]; milestones: { status: string }[] };
+  await db.project.update({ where: { id: projectId }, data: { progress: projectProgress(input) } });
 }
 
 export const projects = new Hono<Env>()
@@ -67,9 +68,15 @@ export const projects = new Hono<Env>()
       db.client.findMany({ where: { archivedAt: null, companies: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
     ]);
     const tabCount = (k: keyof typeof LIST_TABS) => counts.filter((x) => !LIST_TABS[k] || (LIST_TABS[k] as readonly string[]).includes(x.status)).reduce((a, x) => a + x._count, 0);
+    const rows = list.map((x) => ({
+      ...x,
+      template: x.template as "VMH" | "VTH",
+      client: x.client as { name: string } | null,
+      members: x.members as { userId: string; user: { name: string; image: string | null } }[],
+    }));
     return c.json({
       denied: false as const,
-      list,
+      list: rows,
       total,
       page,
       pageSize: PAGE,
@@ -164,7 +171,7 @@ export const projects = new Hono<Env>()
     const user = c.get("user");
     const body = await c.req.json<{ projectId: string; status: string }>();
     const project = await projectFor(user, "update", body.projectId);
-    const allowed = TEMPLATES[project.template].statuses as readonly string[];
+    const allowed = TEMPLATES[project.template as "VMH" | "VTH"].statuses as readonly string[];
     const s = z.string().refine((v) => allowed.includes(v), "Invalid status").parse(body.status);
     await db.$transaction([
       db.project.update({ where: { id: project.id }, data: { status: s as never, completedAt: s === "COMPLETED" ? new Date() : null } }),
@@ -229,7 +236,7 @@ export const projects = new Hono<Env>()
     const user = c.get("user");
     const body = await c.req.json<{ contactId: string; projectId?: string }>();
     const contact = await db.clientContact.findUniqueOrThrow({ where: { id: id.parse(body.contactId) }, include: { client: { include: { companies: true } } } });
-    contact.client.companies.forEach((x) => assertCan(user, "update", "client", x.companyId));
+    contact.client.companies.forEach((x: any) => assertCan(user, "update", "client", x.companyId));
     const res = await invitePortalContact(contact.id);
     // A login on its own shows nothing: access is granted one project at a time.
     if (res.ok && body.projectId) {
@@ -270,7 +277,7 @@ export const projects = new Hono<Env>()
     const user = c.get("user");
     const { contactId } = await c.req.json<{ contactId: string }>();
     const contact = await db.clientContact.findUniqueOrThrow({ where: { id: id.parse(contactId) }, include: { client: { include: { companies: true } } } });
-    contact.client.companies.forEach((x) => assertCan(user, "update", "client", x.companyId));
+    contact.client.companies.forEach((x: any) => assertCan(user, "update", "client", x.companyId));
     await db.clientContact.update({ where: { id: contact.id }, data: { portalAccess: false } });
     if (contact.userId) await db.session.deleteMany({ where: { userId: contact.userId } });
     return c.json<ActionResult>({ ok: true });

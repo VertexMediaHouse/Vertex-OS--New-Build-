@@ -29,7 +29,12 @@ const ICONS: Record<string, [LucideIcon, TileTone]> = {
 
 type Payload = Awaited<ReturnType<typeof fetchGoals>>;
 type Loaded = Extract<Payload, { denied: false }>;
-type Row = Omit<Loaded["rows"][number], "startDate" | "endDate"> & { startDate: Date; endDate: Date };
+type Row = Omit<Loaded["rows"][number], "startDate" | "endDate"> & {
+  startDate: Date;
+  endDate: Date;
+  owner: { name: string; image: string | null };
+  members: { userId: string; user: { id: string; name: string; image: string | null } }[];
+};
 type Props = {
   rows: Row[];
   sp: Record<string, string>;
@@ -60,7 +65,7 @@ export default function GoalsPage() {
   const from = new Date(data.from);
   const to = new Date(data.to);
   const period: Period = { preset: "custom", from, to, prevFrom: from, prevTo: from };
-  const rows: Row[] = data.rows.map((g) => ({ ...g, startDate: new Date(g.startDate), endDate: new Date(g.endDate) }));
+  const rows = data.rows.map((g) => ({ ...g, startDate: new Date(g.startDate), endDate: new Date(g.endDate) })) as Row[];
   const simple = (sp.view ?? (data.memberOnly ? "simple" : "detailed")) === "simple";
   const range = { preset: "custom", from: dayKey(from), to: dayKey(lastDay(period)) };
   const toggle = <SegmentedControl param="view" active={simple ? "simple" : "detailed"} options={[{ value: "detailed", label: "Detailed" }, { value: "simple", label: "Simple" }]} />;

@@ -211,7 +211,7 @@ export const tasks = new Hono<Env>()
       task: tk,
       comments,
       activity,
-      minutes: tk.timeEntries.reduce((a, e) => a + (e.durationMin ?? 0), 0),
+      minutes: tk.timeEntries.reduce((a: any, e: any) => a + (e.durationMin ?? 0), 0),
       canDelete: can(user, "delete", "task", tk.companyId),
       viewerId: user.id,
       now: now().toISOString(),

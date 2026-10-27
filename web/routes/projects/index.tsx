@@ -116,12 +116,12 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
   if (!data) return <CardSkeleton className="h-96" />;
   if (!data.project) return <EmptyState title="Project not found" />;
 
-  const pr = data.project;
+  const pr = data.project as typeof data.project & { template: "VMH" | "VTH" };
   const { tasks, taskCount, doneCount, files, notes, activity, clients, people, billable, nonBillable, editable } = data;
   const vth = pr.template === "VTH";
   const t = new Date(data.now);
-  const primary = pr.client?.contacts.find((c) => c.isPrimary) ?? pr.client?.contacts[0];
-  const others = pr.client?.contacts.filter((c) => c.id !== primary?.id) ?? [];
+  const primary = pr.client?.contacts.find((c: any) => c.isPrimary) ?? pr.client?.contacts[0];
+  const others = pr.client?.contacts.filter((c: any) => c.id !== primary?.id) ?? [];
   const due = pr.dueDate ? new Date(pr.dueDate) : null;
   const daysLeft = due ? formatDaysLeft(due, t) : null;
   const dueRed = due ? due.getTime() - t.getTime() < 7 * 86_400_000 : false;
@@ -130,8 +130,8 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
   const editDialog = (trigger: React.ReactNode) => <NewProjectDialog companies={[pr.companyId as "vmh"]} clients={clients} project={formValues} trigger={trigger} />;
   const accent = vth ? "text-vth-text" : "text-brand-text";
   const dueText = due && <span className={dueRed ? "text-danger-text" : undefined}>{formatDate(due)} ({daysLeft})</span>;
-  const timeline: TimelinePoint[] = (pr.phases.length ? pr.phases.map((ph) => ({ label: ph.label, date: ph.date, status: ph.status })) : pr.milestones.map((m) => ({ label: m.title, date: m.dueDate, status: m.status }))).map((ph, i, arr) => {
-    const firstOpen = arr.findIndex((x) => x.status !== "COMPLETED");
+  const timeline: TimelinePoint[] = (pr.phases.length ? pr.phases.map((ph: any) => ({ label: ph.label, date: ph.date, status: ph.status })) : pr.milestones.map((m: any) => ({ label: m.title, date: m.dueDate, status: m.status }))).map((ph: any, i: any, arr: any) => {
+    const firstOpen = arr.findIndex((x: any) => x.status !== "COMPLETED");
     const state = ph.status === "COMPLETED" ? "done" : ph.status === "IN_PROGRESS" ? "current" : i === firstOpen || (i === firstOpen + 1 && arr[firstOpen]?.status === "IN_PROGRESS") ? "next" : "todo";
     return { label: ph.label, date: formatShortDate(new Date(ph.date)), state };
   });
@@ -167,7 +167,7 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
     <>
       <table className="w-full text-2xs">
         <thead><tr className="text-left text-ink-2">{["Invoice", "Amount", "Status", "Due Date"].map((h) => <th key={h} className="bg-surface-muted px-2 py-1.5 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
-        <tbody>{pr.invoices.map((i) => <tr key={i.id} className="border-b last:border-0"><td className="px-2 py-1.5"><Link href={`/invoices?id=${i.id}`} className="text-ink hover:underline">#{i.number}</Link></td><td className="px-2 py-1.5 tabular">{formatINR(i.total)}</td><td className="px-2 py-1.5"><EnumPill map={INVOICE_STATUS} value={i.status} size="xs" /></td><td className="px-2 py-1.5 text-ink-2">{formatDate(new Date(i.dueDate))}</td></tr>)}</tbody>
+        <tbody>{pr.invoices.map((i: any) => <tr key={i.id} className="border-b last:border-0"><td className="px-2 py-1.5"><Link href={`/invoices?id=${i.id}`} className="text-ink hover:underline">#{i.number}</Link></td><td className="px-2 py-1.5 tabular">{formatINR(i.total)}</td><td className="px-2 py-1.5"><EnumPill map={INVOICE_STATUS} value={i.status} size="xs" /></td><td className="px-2 py-1.5 text-ink-2">{formatDate(new Date(i.dueDate))}</td></tr>)}</tbody>
       </table>
       {data.canInvoice && <Link href={`/invoices/new?project=${pr.id}`} className="mt-3 inline-flex h-8 items-center gap-1 rounded-lg bg-brand-soft px-3 text-xs font-semibold text-brand-text"><Plus className="size-3.5" /> Create Invoice</Link>}
     </>
@@ -217,13 +217,13 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
                 ["Priority", <EnumPill key="p" map={PRIORITY} value={pr.priority} />],
                 ["Project Value", <span key="v" className="font-bold">{formatINR(pr.value)}</span>],
                 ["Billing Type", BILLING_LABELS[pr.billingType]],
-                ["Team Members", <AvatarStack key="m" people={pr.members.map((m) => m.user)} size={28} />],
+                ["Team Members", <AvatarStack key="m" people={pr.members.map((m: any) => m.user)} size={28} />],
               ]} />
             </SectionCard>
             <SectionCard title="Project Description">
               <p className="text-xs leading-5 text-ink-2">{pr.description}</p>
               <h3 className="mt-4 mb-1 text-md font-bold text-ink">{vth ? "Key Deliverables" : "Deliverables"}</h3>
-              {pr.deliverables.map((d) => {
+              {pr.deliverables.map((d: any) => {
                 const isCount = d.targetCount !== null;
                 const pct = isCount ? ((d.completedCount ?? 0) / (d.targetCount || 1)) * 100 : (d.percent ?? 0);
                 return (
@@ -250,7 +250,7 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
                     <Link href={`?${new URLSearchParams({ ...sp, tab: "notes" })}`} className="inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5"><MessageSquare className="size-3.5" />Message</Link>
                   </div>
                   {others.length > 0 && <p className="pt-1 text-sm font-semibold text-ink">Additional Contacts</p>}
-                  {others.map((c) => (
+                  {others.map((c: any) => (
                     <div key={c.id} className="flex items-center gap-3"><Avatar person={c} size={32} /><div><p className="font-semibold text-ink">{c.name}</p><p className="text-ink-muted">{c.title}</p>{c.email && <a href={`mailto:${c.email}`} className={cn("flex items-center gap-1", accent)}><Mail className="size-3" />{c.email}</a>}</div></div>
                   ))}
                 </div>
@@ -260,8 +260,8 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
 
           <div className="grid gap-3.5 xl:grid-cols-3">
             {vth ? (
-              <SectionCard title={`Milestones (${pr.milestones.filter((m) => m.status === "COMPLETED").length}/${pr.milestones.length} completed)`} icon={Target} tone="purple" href={`?${new URLSearchParams({ ...sp, tab: "milestones" })}`}>
-                {pr.milestones.map((m, i) => (
+              <SectionCard title={`Milestones (${pr.milestones.filter((m: any) => m.status === "COMPLETED").length}/${pr.milestones.length} completed)`} icon={Target} tone="purple" href={`?${new URLSearchParams({ ...sp, tab: "milestones" })}`}>
+                {pr.milestones.map((m: any, i: any) => (
                   <CheckRow key={m.id} round done={m.status === "COMPLETED"} label={`${i + 1}. ${m.title}`} right={<span className="flex items-center gap-2"><span className="w-12 text-2xs text-ink-2">{formatShortDate(new Date(m.dueDate))}</span><EnumPill map={MILESTONE_STATUS} value={m.status} size="xs" /></span>} />
                 ))}
               </SectionCard>
@@ -271,7 +271,7 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
             {vth ? <SectionCard title={`Tasks (${taskCount} total)`} icon={FileCheck} tone="green" href={`?${new URLSearchParams({ ...sp, tab: "tasks" })}`}>{taskTable}</SectionCard> : <SectionCard title="Recent Files" icon={FileText} tone="blue" href={`?${new URLSearchParams({ ...sp, tab: "files" })}`}>{fileList}</SectionCard>}
             {vth ? <SectionCard title="Recent Files" icon={FileText} tone="blue" href={`?${new URLSearchParams({ ...sp, tab: "files" })}`}>{fileList}</SectionCard> : (
               <SectionCard title="Client Approvals" icon={FolderOpen} tone="orange" href={`?${new URLSearchParams({ ...sp, tab: "access" })}`}>
-                {pr.approvals.map((a) => (
+                {pr.approvals.map((a: any) => (
                   <div key={a.id} className="flex items-center gap-3 py-1.5">
                     <span className="inline-flex size-9 items-center justify-center rounded-md bg-surface-muted text-2xs font-bold text-ink-2">{a.title.slice(0, 2)}</span>
                     <div className="min-w-0 flex-1"><p className="text-xs font-semibold text-ink">{a.title}</p><p className="text-2xs text-ink-muted">{a.status === "PENDING" ? "Pending approval" : a.status === "APPROVED" ? `Approved on ${formatShortDate(new Date(a.respondedAt!))}` : `Changes requested on ${formatShortDate(new Date(a.respondedAt!))}`}</p></div>
@@ -317,7 +317,7 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
       )}
       {tab === "milestones" && (
         <Card className="p-4">
-          {pr.milestones.map((m, i) => <CheckRow key={m.id} round done={m.status === "COMPLETED"} label={`${i + 1}. ${m.title}`} right={<span className="flex items-center gap-3"><span className="text-2xs text-ink-2">{formatDate(new Date(m.dueDate))}</span><EnumPill map={MILESTONE_STATUS} value={m.status} size="xs" />{editable && <MilestoneToggle id={m.id} status={m.status} />}</span>} />)}
+          {pr.milestones.map((m: any, i: any) => <CheckRow key={m.id} round done={m.status === "COMPLETED"} label={`${i + 1}. ${m.title}`} right={<span className="flex items-center gap-3"><span className="text-2xs text-ink-2">{formatDate(new Date(m.dueDate))}</span><EnumPill map={MILESTONE_STATUS} value={m.status} size="xs" />{editable && <MilestoneToggle id={m.id} status={m.status} />}</span>} />)}
         </Card>
       )}
       {tab === "files" && <Card className="p-4">{fileList}</Card>}
@@ -336,7 +336,7 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
           <SectionCard title="Client portal access">
             <p className="mb-3 text-xs text-ink-muted">A contact sees a project only once it is shared with them. Sharing this one shows them its files, invoices and deliverables to approve, and nothing else.</p>
             <ul className="space-y-3">
-              {pr.client?.contacts.map((c) => (
+              {pr.client?.contacts.map((c: any) => (
                 <li key={c.id} className="flex items-center gap-3"><Avatar person={c} size={32} /><div className="min-w-0 flex-1 text-xs"><p className="font-semibold text-ink">{c.name}</p><p className="text-ink-muted">{c.email ?? "No email"}</p></div>{editable && <PortalAccessButton contactId={c.id} projectId={pr.id} active={c.portalAccess} shared={c.projects.length > 0} />}</li>
               ))}
             </ul>
@@ -344,7 +344,7 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
           <SectionCard title="Approvals">
             {editable && <RequestApproval projectId={pr.id} files={files.map((f) => ({ id: f.id, name: f.name }))} />}
             <ul className="mt-3 divide-y">
-              {pr.approvals.map((a) => <li key={a.id} className="flex items-center gap-3 py-2 text-xs"><span className="flex-1 font-medium text-ink">{a.title}</span><span className="text-ink-muted">{formatShortDate(new Date(a.requestedAt))}</span><EnumPill map={APPROVAL_STATUS} value={a.status} dot={false} size="xs" /></li>)}
+              {pr.approvals.map((a: any) => <li key={a.id} className="flex items-center gap-3 py-2 text-xs"><span className="flex-1 font-medium text-ink">{a.title}</span><span className="text-ink-muted">{formatShortDate(new Date(a.requestedAt))}</span><EnumPill map={APPROVAL_STATUS} value={a.status} dot={false} size="xs" /></li>)}
             </ul>
           </SectionCard>
         </div>

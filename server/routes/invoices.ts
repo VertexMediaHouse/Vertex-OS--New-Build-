@@ -6,12 +6,13 @@ import { requireUser, staffContext, withScope, type Env } from "../context";
 import { logActivity, notify } from "@/lib/activity";
 import { assertCan, can } from "@/lib/auth/permissions";
 import { now } from "@/lib/clock";
+import { withLock } from "@/lib/concurrency";
 import { db, Prisma } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { formatDate, formatMoney } from "@/lib/format";
 import { loadInvoice, pdfData } from "@/lib/invoices/load";
 import { renderInvoicePdf } from "@/lib/invoices/pdf";
-import { invoiceStatus, invoiceTotals } from "@/lib/invoices/status";
+import { invoiceStatus, invoiceTotals, type InvoiceStatusName } from "@/lib/invoices/status";
 import { parseCompanySettings } from "@/lib/settings";
 import { subScope } from "@/lib/search-params";
 import type { ActionResult } from "@/lib/validation/result";
@@ -99,7 +100,7 @@ export const invoices = new Hono<Env>()
       denied: false as const,
       scope: c.get("scope"),
       companies: companies.map((x) => { const s = parseCompanySettings(x.settings); return { id: x.id as "vmh", name: x.name, taxRate: s.defaultTaxRate, terms: s.paymentTermsDays, hourlyRate: s.defaultHourlyRate }; }),
-      clients: clients.map((x) => ({ id: x.id, name: x.name, companyIds: x.companies.map((y) => y.companyId) })),
+      clients: clients.map((x) => ({ id: x.id, name: x.name, companyIds: x.companies.map((y: any) => y.companyId) })),
       projects: projects.map((x) => ({ id: x.id, name: x.name, clientId: x.clientId, companyId: x.companyId, value: Number(x.value), billing: x.billingType })),
       entries: entries.map((e) => ({ id: e.id, companyId: e.companyId, clientId: e.project?.clientId ?? null, projectId: e.projectId, hours: Math.round(((e.durationMin ?? 0) / 60) * 100) / 100, label: `${e.start.toISOString().slice(0, 10)} · ${e.user.name} · ${e.task?.title ?? e.note ?? e.project?.name}` })),
     });
@@ -163,22 +164,22 @@ export const invoices = new Hono<Env>()
     const inv = await db.invoice.findUniqueOrThrow({ where: { id: id.parse(c.req.param("id")) }, include: { client: true, project: { include: { members: true } } } });
     assertCan(user, "update", "invoice", inv.companyId);
     if (inv.status === "CANCELLED" || inv.status === "DRAFT") return c.json<ActionResult>({ ok: false, error: "Send the invoice before recording payments." });
-    const result = await db.$transaction(async (tx) => {
-      // Lock the invoice row: two people recording a payment at once must not both pass the
-      // balance check, and the paid total must count both payments.
-      await tx.$executeRaw`SELECT 1 FROM "Invoice" WHERE id = ${inv.id} FOR UPDATE`;
+    // Two people recording a payment at once must not both pass the balance check, and the
+    // paid total must count both payments. Postgres used to lock the row (SELECT ... FOR
+    // UPDATE); withLock serializes same-invoice payments in-process instead.
+    const result = await withLock(`invoice-payment:${inv.id}`, () => db.$transaction(async (tx) => {
       const fresh = await tx.invoice.findUniqueOrThrow({ where: { id: inv.id }, select: { total: true, paidAmount: true, status: true, dueDate: true } });
       const balance = new Prisma.Decimal(fresh.total).minus(fresh.paidAmount);
       if (balance.lessThan(p.amount)) return { ok: false as const, error: `That's more than the balance (${formatMoney(balance, inv.currency)}).` };
       await tx.payment.create({ data: { invoiceId: inv.id, ...p, createdById: user.id } });
       const paid = new Prisma.Decimal(fresh.paidAmount).plus(p.amount);
-      const status = invoiceStatus({ current: fresh.status, total: Number(fresh.total), paid: Number(paid), dueDate: fresh.dueDate, now: now() });
+      const status = invoiceStatus({ current: fresh.status as InvoiceStatusName, total: Number(fresh.total), paid: Number(paid), dueDate: fresh.dueDate, now: now() });
       await tx.invoice.update({ where: { id: inv.id }, data: { paidAmount: paid, status } });
       // Financial changes always land in the audit trail.
       await logActivity(tx, { companyId: inv.companyId, actorId: user.id, verb: "paid", entityType: "PAYMENT", entityId: inv.id, summary: `Payment received from ${inv.client.name} (${formatMoney(p.amount, inv.currency)})`, meta: { amount: p.amount, method: p.method, reference: p.reference ?? null } });
-      if (status === "PAID") await notify(tx, { userIds: inv.project?.members.map((m) => m.userId) ?? [], exceptUserId: user.id, type: "invoice_paid", title: `#${inv.number} is fully paid`, link: `/invoices?id=${inv.id}` });
+      if (status === "PAID") await notify(tx, { userIds: inv.project?.members.map((m: any) => m.userId) ?? [], exceptUserId: user.id, type: "invoice_paid", title: `#${inv.number} is fully paid`, link: `/invoices?id=${inv.id}` });
       return { ok: true as const };
-    });
+    }));
     return c.json<ActionResult>(result);
   })
   .post("/:id/reminder", ...staffContext, async (c) => {

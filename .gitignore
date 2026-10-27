@@ -42,14 +42,10 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
-# local services (embedded Postgres data, object storage data, downloaded binaries)
+# local services (object storage data, downloaded binaries)
 /.data/
 /.bin/
-
-# generated Prisma client
-/lib/db/generated/
 
 # test output
 /test-results/

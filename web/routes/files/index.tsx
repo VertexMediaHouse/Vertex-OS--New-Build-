@@ -103,7 +103,7 @@ export default function FilesPage() {
                     <td className="px-2 text-ink-muted">{f.ext}</td>
                     <td className="px-2">{formatFileSize(f.size)}</td>
                     <td className="px-2">{formatDate(new Date(f.updatedAt))}</td>
-                    <td className="px-2"><AvatarStack people={f.shares.flatMap((s) => (s.user ? [s.user] : []))} size={22} max={2} /></td>
+                    <td className="px-2"><AvatarStack people={f.shares.flatMap((s: any) => (s.user ? [s.user] : []))} size={22} max={2} /></td>
                     <td className="px-2"><StarButton id={f.id} starred={f.starred} /></td>
                   </tr>
                 ))}
@@ -152,7 +152,7 @@ function FilePanel({ id, closeHref, people, tab }: { id: string; closeHref: stri
               ["Uploaded by", <span key="u" className="flex items-center gap-1.5"><Avatar person={f.uploadedBy} size={20} />{f.uploadedBy.name}</span>],
               ["Uploaded on", formatFullDateTime(new Date(f.createdAt))],
               ["Last modified", formatFullDateTime(new Date(f.updatedAt))],
-              ["Shared with", <AvatarStack key="s" people={f.shares.flatMap((s) => (s.user ? [s.user] : []))} size={22} />],
+              ["Shared with", <AvatarStack key="s" people={f.shares.flatMap((s: any) => (s.user ? [s.user] : []))} size={22} />],
               ["Tags", f.tags.length ? <span key="t" className="flex flex-wrap gap-1">{f.tags.map((g) => <span key={g} className="rounded bg-brand-soft px-1.5 py-0.5 text-brand-text">{g}</span>)}</span> : "—"],
             ]} />
             {f.description && <><p className="mt-3 text-xs font-semibold text-ink">Description</p><p className="mt-1 rounded-lg bg-surface-muted p-2.5 text-xs text-ink-2">{f.description}</p></>}
@@ -161,12 +161,12 @@ function FilePanel({ id, closeHref, people, tab }: { id: string; closeHref: stri
         {tab === "versions" && (
           <ul className="space-y-2 text-xs">
             <li className="flex justify-between"><span><b>v{f.version}</b> (current) · {formatFileSize(f.size)}</span><a href={dl} className="text-brand-text">Download</a></li>
-            {f.versions.map((v) => <li key={v.id} className="flex justify-between"><span>v{v.version} · {formatFileSize(v.size)} · {v.uploadedBy.name} · {formatDate(new Date(v.createdAt))}</span><a href={`${dl}?v=${v.version}`} className="text-brand-text">Download</a></li>)}
+            {f.versions.map((v: any) => <li key={v.id} className="flex justify-between"><span>v{v.version} · {formatFileSize(v.size)} · {v.uploadedBy.name} · {formatDate(new Date(v.createdAt))}</span><a href={`${dl}?v=${v.version}`} className="text-brand-text">Download</a></li>)}
             {canUpdate && <li className="pt-2"><UploadButton fileId={f.id} label="Upload new version" /></li>}
           </ul>
         )}
         {tab === "activity" && activity.map((a) => <ActivityRow key={a.id} person={a.actor ?? undefined} text={a.summary} time={a.time} />)}
-        {tab === "share" && canUpdate && <FileMenuActions id={f.id} trashed={Boolean(f.deletedAt)} status={f.status} portal={f.sharedWithPortal} people={people} shared={f.shares.flatMap((s) => (s.userId ? [s.userId] : []))} />}
+        {tab === "share" && canUpdate && <FileMenuActions id={f.id} trashed={Boolean(f.deletedAt)} status={f.status} portal={f.sharedWithPortal} people={people} shared={f.shares.flatMap((s: any) => (s.userId ? [s.userId] : []))} />}
       </div>
     </SidePanel>
   );

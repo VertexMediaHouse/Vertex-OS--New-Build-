@@ -28,10 +28,10 @@ export const requireUser = createMiddleware<Env>(async (c, next) => {
     email: user.email,
     image: user.image,
     isOwner: user.isOwner,
-    kind: user.kind,
+    kind: user.kind as "STAFF" | "CLIENT",
     title: user.title,
     weeklyCapacityHours: user.weeklyCapacityHours,
-    memberships: user.memberships,
+    memberships: user.memberships as { companyId: string; role: CurrentUser["memberships"][number]["role"]; modules: string[] }[],
   });
   await next();
 });

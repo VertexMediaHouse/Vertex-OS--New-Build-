@@ -1,8 +1,6 @@
 // Direct Google Sheets Integration using Web App webhook.
 // Provides zero-auth direct reading and writing to Google Sheets.
 
-const SCRIPT_URL = process.env.GOOGLE_SHEET_WEBAPP_URL;
-
 export function isSheetsConfigured(): boolean {
   return Boolean(process.env.GOOGLE_SHEET_WEBAPP_URL);
 }
@@ -13,29 +11,6 @@ function getUrl(): string {
     throw new Error("GOOGLE_SHEET_WEBAPP_URL is not set in environment");
   }
   return url;
-}
-
-/**
- * Hydrates date strings back into JavaScript Date objects.
- */
-export function hydrateDates(val: any): any {
-  if (val === null || val === undefined) return val;
-  if (typeof val === "string") {
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
-      const d = new Date(val);
-      if (!isNaN(d.getTime())) return d;
-    }
-    return val;
-  }
-  if (Array.isArray(val)) return val.map(hydrateDates);
-  if (typeof val === "object") {
-    const out: any = {};
-    for (const [k, v] of Object.entries(val)) {
-      out[k] = hydrateDates(v);
-    }
-    return out;
-  }
-  return val;
 }
 
 /**
@@ -83,12 +58,12 @@ export async function fetchAllFromSheets(): Promise<Record<string, any[]> | null
       return null;
     }
 
-    // Hydrate dates for all rows
+    // Dates stay as the raw ISO strings the sheet sends; lib/db/index.ts hydrates them
+    // into real Date objects on the way into the store (and double-hydrating a Date
+    // turns it into `{}` — it has no enumerable own properties to walk).
     const result: Record<string, any[]> = {};
     for (const [table, rows] of Object.entries(json.data)) {
-      if (Array.isArray(rows)) {
-        result[table] = rows.map(hydrateDates);
-      }
+      if (Array.isArray(rows)) result[table] = rows;
     }
 
     return result;

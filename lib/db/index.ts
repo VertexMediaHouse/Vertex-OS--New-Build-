@@ -263,6 +263,9 @@ export class Decimal {
     const d = n instanceof Decimal ? n.val : Number(n) || 0;
     return new Decimal(d === 0 ? 0 : this.val / d);
   }
+  lessThan(n: number | string | Decimal) {
+    return this.val < (n instanceof Decimal ? n.val : Number(n) || 0);
+  }
   toNumber() {
     return this.val;
   }
@@ -282,6 +285,9 @@ export class Decimal {
 
 const OuterDecimal = Decimal;
 
+// Mirrors the real @prisma/client's own `Prisma` namespace shape, which callers already
+// use as `Prisma.Decimal`/`Prisma.XWhereInput` — an ES module can't offer that shape.
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Prisma {
   export const Decimal: typeof OuterDecimal = (globalThis as any).Decimal || OuterDecimal;
   export type Decimal = InstanceType<typeof Decimal>;
@@ -377,6 +383,29 @@ const store: Record<string, any[]> = {
   recurringTask: hydrateDates(recurringTaskData),
 };
 
+// "Add Client" and "Convert lead" file in a client under this fixed id (see
+// server/routes/clients.ts and leads.ts) assuming it already exists — true for the
+// bundled mock data, but a Google Sheet someone reset without these rows would otherwise
+// break both flows (a Postgres migration used to guarantee this; see docs/decisions.md #36).
+const ROOT_FOLDERS = [
+  { id: "folder_client_files", name: "Client Files", category: "CLIENT_FILES" },
+  { id: "folder_project_files", name: "Project Files", category: "PROJECT_FILES" },
+  { id: "folder_design_assets", name: "Design Assets", category: "DESIGN_ASSETS" },
+  { id: "folder_video_assets", name: "Video Assets", category: "VIDEO_ASSETS" },
+  { id: "folder_documents", name: "Documents", category: "DOCUMENTS" },
+  { id: "folder_team_resources", name: "Team Resources", category: "TEAM_RESOURCES" },
+];
+
+function ensureRootFolders() {
+  const now = new Date();
+  for (const f of ROOT_FOLDERS) {
+    if (!store.folder.some((x) => x.id === f.id)) {
+      store.folder.push({ ...f, parentId: null, companyId: null, clientId: null, projectId: null, color: "#93C5FD", deletedAt: null, createdAt: now, updatedAt: now });
+    }
+  }
+}
+ensureRootFolders();
+
 // ───────────────────────────── Google Sheets Hydration ─────────────────────────────
 
 let sheetsHydrated = false;
@@ -409,6 +438,7 @@ export async function initDbFromSheets(force = false): Promise<void> {
           }
         }
       }
+      ensureRootFolders();
       console.log(`[db] Successfully hydrated ${loadedCount} tables from Google Sheets`);
       sheetsHydrated = true;
     } catch (err) {
@@ -890,7 +920,46 @@ function nextId(prefix: string) {
 
 // ───────────────────────────── Model Delegate Factory ─────────────────────────────
 
-function createModelDelegate(modelName: string) {
+// Known scalar fields come from the model's own mock-data shape; relations added by
+// `include`/`select` fall through the index signature, so a route handler's return type
+// stays a concrete object (never bare `any`) and Hono's client-side type inference holds.
+type Loose<T> = T & { [key: string]: any };
+
+// JSON import types infer DateTime columns as `string` (that's what's in the file on disk),
+// but hydrateDates() turns them into real Date objects in the in-memory store at runtime —
+// matching what Prisma gave server-side code before. Re-widen exactly those fields (the
+// DateTime columns of prisma/schema.prisma) back to Date; Hono's c.json() re-narrows them
+// to `string` for API clients automatically (Date has .toJSON(), see hono's JSONParsed<T>).
+type DateField =
+  | "accessTokenExpiresAt" | "archivedAt" | "completedAt" | "createdAt" | "cycleMonth"
+  | "date" | "deletedAt" | "deliveredAt" | "dueDate" | "editingStartedAt" | "end"
+  | "endDate" | "expiresAt" | "issueDate" | "lastActivityAt" | "lostAt"
+  | "meetingBookedAt" | "openedAt" | "publishDate" | "publishedAt" | "readAt"
+  | "refreshTokenExpiresAt" | "repliedAt" | "requestedAt" | "resolvedAt" | "respondedAt"
+  | "scheduledAt" | "sentAt" | "shootDate" | "since" | "start" | "startDate"
+  | "updatedAt" | "wonAt";
+
+type Hydrate<T> = { [K in keyof T]: K extends DateField ? (null extends T[K] ? Date | null : Date) : T[K] };
+
+type ModelDelegate<T extends Record<string, any>> = {
+  findMany(args?: any): Promise<Loose<T>[]>;
+  findFirst(args?: any): Promise<Loose<T> | null>;
+  findFirstOrThrow(args?: any): Promise<Loose<T>>;
+  findUnique(args?: any): Promise<Loose<T> | null>;
+  findUniqueOrThrow(args?: any): Promise<Loose<T>>;
+  count(args?: any): Promise<number>;
+  groupBy(args?: any): Promise<any[]>;
+  aggregate(args?: any): Promise<any>;
+  create(args?: any): Promise<Loose<T>>;
+  createMany(args?: any): Promise<{ count: number }>;
+  update(args?: any): Promise<Loose<T>>;
+  updateMany(args?: any): Promise<{ count: number }>;
+  delete(args?: any): Promise<Loose<T>>;
+  deleteMany(args?: any): Promise<{ count: number }>;
+  upsert(args?: any): Promise<Loose<T>>;
+};
+
+function createModelDelegate<T extends Record<string, any> = Record<string, any>>(modelName: string): ModelDelegate<T> {
   return {
     async findMany(args: any = {}) {
       if (!sheetsHydrated && sheetsHydratingPromise) await sheetsHydratingPromise;
@@ -1125,50 +1194,50 @@ function createModelDelegate(modelName: string) {
 // ───────────────────────────── Database Client ─────────────────────────────
 
 const rawDb = {
-  company: createModelDelegate("company"),
-  user: createModelDelegate("user"),
-  session: createModelDelegate("session"),
-  account: createModelDelegate("account"),
-  verification: createModelDelegate("verification"),
-  rateLimit: createModelDelegate("rateLimit"),
-  membership: createModelDelegate("membership"),
-  client: createModelDelegate("client"),
-  clientCompany: createModelDelegate("clientCompany"),
-  projectContact: createModelDelegate("projectContact"),
-  clientContact: createModelDelegate("clientContact"),
-  lead: createModelDelegate("lead"),
-  crossSellAlert: createModelDelegate("crossSellAlert"),
-  project: createModelDelegate("project"),
-  projectMember: createModelDelegate("projectMember"),
-  deliverable: createModelDelegate("deliverable"),
-  milestone: createModelDelegate("milestone"),
-  timelinePhase: createModelDelegate("timelinePhase"),
-  approval: createModelDelegate("approval"),
-  bug: createModelDelegate("bug"),
-  supportTicket: createModelDelegate("supportTicket"),
-  task: createModelDelegate("task"),
-  checklistItem: createModelDelegate("checklistItem"),
-  timeEntry: createModelDelegate("timeEntry"),
-  invoice: createModelDelegate("invoice"),
-  invoiceLineItem: createModelDelegate("invoiceLineItem"),
-  payment: createModelDelegate("payment"),
-  goal: createModelDelegate("goal"),
-  goalMember: createModelDelegate("goalMember"),
-  goalMilestone: createModelDelegate("goalMilestone"),
-  folder: createModelDelegate("folder"),
-  file: createModelDelegate("file"),
-  fileVersion: createModelDelegate("fileVersion"),
-  fileShare: createModelDelegate("fileShare"),
-  emailCampaign: createModelDelegate("emailCampaign"),
-  campaignRecipient: createModelDelegate("campaignRecipient"),
-  calendarEvent: createModelDelegate("calendarEvent"),
-  comment: createModelDelegate("comment"),
-  activity: createModelDelegate("activity"),
-  notification: createModelDelegate("notification"),
-  tag: createModelDelegate("tag"),
-  contentItem: createModelDelegate("contentItem"),
-  note: createModelDelegate("note"),
-  recurringTask: createModelDelegate("recurringTask"),
+  company: createModelDelegate<Hydrate<(typeof companyData)[number]>>("company"),
+  user: createModelDelegate<Hydrate<(typeof userData)[number]>>("user"),
+  session: createModelDelegate<Hydrate<(typeof sessionData)[number]>>("session"),
+  account: createModelDelegate<Hydrate<(typeof accountData)[number]>>("account"),
+  verification: createModelDelegate<Hydrate<(typeof verificationData)[number]>>("verification"),
+  rateLimit: createModelDelegate<Hydrate<(typeof rateLimitData)[number]>>("rateLimit"),
+  membership: createModelDelegate<Hydrate<(typeof membershipData)[number]>>("membership"),
+  client: createModelDelegate<Hydrate<(typeof clientData)[number]>>("client"),
+  clientCompany: createModelDelegate<Hydrate<(typeof clientCompanyData)[number]>>("clientCompany"),
+  projectContact: createModelDelegate<Hydrate<(typeof projectContactData)[number]>>("projectContact"),
+  clientContact: createModelDelegate<Hydrate<(typeof clientContactData)[number]>>("clientContact"),
+  lead: createModelDelegate<Hydrate<(typeof leadData)[number]>>("lead"),
+  crossSellAlert: createModelDelegate<Hydrate<(typeof crossSellAlertData)[number]>>("crossSellAlert"),
+  project: createModelDelegate<Hydrate<(typeof projectData)[number]>>("project"),
+  projectMember: createModelDelegate<Hydrate<(typeof projectMemberData)[number]>>("projectMember"),
+  deliverable: createModelDelegate<Hydrate<(typeof deliverableData)[number]>>("deliverable"),
+  milestone: createModelDelegate<Hydrate<(typeof milestoneData)[number]>>("milestone"),
+  timelinePhase: createModelDelegate<Hydrate<(typeof timelinePhaseData)[number]>>("timelinePhase"),
+  approval: createModelDelegate<Hydrate<(typeof approvalData)[number]>>("approval"),
+  bug: createModelDelegate<Hydrate<(typeof bugData)[number]>>("bug"),
+  supportTicket: createModelDelegate<Hydrate<(typeof supportTicketData)[number]>>("supportTicket"),
+  task: createModelDelegate<Hydrate<(typeof taskData)[number]>>("task"),
+  checklistItem: createModelDelegate<Hydrate<(typeof checklistItemData)[number]>>("checklistItem"),
+  timeEntry: createModelDelegate<Hydrate<(typeof timeEntryData)[number]>>("timeEntry"),
+  invoice: createModelDelegate<Hydrate<(typeof invoiceData)[number]>>("invoice"),
+  invoiceLineItem: createModelDelegate<Hydrate<(typeof invoiceLineItemData)[number]>>("invoiceLineItem"),
+  payment: createModelDelegate<Hydrate<(typeof paymentData)[number]>>("payment"),
+  goal: createModelDelegate<Hydrate<(typeof goalData)[number]>>("goal"),
+  goalMember: createModelDelegate<Hydrate<(typeof goalMemberData)[number]>>("goalMember"),
+  goalMilestone: createModelDelegate<Hydrate<(typeof goalMilestoneData)[number]>>("goalMilestone"),
+  folder: createModelDelegate<Hydrate<(typeof folderData)[number]>>("folder"),
+  file: createModelDelegate<Hydrate<(typeof fileData)[number]>>("file"),
+  fileVersion: createModelDelegate<Hydrate<(typeof fileVersionData)[number]>>("fileVersion"),
+  fileShare: createModelDelegate<Hydrate<(typeof fileShareData)[number]>>("fileShare"),
+  emailCampaign: createModelDelegate<Hydrate<(typeof emailCampaignData)[number]>>("emailCampaign"),
+  campaignRecipient: createModelDelegate<Hydrate<(typeof campaignRecipientData)[number]>>("campaignRecipient"),
+  calendarEvent: createModelDelegate<Hydrate<(typeof calendarEventData)[number]>>("calendarEvent"),
+  comment: createModelDelegate<Hydrate<(typeof commentData)[number]>>("comment"),
+  activity: createModelDelegate<Hydrate<(typeof activityData)[number]>>("activity"),
+  notification: createModelDelegate<Hydrate<(typeof notificationData)[number]>>("notification"),
+  tag: createModelDelegate<Hydrate<(typeof tagData)[number]>>("tag"),
+  contentItem: createModelDelegate<Hydrate<(typeof contentItemData)[number]>>("contentItem"),
+  note: createModelDelegate<Hydrate<(typeof noteData)[number]>>("note"),
+  recurringTask: createModelDelegate<Hydrate<(typeof recurringTaskData)[number]>>("recurringTask"),
 
   async $disconnect() {
     // No-op for in-memory client

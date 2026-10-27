@@ -95,7 +95,6 @@ export type AvatarPerson = { name: string; image?: string | null };
 export function Avatar({ person, size = 28, ring = false, className }: { person: AvatarPerson; size?: number; ring?: boolean; className?: string }) {
   const style = { width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.38)) };
   return person.image ? (
-    // eslint-disable-next-line @next/next/no-img-element -- avatars are small, user-uploaded and already sized
     <img src={person.image} alt={person.name} title={person.name} style={style} className={cn("shrink-0 rounded-full object-cover", ring && "ring-2 ring-white", className)} />
   ) : (
     <span

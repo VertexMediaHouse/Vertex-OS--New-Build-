@@ -29,7 +29,7 @@ export const team = new Hono<Env>()
       allowed: true as const,
       invitable,
       workload,
-      users: users.map((u) => ({ id: u.id, name: u.name, image: u.image, active: u.active, isOwner: u.isOwner, title: u.title, weeklyCapacityHours: u.weeklyCapacityHours, memberships: u.memberships.map((m) => ({ companyId: m.companyId, role: m.role, modules: m.modules })) })),
+      users: users.map((u) => ({ id: u.id, name: u.name, image: u.image, active: u.active, isOwner: u.isOwner, title: u.title, weeklyCapacityHours: u.weeklyCapacityHours, memberships: u.memberships.map((m: any) => ({ companyId: m.companyId, role: m.role, modules: m.modules })) })),
       tasks: tasks.map((t) => ({ assigneeId: t.assigneeId, count: t._count })),
     });
   })
@@ -48,9 +48,9 @@ export const team = new Hono<Env>()
       db.activity.findMany({ where: { actorId: id }, orderBy: { createdAt: "desc" }, take: 10 }),
     ]);
     const weekMin = time.filter((e) => e.start >= week).reduce((a, e) => a + (e.durationMin ?? 0), 0);
-    const editable = !u.isOwner && u.memberships.every((m) => can(viewer, "update", "team", m.companyId));
+    const editable = !u.isOwner && u.memberships.every((m: any) => can(viewer, "update", "team", m.companyId));
     return c.json({
-      user: { id: u.id, name: u.name, email: u.email, image: u.image, isOwner: u.isOwner, title: u.title, active: u.active, weeklyCapacityHours: u.weeklyCapacityHours, memberships: u.memberships.map((m) => ({ companyId: m.companyId, role: m.role, modules: m.modules })) },
+      user: { id: u.id, name: u.name, email: u.email, image: u.image, isOwner: u.isOwner, title: u.title, active: u.active, weeklyCapacityHours: u.weeklyCapacityHours, memberships: u.memberships.map((m: any) => ({ companyId: m.companyId, role: m.role, modules: m.modules })) },
       tasks, time, goals, activity, weekMin, editable, companyIds,
     });
   })
@@ -72,7 +72,7 @@ export const team = new Hono<Env>()
     const target = await db.user.findUniqueOrThrow({ where: { id: z.string().max(64).parse(body.userId) }, include: { memberships: true } });
     if (target.isOwner) throw new Error("The owner's access can't be changed here.");
     const d = z.object({ title: z.string().max(120).optional(), capacity: z.number().int().min(1).max(80).optional(), active: z.boolean().optional(), memberships: z.array(z.object({ companyId: z.enum(["vmh", "vth"]), role: roles })).optional() }).parse(body.input);
-    [...target.memberships.map((m) => m.companyId), ...(d.memberships?.map((m) => m.companyId) ?? [])].forEach((x) => assertCan(user, "update", "team", x));
+    [...target.memberships.map((m: any) => m.companyId), ...(d.memberships?.map((m) => m.companyId) ?? [])].forEach((x) => assertCan(user, "update", "team", x));
     await db.$transaction(async (tx) => {
       await tx.user.update({ where: { id: target.id }, data: { title: d.title, weeklyCapacityHours: d.capacity, active: d.active } });
       if (d.memberships) {

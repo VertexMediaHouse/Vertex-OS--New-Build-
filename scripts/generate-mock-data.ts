@@ -1,12 +1,12 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { hashPassword } from "better-auth/crypto";
-import { addDays, now, startOfDayIST, startOfWeekIST } from "../lib/clock";
+import { addDays, now, startOfWeekIST } from "../lib/clock";
 import { goalProgress, goalStatus } from "../lib/metrics/goals";
 import { invoiceStatus } from "../lib/invoices/status";
 import { companySettingsSchema } from "../lib/settings";
-import * as F from "../prisma/seed/fixtures";
-import { at, day, minutesAgo, rng, slug, splitInto, splitTotal, weekdays } from "../prisma/seed/util";
+import * as F from "./seed-fixtures";
+import { at, day, minutesAgo, rng, slug, splitInto, splitTotal, weekdays } from "./seed-util";
 
 const outDir = path.resolve(process.cwd(), "lib/db/mock-data");
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
@@ -63,7 +63,6 @@ const r = rng();
 const coId = (c: F.Co) => c.toLowerCase();
 const uid = (k: F.TeamKey) => `user_${k}`;
 const NOW = now();
-const TODAY = startOfDayIST(NOW);
 const STAFF: F.TeamKey[] = ["sheen", "hardik"];
 
 const PADDED_CLIENT_NAMES = [

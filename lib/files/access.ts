@@ -11,12 +11,12 @@ export async function canSeeFile(user: CurrentUser, fileId: string) {
   if (!f) return null;
   if (user.kind === "CLIENT") {
     const contact = await db.clientContact.findUnique({ where: { userId: user.id } });
-    const ok = contact?.portalAccess && f.clientId === contact.clientId && (f.sharedWithPortal || f.shares.some((s) => s.clientContactId === contact.id));
+    const ok = contact?.portalAccess && f.clientId === contact.clientId && (f.sharedWithPortal || f.shares.some((s: any) => s.clientContactId === contact.id));
     return ok && !f.deletedAt ? f : null;
   }
   if (f.companyId && !allowedCompanyIds(user).includes(f.companyId)) return null;
   if (isMemberOnly(user, f.companyId ?? undefined)) {
-    const mine = f.uploadedById === user.id || f.shares.some((s) => s.userId === user.id) || f.project?.members.some((m) => m.userId === user.id) || f.task?.assigneeId === user.id;
+    const mine = f.uploadedById === user.id || f.shares.some((s: any) => s.userId === user.id) || f.project?.members.some((m: any) => m.userId === user.id) || f.task?.assigneeId === user.id;
     if (!mine) return null;
   }
   return f;

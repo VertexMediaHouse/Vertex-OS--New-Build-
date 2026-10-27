@@ -11,7 +11,7 @@ import { readParams } from "@/lib/search-params";
 async function projectsTab(companyIds: string[]) {
   const projects = await db.project.findMany({ where: { companyId: { in: companyIds }, clientId: { not: null } }, include: { client: { select: { name: true } }, invoices: { select: { paidAmount: true } } } });
   const hours = await db.timeEntry.groupBy({ by: ["projectId"], _sum: { durationMin: true }, where: { companyId: { in: companyIds } } });
-  return projects.map((x) => { const collected = x.invoices.reduce((a, i) => a + Number(i.paidAmount), 0); const mins = Number(hours.find((h) => h.projectId === x.id)?._sum.durationMin ?? 0); return { ...x, collected, mins, perHour: mins ? collected / (mins / 60) : null }; }).sort((a, b) => (b.perHour ?? 0) - (a.perHour ?? 0));
+  return projects.map((x) => { const collected = x.invoices.reduce((a: any, i: any) => a + Number(i.paidAmount), 0); const mins = Number(hours.find((h) => h.projectId === x.id)?._sum.durationMin ?? 0); return { ...x, client: x.client as { name: string } | null, collected, mins, perHour: mins ? collected / (mins / 60) : null }; }).sort((a, b) => (b.perHour ?? 0) - (a.perHour ?? 0));
 }
 
 async function clientsTab(companyIds: string[]) {

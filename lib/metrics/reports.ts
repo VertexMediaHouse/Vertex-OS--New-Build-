@@ -74,7 +74,7 @@ export async function reportData(s: ScopeFilter, p: Period) {
     members: [...byMember.values()].sort((a, b) => b.minutes - a.minutes),
     topClients: [...byClient.values()].sort((a, b) => b.amount - a.amount).slice(0, 5),
     categories: cats,
-    recentProjects: recentProjects.map((x) => ({ ...x, revenue: x.invoices.reduce((a, i) => a + n(i.total), 0), minutes: n(recentHours.find((h) => h.projectId === x.id)?._sum.durationMin) })),
+    recentProjects: recentProjects.map((x) => ({ ...x, client: x.client as { name: string } | null, revenue: x.invoices.reduce((a: any, i: any) => a + n(i.total), 0), minutes: n(recentHours.find((h) => h.projectId === x.id)?._sum.durationMin) })),
     insights: { revenueChange: pctChange(revenue(), n(paymentsPrev._sum.amount)), newClients, hoursChange: pctChange(minutes(), prevMinutes), hours: minutes(), completed: completedInP },
   };
 }

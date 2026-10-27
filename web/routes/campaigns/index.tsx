@@ -43,7 +43,7 @@ export default function CampaignsPage() {
         <Card className="p-4">
           <table className="w-full text-xs">
             <thead><tr className="text-left text-2xs text-ink-2">{["Name", "Company", "Status", "Sent", "Open %", "Reply %", "Meetings", "Created"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
-            <tbody>{list.map((c) => <tr key={c.id} className={`border-b ${c.id === openId ? "bg-brand-soft" : "hover:bg-accent"}`}><td className="px-2 py-2.5"><Link href={`?id=${c.id}`} scroll={false} className="font-semibold text-ink hover:underline">{c.name}</Link></td><td className="px-2"><CompanyBadge code={companyCode(c.companyId)} /></td><td className="px-2"><StatusPill label={c.status[0] + c.status.slice(1).toLowerCase()} tone={TONE[c.status]} /></td><td className="px-2 tabular">{c.sentCount.toLocaleString("en-IN")}</td><td className="px-2 text-success-text">{pct(c.openCount, c.sentCount)}%</td><td className="px-2 text-danger-text">{pct(c.replyCount, c.sentCount)}%</td><td className="px-2">{c.meetingsCount}</td><td className="px-2">{formatDate(new Date(c.createdAt))}</td></tr>)}</tbody>
+            <tbody>{list.map((c) => <tr key={c.id} className={`border-b ${c.id === openId ? "bg-brand-soft" : "hover:bg-accent"}`}><td className="px-2 py-2.5"><Link href={`?id=${c.id}`} scroll={false} className="font-semibold text-ink hover:underline">{c.name}</Link></td><td className="px-2"><CompanyBadge code={companyCode(c.companyId)} /></td><td className="px-2"><StatusPill label={c.status[0] + c.status.slice(1).toLowerCase()} tone={TONE[c.status as keyof typeof TONE]} /></td><td className="px-2 tabular">{c.sentCount.toLocaleString("en-IN")}</td><td className="px-2 text-success-text">{pct(c.openCount, c.sentCount)}%</td><td className="px-2 text-danger-text">{pct(c.replyCount, c.sentCount)}%</td><td className="px-2">{c.meetingsCount}</td><td className="px-2">{formatDate(new Date(c.createdAt))}</td></tr>)}</tbody>
           </table>
           {list.length === 0 && <EmptyState title="No campaigns yet" action={<Link href="/campaigns/new" className="text-brand-text">Create one</Link>} />}
         </Card>
@@ -58,12 +58,12 @@ function CampaignPanel({ id }: { id: string }) {
   const c = data?.campaign;
   if (!c) return null;
   return (
-    <SidePanel title={c.name} closeHref="/campaigns" header={<><CompanyBadge code={companyCode(c.companyId)} /><StatusPill label={c.status} tone={TONE[c.status]} /></>}>
+    <SidePanel title={c.name} closeHref="/campaigns" header={<><CompanyBadge code={companyCode(c.companyId)} /><StatusPill label={c.status} tone={TONE[c.status as keyof typeof TONE]} /></>}>
       <CampaignStatusButtons id={c.id} status={c.status} />
       <p className="mt-3 text-xs text-ink-muted">Subject: {c.subject}</p>
       <h3 className="mt-4 mb-1 text-sm font-semibold text-ink">Recipients ({c.recipients.length})</h3>
       <ul className="divide-y text-xs">
-        {c.recipients.map((r) => <li key={r.id} className="flex items-center gap-2 py-2"><span className="min-w-0 flex-1 truncate">{r.name ?? r.email}<span className="block text-2xs text-ink-muted">{r.email}</span></span><StatusPill size="xs" dot={false} label={r.status.toLowerCase()} tone={r.status === "REPLIED" ? "success" : r.status === "OPENED" ? "info" : r.status === "BOUNCED" ? "danger" : "neutral"} /><RecipientButtons id={r.id} replied={Boolean(r.repliedAt)} meeting={Boolean(r.meetingBookedAt)} /></li>)}
+        {c.recipients.map((r: any) => <li key={r.id} className="flex items-center gap-2 py-2"><span className="min-w-0 flex-1 truncate">{r.name ?? r.email}<span className="block text-2xs text-ink-muted">{r.email}</span></span><StatusPill size="xs" dot={false} label={r.status.toLowerCase()} tone={r.status === "REPLIED" ? "success" : r.status === "OPENED" ? "info" : r.status === "BOUNCED" ? "danger" : "neutral"} /><RecipientButtons id={r.id} replied={Boolean(r.repliedAt)} meeting={Boolean(r.meetingBookedAt)} /></li>)}
       </ul>
     </SidePanel>
   );

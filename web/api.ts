@@ -7,7 +7,6 @@ export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
 export const api = hc<AppType>(API_URL, { init: { credentials: "include" } });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type JsonOf<T> = T extends ClientResponse<infer D, any, any> ? D : never;
 
 /**
@@ -18,7 +17,6 @@ type JsonOf<T> = T extends ClientResponse<infer D, any, any> ? D : never;
  * produces, so a permission-gated page infers as `{denied} | {data}` instead of just
  * the first branch.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function query<T extends ClientResponse<any, any, any>>(p: Promise<T>): Promise<JsonOf<T>> {
   const res = await p;
   if (res.status === 401) {

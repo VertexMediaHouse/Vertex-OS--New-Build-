@@ -11,7 +11,6 @@ import { listClients, logoColor } from "@/lib/clients";
 import { invitePortalContact } from "@/lib/clients/portal-invite";
 import { toCsv } from "@/lib/csv";
 import { db } from "@/lib/db";
-import { scopedClientWhere } from "@/lib/db/scope";
 import { readParams, subScope } from "@/lib/search-params";
 import { CLIENT_STATUS } from "@/lib/status";
 import { clientSchema, CLIENT_STATUSES } from "@/lib/validation/client";
@@ -26,7 +25,7 @@ async function loadClient(id: string) {
 /** The user must be allowed in every company the client belongs to. */
 async function assertClient(user: CurrentUser, action: "update" | "delete", id: string) {
   const client = await loadClient(id);
-  client.companies.forEach((c) => assertCan(user, action, "client", c.companyId));
+  client.companies.forEach((c: any) => assertCan(user, action, "client", c.companyId));
   return client;
 }
 
@@ -101,7 +100,7 @@ export const clients = new Hono<Env>()
     });
     if (!client) throw new HTTPException(404, { message: "Client not found." });
     const [activity, notes, invoiced, owners] = await Promise.all([
-      db.activity.findMany({ where: { OR: [{ entityType: "CLIENT", entityId: id }, { entityId: { in: client.projects.map((p) => p.id) } }] }, orderBy: { createdAt: "desc" }, take: 8, include: { actor: { select: { name: true } } } }),
+      db.activity.findMany({ where: { OR: [{ entityType: "CLIENT", entityId: id }, { entityId: { in: client.projects.map((p: any) => p.id) } }] }, orderBy: { createdAt: "desc" }, take: 8, include: { actor: { select: { name: true } } } }),
       db.comment.findMany({ where: { entityType: "CLIENT", entityId: id }, orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } }),
       // Every invoice, not just the 10 shown below.
       db.invoice.aggregate({ _sum: { total: true }, where: { clientId: id, companyId: { in: companyIds }, status: { notIn: ["DRAFT", "CANCELLED"] } } }),
@@ -114,7 +113,7 @@ export const clients = new Hono<Env>()
       owners,
       color: logoColor(client.name),
       billed: Number(invoiced._sum.total ?? 0),
-      editable: client.companies.every((x) => can(user, "update", "client", x.companyId)),
+      editable: client.companies.every((x: any) => can(user, "update", "client", x.companyId)),
       editableCompanies: companyIds.filter((x): x is "vmh" | "vth" => can(user, "update", "client", x)),
     });
   })
@@ -172,7 +171,7 @@ export const clients = new Hono<Env>()
     const client = await assertClient(user, "update", body.id);
     const { companies, contactName, contactEmail, ...d } = parsed.data;
     companies.forEach((x) => assertCan(user, "update", "client", x));
-    const removed = client.companies.filter((x) => !companies.includes(x.companyId as "vmh")).map((x) => x.companyId);
+    const removed = client.companies.filter((x: any) => !companies.includes(x.companyId as "vmh")).map((x: any) => x.companyId);
     if (removed.length) {
       // Projects and invoices keep their own company, so removing one would leave them
       // pointing at a client that no longer belongs there.

@@ -17,7 +17,7 @@ async function portalData(user: CurrentUser) {
   if (!contact?.portalAccess) return { state: "no-access" as const };
 
   // Access is per project: without one shared with them, there is nothing to show.
-  const projectIds = contact.projects.map((p) => p.projectId);
+  const projectIds = contact.projects.map((p: any) => p.projectId);
   if (projectIds.length === 0) return { state: "no-projects" as const };
 
   const [projects, approvals, files, invoices, tasks] = await Promise.all([
@@ -64,7 +64,7 @@ export const portal = new Hono<Env>()
       await tx.approval.update({ where: { id: approval.id }, data: { status: d, respondedAt: new Date(), respondedByContactId: contact.id, comment: note } });
       const summary = `${contact.name} ${d === "APPROVED" ? "approved" : "requested changes on"} ${approval.title}`;
       await logActivity(tx, { companyId: approval.project.companyId, actorId: null, verb: d === "APPROVED" ? "approved" : "revision", entityType: "APPROVAL", entityId: approval.projectId, summary });
-      await notify(tx, { userIds: approval.project.members.map((m) => m.userId), type: "approval", title: summary, link: `/projects?id=${approval.projectId}&tab=access` });
+      await notify(tx, { userIds: approval.project.members.map((m: any) => m.userId), type: "approval", title: summary, link: `/projects?id=${approval.projectId}&tab=access` });
     });
     return c.json<ActionResult>({ ok: true });
   });

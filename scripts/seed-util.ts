@@ -1,5 +1,5 @@
 // Seed helpers: PDF-relative dates, a deterministic random generator, chunking.
-import { addDays, daysBetween, IST_OFFSET_MS, now } from "../../lib/clock";
+import { addDays, daysBetween, IST_OFFSET_MS, now } from "../lib/clock";
 
 /** "Today" in the design PDF. All fixture dates are written relative to it. */
 export const PDF_TODAY = "2026-10-22";

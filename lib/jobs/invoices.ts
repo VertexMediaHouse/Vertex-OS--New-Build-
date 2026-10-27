@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@/lib/db";
-import { invoiceStatus } from "@/lib/invoices/status";
+import { invoiceStatus, type InvoiceStatusName } from "@/lib/invoices/status";
 import { notify } from "@/lib/activity";
 
 /** Daily: flip Pending ↔ Overdue by due date and tell the company admins about new overdue invoices. */
@@ -7,7 +7,7 @@ export async function markOverdueInvoices(db: PrismaClient, now: Date): Promise<
   const open = await db.invoice.findMany({ where: { status: { in: ["PENDING", "OVERDUE"] } }, include: { client: { select: { name: true } } } });
   let changed = 0;
   for (const inv of open) {
-    const next = invoiceStatus({ current: inv.status, total: Number(inv.total), paid: Number(inv.paidAmount), dueDate: inv.dueDate, now });
+    const next = invoiceStatus({ current: inv.status as InvoiceStatusName, total: Number(inv.total), paid: Number(inv.paidAmount), dueDate: inv.dueDate, now });
     if (next === inv.status) continue;
     changed++;
     await db.$transaction(async (tx) => {

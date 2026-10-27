@@ -156,7 +156,7 @@ function TaskDrawer({ id, people }: { id: string; people: { id: string; name: st
   if (!data?.task) return null;
   const tk = data.task;
   const t = new Date(data.now);
-  const done = tk.checklist.filter((c) => c.done).length;
+  const done = tk.checklist.filter((c: any) => c.done).length;
   const dueDate = tk.dueDate ? new Date(tk.dueDate) : null;
   return (
     <UrlSheet title={tk.title} width={380}>
@@ -187,11 +187,11 @@ function TaskDrawer({ id, people }: { id: string; people: { id: string; name: st
         <section><h3 className="mb-1 text-sm font-semibold text-ink">Description</h3><p className="leading-5 text-ink-2">{tk.description}</p></section>
         <section>
           <h3 className="mb-1 text-sm font-semibold text-ink">Checklist ({done}/{tk.checklist.length})</h3>
-          <ChecklistControls taskId={tk.id} items={tk.checklist.map((c) => ({ id: c.id, text: c.text, done: c.done, assignee: c.assignee?.name ?? null }))} />
+          <ChecklistControls taskId={tk.id} items={tk.checklist.map((c: any) => ({ id: c.id, text: c.text, done: c.done, assignee: c.assignee?.name ?? null }))} />
         </section>
         <section>
           <h3 className="mb-1 text-sm font-semibold text-ink">Files ({tk.files.length})</h3>
-          {tk.files.map((f) => <a key={f.id} href={`${API_URL}/api/files/${f.id}/download`} className="flex items-center gap-2 py-1 hover:underline"><FileIcon ext={f.ext} size={26} /><span className="flex-1">{f.name}<span className="block text-ink-muted">{formatFileSize(f.size)} • {formatDate(new Date(f.createdAt))}</span></span></a>)}
+          {tk.files.map((f: any) => <a key={f.id} href={`${API_URL}/api/files/${f.id}/download`} className="flex items-center gap-2 py-1 hover:underline"><FileIcon ext={f.ext} size={26} /><span className="flex-1">{f.name}<span className="block text-ink-muted">{formatFileSize(f.size)} • {formatDate(new Date(f.createdAt))}</span></span></a>)}
         </section>
         <section>
           <h3 className="mb-1 text-sm font-semibold text-ink">Comments ({data.comments.length})</h3>

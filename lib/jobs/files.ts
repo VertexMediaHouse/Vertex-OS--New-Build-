@@ -6,7 +6,7 @@ export async function purgeTrash(db: PrismaClient, now: Date): Promise<number> {
   const old = await db.file.findMany({ where: { deletedAt: { lt: new Date(now.getTime() - 30 * 86_400_000) } }, include: { versions: true } });
   const orphans: string[] = [];
   for (const f of old) {
-    for (const key of [f.storageKey, ...f.versions.map((v) => v.storageKey)]) {
+    for (const key of [f.storageKey, ...f.versions.map((v: any) => v.storageKey)]) {
       // The row goes either way; a key we couldn't delete is logged so it can be cleaned up.
       await deleteObject(key).catch(() => orphans.push(key));
     }

@@ -130,7 +130,7 @@ function InvoicePanel({ id, tab, sp }: { id: string; tab: string; sp: Record<str
             {canUpdate && <div className="mt-4"><InvoiceActions id={inv.id} status={inv.status} balance={balance} currency={inv.currency} /></div>}
           </>
         )}
-        {tab === "payments" && (inv.payments.length ? inv.payments.map((pm) => <div key={pm.id} className="flex justify-between border-b py-2 text-xs"><span>{formatDate(new Date(pm.date))} · {pm.method.replace("_", " ").toLowerCase()}{pm.reference && ` · ${pm.reference}`}</span><b>{formatMoney(pm.amount, inv.currency)}</b></div>) : <EmptyState title="No payments yet" />)}
+        {tab === "payments" && (inv.payments.length ? inv.payments.map((pm: any) => <div key={pm.id} className="flex justify-between border-b py-2 text-xs"><span>{formatDate(new Date(pm.date))} · {pm.method.replace("_", " ").toLowerCase()}{pm.reference && ` · ${pm.reference}`}</span><b>{formatMoney(pm.amount, inv.currency)}</b></div>) : <EmptyState title="No payments yet" />)}
         {tab === "notes" && notes.map((n) => <ActivityRow key={n.id} person={n.author} text={n.body} time={formatRelative(new Date(n.createdAt), t)} />)}
         {tab === "activity" && activity.map((a) => <ActivityRow key={a.id} person={a.actor ?? undefined} text={a.summary} time={formatRelative(new Date(a.createdAt), t)} />)}
       </SidePanel>
@@ -154,7 +154,7 @@ function InvoicePanel({ id, tab, sp }: { id: string; tab: string; sp: Record<str
           </div>
           <table className="mt-3 w-full overflow-hidden rounded border">
             <thead className="bg-surface-muted text-ink"><tr>{["#", "Description", "Qty", "Rate", "Amount"].map((h, n) => <th key={h} className={`px-1.5 py-1 font-semibold ${n >= 2 ? "text-right" : "text-left"}`}>{h}</th>)}</tr></thead>
-            <tbody>{inv.lineItems.map((l, n) => <tr key={l.id}><td className="px-1.5 py-1">{n + 1}</td><td className="px-1.5 py-1">{l.description}</td><td className="px-1.5 py-1 text-right">{Number(l.qty)}</td><td className="px-1.5 py-1 text-right">{formatMoney(l.rate, inv.currency)}</td><td className="px-1.5 py-1 text-right">{formatMoney(l.amount, inv.currency)}</td></tr>)}</tbody>
+            <tbody>{inv.lineItems.map((l: any, n: any) => <tr key={l.id}><td className="px-1.5 py-1">{n + 1}</td><td className="px-1.5 py-1">{l.description}</td><td className="px-1.5 py-1 text-right">{Number(l.qty)}</td><td className="px-1.5 py-1 text-right">{formatMoney(l.rate, inv.currency)}</td><td className="px-1.5 py-1 text-right">{formatMoney(l.amount, inv.currency)}</td></tr>)}</tbody>
           </table>
           <div className="mt-2 ml-auto w-1/2 space-y-0.5">
             <p className="flex justify-between"><span>Subtotal</span><b className="text-ink">{formatMoney(inv.subtotal, inv.currency)}</b></p>
