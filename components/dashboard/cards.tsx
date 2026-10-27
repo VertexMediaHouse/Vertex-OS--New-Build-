@@ -21,8 +21,10 @@ import { CrossSellActions } from "./cross-sell-actions";
 type Ctx = ScopeFilter & { scope: "ALL" | "VMH" | "VTH" };
 const suffix = (s: Ctx) => (s.scope === "ALL" ? "" : ` (${s.scope})`);
 
-// JSON turns the metric Dates into strings; these are the same shapes otherwise.
-type Json<T> = T extends Date ? string : T extends (infer U)[] ? Json<U>[] : T extends object ? { [K in keyof T]: Json<T[K]> } : T;
+// JSON serialisation turns Dates into ISO strings and Prisma Decimals into numeric
+// strings (via their toJSON()). Catch both before the generic object branch.
+type DecimalLike = { d: number[]; e: number; s: number };
+type Json<T> = T extends Date ? string : T extends DecimalLike ? string : T extends (infer U)[] ? Json<U>[] : T extends object ? { [K in keyof T]: Json<T[K]> } : T;
 export type Revenue = Json<Awaited<ReturnType<typeof M.revenueSummary>>>;
 export type Projects = Json<Awaited<ReturnType<typeof M.projectSummary>>>;
 export type Tasks = Json<Awaited<ReturnType<typeof M.taskSummary>>>;
