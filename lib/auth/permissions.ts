@@ -114,7 +114,7 @@ export function isMemberOnly(user: CurrentUser, companyId?: string): boolean {
 }
 
 /** Label shown under the user's name in the topbar. */
-export function roleLabel(user: CurrentUser): string {
+export function roleLabel(user: { isOwner: boolean; title?: string | null; memberships: { role: MemberRoleName }[]; [key: string]: unknown }): string {
   if (user.isOwner) return "Owner (Super Admin)";
   if (user.title) return user.title;
   const top = (["ADMIN", "MANAGER", "MEMBER"] as const).find((r) => user.memberships.some((m) => m.role === r));

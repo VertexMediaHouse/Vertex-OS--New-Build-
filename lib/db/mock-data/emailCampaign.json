@@ -1,0 +1,108 @@
+[
+  {
+    "id": "campaign_1",
+    "companyId": "vmh",
+    "name": "YouTube Growth Outreach",
+    "status": "ACTIVE",
+    "subject": "{{firstName}}, 3 edits that doubled a creator's Shorts views",
+    "sentCount": 2450,
+    "openCount": 1176,
+    "replyCount": 294,
+    "meetingsCount": 6,
+    "audienceFilter": {
+      "companies": [
+        "VMH"
+      ],
+      "stages": [
+        "NEW",
+        "CONTACTED"
+      ]
+    },
+    "steps": [
+      {
+        "subject": "{{firstName}}, 3 edits that doubled a creator's Shorts views",
+        "body": "Hi {{firstName}},\n\n…",
+        "delayDays": 0
+      },
+      {
+        "subject": "Re: {{firstName}}, 3 edits that doubled a creator's Shorts views",
+        "body": "Just following up, {{firstName}}.",
+        "delayDays": 3
+      }
+    ],
+    "scheduledAt": null,
+    "createdAt": "2026-10-07T03:30:00.000Z",
+    "updatedAt": "2026-10-26T03:30:00.000Z"
+  },
+  {
+    "id": "campaign_2",
+    "companyId": "vth",
+    "name": "Website & CRM Leads",
+    "status": "ACTIVE",
+    "subject": "A CRM built around how {{company}} actually works",
+    "sentCount": 1820,
+    "openCount": 655,
+    "replyCount": 146,
+    "meetingsCount": 4,
+    "audienceFilter": {
+      "companies": [
+        "VTH"
+      ],
+      "stages": [
+        "NEW",
+        "CONTACTED"
+      ]
+    },
+    "steps": [
+      {
+        "subject": "A CRM built around how {{company}} actually works",
+        "body": "Hi {{firstName}},\n\n…",
+        "delayDays": 0
+      },
+      {
+        "subject": "Re: A CRM built around how {{company}} actually works",
+        "body": "Just following up, {{firstName}}.",
+        "delayDays": 3
+      }
+    ],
+    "scheduledAt": null,
+    "createdAt": "2026-10-10T03:30:00.000Z",
+    "updatedAt": "2026-10-26T03:30:00.000Z"
+  },
+  {
+    "id": "campaign_3",
+    "companyId": null,
+    "name": "Re-Engagement Campaign",
+    "status": "ACTIVE",
+    "subject": "It's been a while, {{firstName}}: here's what's new at Vertex",
+    "sentCount": 980,
+    "openCount": 510,
+    "replyCount": 137,
+    "meetingsCount": 8,
+    "audienceFilter": {
+      "companies": [
+        "VMH",
+        "VTH"
+      ],
+      "stages": [
+        "NEW",
+        "CONTACTED"
+      ]
+    },
+    "steps": [
+      {
+        "subject": "It's been a while, {{firstName}}: here's what's new at Vertex",
+        "body": "Hi {{firstName}},\n\n…",
+        "delayDays": 0
+      },
+      {
+        "subject": "Re: It's been a while, {{firstName}}: here's what's new at Vertex",
+        "body": "Just following up, {{firstName}}.",
+        "delayDays": 3
+      }
+    ],
+    "scheduledAt": null,
+    "createdAt": "2026-10-13T03:30:00.000Z",
+    "updatedAt": "2026-10-26T03:30:00.000Z"
+  }
+]

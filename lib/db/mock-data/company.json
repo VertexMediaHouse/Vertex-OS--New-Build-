@@ -1,0 +1,66 @@
+[
+  {
+    "id": "vmh",
+    "code": "VMH",
+    "name": "Vertex Media House",
+    "tagline": "Video Editing",
+    "color": "#7231FB",
+    "invoicePrefix": "VMH",
+    "nextInvoiceNumber": 22,
+    "address": "Vertex Media House, Ahmedabad, Gujarat, India",
+    "gstin": "24ABCDE1234F1Z5",
+    "settings": {
+      "goalThresholds": {
+        "onTrack": 0.9,
+        "atRisk": 0.7
+      },
+      "turnaroundTargetHours": {
+        "min": 24,
+        "max": 48
+      },
+      "revenueBasis": "INVOICED",
+      "defaultTaxRate": 0,
+      "defaultHourlyRate": 1500,
+      "paymentTermsDays": 15,
+      "defaultWeeklyCapacityHours": 40
+    },
+    "bankDetails": {
+      "accountName": "Vertex Media House",
+      "upi": "vertexmedia@upi"
+    },
+    "createdAt": "2025-06-14T03:30:00.000Z",
+    "updatedAt": "2026-10-26T03:30:00.000Z"
+  },
+  {
+    "id": "vth",
+    "code": "VTH",
+    "name": "Vertex Tech House",
+    "tagline": "Web, CRM, ERP, Automation",
+    "color": "#00B675",
+    "invoicePrefix": "VTH",
+    "nextInvoiceNumber": 20,
+    "address": "Vertex Tech House, Ahmedabad, Gujarat, India",
+    "gstin": "24ABCDE1234F2Z4",
+    "settings": {
+      "goalThresholds": {
+        "onTrack": 0.9,
+        "atRisk": 0.7
+      },
+      "turnaroundTargetHours": {
+        "min": 24,
+        "max": 48
+      },
+      "revenueBasis": "INVOICED",
+      "defaultTaxRate": 0,
+      "defaultHourlyRate": 1500,
+      "paymentTermsDays": 15,
+      "defaultWeeklyCapacityHours": 40
+    },
+    "bankDetails": {
+      "accountName": "Vertex Tech House",
+      "upi": "vertextech@upi"
+    },
+    "createdAt": "2025-06-14T03:30:00.000Z",
+    "updatedAt": "2026-10-26T03:30:00.000Z"
+  }
+]

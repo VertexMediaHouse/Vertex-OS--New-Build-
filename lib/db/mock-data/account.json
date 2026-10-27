@@ -1,0 +1,47 @@
+[
+  {
+    "id": "acc_dhrumil",
+    "userId": "user_dhrumil",
+    "accountId": "user_dhrumil",
+    "providerId": "credential",
+    "password": "0bcdbbb75b0790a6b85fd477f0a1d2a1:9dbbdca122b1216eb828fba5113646e1e49077a85e4976ecc56bceb6d04b9757430cca155fe68bc509b08c5603ef3b170642ff8300d268be4abfeacbfba520e3",
+    "accessToken": null,
+    "refreshToken": null,
+    "idToken": null,
+    "accessTokenExpiresAt": null,
+    "refreshTokenExpiresAt": null,
+    "scope": null,
+    "createdAt": "2025-09-22T03:30:00.000Z",
+    "updatedAt": "2026-10-26T03:30:00.000Z"
+  },
+  {
+    "id": "acc_sheen",
+    "userId": "user_sheen",
+    "accountId": "user_sheen",
+    "providerId": "credential",
+    "password": "0bcdbbb75b0790a6b85fd477f0a1d2a1:9dbbdca122b1216eb828fba5113646e1e49077a85e4976ecc56bceb6d04b9757430cca155fe68bc509b08c5603ef3b170642ff8300d268be4abfeacbfba520e3",
+    "accessToken": null,
+    "refreshToken": null,
+    "idToken": null,
+    "accessTokenExpiresAt": null,
+    "refreshTokenExpiresAt": null,
+    "scope": null,
+    "createdAt": "2025-09-22T03:30:00.000Z",
+    "updatedAt": "2026-10-26T03:30:00.000Z"
+  },
+  {
+    "id": "acc_hardik",
+    "userId": "user_hardik",
+    "accountId": "user_hardik",
+    "providerId": "credential",
+    "password": "0bcdbbb75b0790a6b85fd477f0a1d2a1:9dbbdca122b1216eb828fba5113646e1e49077a85e4976ecc56bceb6d04b9757430cca155fe68bc509b08c5603ef3b170642ff8300d268be4abfeacbfba520e3",
+    "accessToken": null,
+    "refreshToken": null,
+    "idToken": null,
+    "accessTokenExpiresAt": null,
+    "refreshTokenExpiresAt": null,
+    "scope": null,
+    "createdAt": "2025-09-22T03:30:00.000Z",
+    "updatedAt": "2026-10-26T03:30:00.000Z"
+  }
+]

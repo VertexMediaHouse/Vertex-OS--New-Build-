@@ -1,0 +1,380 @@
+[
+  {
+    "id": "item_invoice_vmh_021_0",
+    "invoiceId": "invoice_vmh_021",
+    "description": "Short-form Video Editing",
+    "qty": 1,
+    "rate": 40000,
+    "amount": 40000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_019_0",
+    "invoiceId": "invoice_vth_019",
+    "description": "CRM Development",
+    "qty": 1,
+    "rate": 180000,
+    "amount": 180000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_019_1",
+    "invoiceId": "invoice_vth_019",
+    "description": "Email Integration",
+    "qty": 1,
+    "rate": 40000,
+    "amount": 40000,
+    "order": 1
+  },
+  {
+    "id": "item_invoice_vth_019_2",
+    "invoiceId": "invoice_vth_019",
+    "description": "Training & Handover",
+    "qty": 1,
+    "rate": 30000,
+    "amount": 30000,
+    "order": 2
+  },
+  {
+    "id": "item_invoice_vmh_020_0",
+    "invoiceId": "invoice_vmh_020",
+    "description": "Long-form Video Editing",
+    "qty": 1,
+    "rate": 25000,
+    "amount": 25000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_018_0",
+    "invoiceId": "invoice_vth_018",
+    "description": "Website + CRM",
+    "qty": 1,
+    "rate": 300000,
+    "amount": 300000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_019_0",
+    "invoiceId": "invoice_vmh_019",
+    "description": "Podcast Editing",
+    "qty": 1,
+    "rate": 18000,
+    "amount": 18000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_017_0",
+    "invoiceId": "invoice_vth_017",
+    "description": "Website Development",
+    "qty": 1,
+    "rate": 150000,
+    "amount": 150000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_018_0",
+    "invoiceId": "invoice_vmh_018",
+    "description": "Short-form Video Editing",
+    "qty": 1,
+    "rate": 22000,
+    "amount": 22000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_016_0",
+    "invoiceId": "invoice_vth_016",
+    "description": "Automation (n8n)",
+    "qty": 1,
+    "rate": 120000,
+    "amount": 120000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_017_0",
+    "invoiceId": "invoice_vmh_017",
+    "description": "Reels Editing",
+    "qty": 1,
+    "rate": 30000,
+    "amount": 30000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_015_0",
+    "invoiceId": "invoice_vth_015",
+    "description": "Website Redesign",
+    "qty": 1,
+    "rate": 350000,
+    "amount": 350000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_001_0",
+    "invoiceId": "invoice_vmh_001",
+    "description": "Podcast Editing",
+    "qty": 1,
+    "rate": 38000,
+    "amount": 38000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_002_0",
+    "invoiceId": "invoice_vmh_002",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 18000,
+    "amount": 18000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_003_0",
+    "invoiceId": "invoice_vmh_003",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 20000,
+    "amount": 20000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_004_0",
+    "invoiceId": "invoice_vmh_004",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 16000,
+    "amount": 16000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_005_0",
+    "invoiceId": "invoice_vmh_005",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 24000,
+    "amount": 24000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_006_0",
+    "invoiceId": "invoice_vmh_006",
+    "description": "Reels Editing",
+    "qty": 1,
+    "rate": 31000,
+    "amount": 31000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_007_0",
+    "invoiceId": "invoice_vmh_007",
+    "description": "Short-form Video Editing",
+    "qty": 1,
+    "rate": 39000,
+    "amount": 39000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_008_0",
+    "invoiceId": "invoice_vmh_008",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 37000,
+    "amount": 37000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_009_0",
+    "invoiceId": "invoice_vmh_009",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 39000,
+    "amount": 39000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_010_0",
+    "invoiceId": "invoice_vmh_010",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 39000,
+    "amount": 39000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_011_0",
+    "invoiceId": "invoice_vmh_011",
+    "description": "Long-form Video Editing",
+    "qty": 1,
+    "rate": 27000,
+    "amount": 27000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_012_0",
+    "invoiceId": "invoice_vmh_012",
+    "description": "Short-form Video Editing",
+    "qty": 1,
+    "rate": 39000,
+    "amount": 39000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_013_0",
+    "invoiceId": "invoice_vmh_013",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 23000,
+    "amount": 23000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_014_0",
+    "invoiceId": "invoice_vmh_014",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 39000,
+    "amount": 39000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_015_0",
+    "invoiceId": "invoice_vmh_015",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 15000,
+    "amount": 15000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vmh_016_0",
+    "invoiceId": "invoice_vmh_016",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 31000,
+    "amount": 31000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_001_0",
+    "invoiceId": "invoice_vth_001",
+    "description": "Website Development",
+    "qty": 1,
+    "rate": 60000,
+    "amount": 60000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_002_0",
+    "invoiceId": "invoice_vth_002",
+    "description": "Automation (n8n)",
+    "qty": 1,
+    "rate": 170000,
+    "amount": 170000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_003_0",
+    "invoiceId": "invoice_vth_003",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 80000,
+    "amount": 80000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_004_0",
+    "invoiceId": "invoice_vth_004",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 90000,
+    "amount": 90000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_005_0",
+    "invoiceId": "invoice_vth_005",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 150000,
+    "amount": 150000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_006_0",
+    "invoiceId": "invoice_vth_006",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 70000,
+    "amount": 70000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_007_0",
+    "invoiceId": "invoice_vth_007",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 80000,
+    "amount": 80000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_008_0",
+    "invoiceId": "invoice_vth_008",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 160000,
+    "amount": 160000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_009_0",
+    "invoiceId": "invoice_vth_009",
+    "description": "Custom ERP Development",
+    "qty": 1,
+    "rate": 120000,
+    "amount": 120000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_010_0",
+    "invoiceId": "invoice_vth_010",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 180000,
+    "amount": 180000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_011_0",
+    "invoiceId": "invoice_vth_011",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 110000,
+    "amount": 110000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_012_0",
+    "invoiceId": "invoice_vth_012",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 120000,
+    "amount": 120000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_013_0",
+    "invoiceId": "invoice_vth_013",
+    "description": "Website Redesign",
+    "qty": 1,
+    "rate": 120000,
+    "amount": 120000,
+    "order": 0
+  },
+  {
+    "id": "item_invoice_vth_014_0",
+    "invoiceId": "invoice_vth_014",
+    "description": "Professional services",
+    "qty": 1,
+    "rate": 50000,
+    "amount": 50000,
+    "order": 0
+  }
+]

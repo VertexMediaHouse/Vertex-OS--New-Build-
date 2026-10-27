@@ -1,4 +1,4 @@
-import type { PrismaClient, Prisma } from "@/lib/db/generated/client";
+import type { PrismaClient, Prisma } from "@/lib/db";
 import { addDays, startOfDayIST } from "@/lib/clock";
 import { goalProgress, goalStatus } from "@/lib/metrics/goals";
 import { parseCompanySettings } from "@/lib/settings";

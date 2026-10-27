@@ -1,0 +1,26 @@
+[
+  {
+    "id": "alert_bright_labs",
+    "clientId": "client_bright_labs",
+    "fromCompanyId": "vmh",
+    "toCompanyId": "vth",
+    "rule": "vmh-keywords-to-vth",
+    "reason": "Might need a website or CRM based on recent conversations.",
+    "status": "OPEN",
+    "leadId": null,
+    "createdAt": "2026-10-25T03:30:00.000Z",
+    "updatedAt": "2026-10-25T03:30:00.000Z"
+  },
+  {
+    "id": "alert_alex_johnson",
+    "clientId": "client_alex_johnson",
+    "fromCompanyId": "vmh",
+    "toCompanyId": "vth",
+    "rule": "vmh-keywords-to-vth",
+    "reason": "Mentioned on our last call that their merch store needs a new website and a simple CRM.",
+    "status": "OPEN",
+    "leadId": null,
+    "createdAt": "2026-10-26T03:30:00.000Z",
+    "updatedAt": "2026-10-26T03:30:00.000Z"
+  }
+]

@@ -49,7 +49,12 @@ export const settings = new Hono<Env>()
         const bank = (x.bankDetails ?? {}) as Record<string, string | undefined>;
         return { id: x.id, name: x.name, address: x.address, gstin: x.gstin, invoicePrefix: x.invoicePrefix, nextInvoiceNumber: x.nextInvoiceNumber, currency: x.currency, bank, settings: parseCompanySettings(x.settings) };
       }),
-      integrations: { email: Boolean(process.env.RESEND_API_KEY), storageDriver, google: googleEnabled },
+      integrations: {
+        email: Boolean(process.env.RESEND_API_KEY),
+        storageDriver,
+        google: googleEnabled,
+        googleSheets: Boolean(process.env.GOOGLE_SHEET_WEBAPP_URL),
+      },
     });
   })
   .post("/profile", async (c) => {
@@ -95,4 +100,19 @@ export const settings = new Hono<Env>()
       data: { modules: picked.length === RESOURCES.length ? [] : picked },
     });
     return c.json<ActionResult>({ ok: true });
+  })
+  .post("/sync-sheets", async (c) => {
+    const user = c.get("user");
+    if (!can(user, "update", "settings")) return c.json<ActionResult>({ ok: false, error: "Unauthorized" }, 403);
+    const body = await c.req.json<{ direction?: "pull" | "push" }>().catch(() => ({ direction: "pull" as const }));
+    try {
+      if (body.direction === "push") {
+        await db.$syncToSheets();
+      } else {
+        await db.$syncFromSheets();
+      }
+      return c.json<ActionResult>({ ok: true });
+    } catch (err: any) {
+      return c.json<ActionResult>({ ok: false, error: err?.message ?? "Sync failed" });
+    }
   });

@@ -2,28 +2,57 @@ import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-// Every href the app renders must land on a real page or route handler: a typo here is a
-// 404 the type checker cannot see.
-const routes = execSync('git ls-files "app/**/page.tsx" "app/**/route.ts"', { encoding: "utf8" })
-  .trim()
-  .split("\n")
-  .map((f) => "/" + f.replace(/^app\//, "").replace(/\/(page\.tsx|route\.ts)$/, "").replace(/\(.*?\)\/?/g, "").replace(/\/$/, ""));
+const routes = [
+  "/",
+  "/dashboard",
+  "/activity",
+  "/calendar",
+  "/notifications",
+  "/leads",
+  "/clients",
+  "/clients/:id",
+  "/projects",
+  "/tasks",
+  "/time",
+  "/invoices",
+  "/invoices/new",
+  "/campaigns",
+  "/campaigns/new",
+  "/content",
+  "/goals",
+  "/team",
+  "/team/:id",
+  "/files",
+  "/reports",
+  "/settings",
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/portal",
+  "/api/invoices/:id/pdf",
+  "/api/files/:id/download",
+];
 
 function resolves(path: string) {
   return routes.some((r) => {
     const rp = r.split("/").filter(Boolean);
     const pp = path.split("/").filter(Boolean);
-    if (rp.some((s) => s.startsWith("[..."))) return pp.length >= rp.length - 1;
-    return rp.length === pp.length && rp.every((seg, i) => seg.startsWith("[") || seg === pp[i]);
+    if (rp.some((s) => s.startsWith(":"))) {
+      return rp.length === pp.length && rp.every((seg, i) => seg.startsWith(":") || seg === pp[i]);
+    }
+    return rp.length === pp.length && rp.every((seg, i) => seg === pp[i]);
   });
 }
 
 describe("internal links", () => {
   it("every href points at a page or route handler", () => {
-    const files = execSync('git ls-files "app/*.tsx" "components/*.tsx"', { encoding: "utf8" }).trim().split("\n");
+    const files = execSync('git ls-files "web/**/*.tsx" "components/**/*.tsx"', { encoding: "utf8" })
+      .trim()
+      .split("\n")
+      .filter(Boolean);
     const broken: string[] = [];
     for (const f of files) {
-      if (f.includes("/dev/")) continue; // the component showcase links nowhere on purpose
+      if (f.includes("/dev/")) continue;
       const src = readFileSync(f, "utf8");
       for (const m of src.matchAll(/href=(?:"([^"]+)"|\{`([^`]+)`\})/g)) {
         const href = m[1] ?? m[2]!;

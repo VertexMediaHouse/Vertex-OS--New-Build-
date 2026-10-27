@@ -1,0 +1,52 @@
+[
+  {
+    "id": "tag_0",
+    "name": "Editing",
+    "color": "#7C3AED"
+  },
+  {
+    "id": "tag_1",
+    "name": "Shorts",
+    "color": "#64748B"
+  },
+  {
+    "id": "tag_2",
+    "name": "YouTube",
+    "color": "#64748B"
+  },
+  {
+    "id": "tag_3",
+    "name": "Brief",
+    "color": "#2563EB"
+  },
+  {
+    "id": "tag_4",
+    "name": "Client",
+    "color": "#2563EB"
+  },
+  {
+    "id": "tag_5",
+    "name": "Website",
+    "color": "#2563EB"
+  },
+  {
+    "id": "tag_6",
+    "name": "retainer",
+    "color": "#047857"
+  },
+  {
+    "id": "tag_7",
+    "name": "product-launch",
+    "color": "#EA580C"
+  },
+  {
+    "id": "tag_8",
+    "name": "website",
+    "color": "#2563EB"
+  },
+  {
+    "id": "tag_9",
+    "name": "crm",
+    "color": "#2563EB"
+  }
+]

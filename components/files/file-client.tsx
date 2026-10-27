@@ -19,9 +19,9 @@ const requestUpload = (json: { name: string; size: number; mime: string }) => qu
 const completeUpload = (json: { name: string; size: number; mime: string; key: string; keySig: string; folderId?: string | null; fileId?: string | null; projectId?: string | null; taskId?: string | null }) => call(api.api.files.complete.$post({ json: json as never }));
 const createFolder = (name: string, parentId: string | null) => call(api.api.files.folders.$post({ json: { name, parentId } }));
 const toggleStar = (id: string) => must(api.api.files[":id"].star.$post({ param: { id } }));
-const updateFile = (id: string, patch: { name?: string; folderId?: string | null; description?: string; status?: string | null; tags?: string[]; sharedWithPortal?: boolean }) => must(api.api.files[":id"].update.$post({ param: { id }, json: patch as never }));
-const shareFile = (id: string, userIds: string[]) => must(api.api.files[":id"].share.$post({ param: { id }, json: { userIds } }));
-const trashFile = (id: string, restore = false) => must(api.api.files[":id"].trash.$post({ param: { id }, json: { restore } }));
+const updateFile = (id: string, patch: { name?: string; folderId?: string | null; description?: string; status?: string | null; tags?: string[]; sharedWithPortal?: boolean }) => must(api.api.files[":id"].update.$post({ param: { id }, json: patch } as never));
+const shareFile = (id: string, userIds: string[]) => must(api.api.files[":id"].share.$post({ param: { id }, json: { userIds } } as never));
+const trashFile = (id: string, restore = false) => must(api.api.files[":id"].trash.$post({ param: { id }, json: { restore } } as never));
 
 /** PUT with progress (fetch has no upload progress). */
 function put(url: string, file: File, onProgress: (p: number) => void) {

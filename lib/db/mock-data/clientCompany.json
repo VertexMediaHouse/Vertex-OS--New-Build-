@@ -1,0 +1,372 @@
+[
+  {
+    "clientId": "client_bright_labs",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_bright_labs",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_greenbuild_infra",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_rocco_construction",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_elite_creators",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_elite_creators",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_danny_drywall",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_scaleup_co",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_scaleup_co",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_creative_studio",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_flow_marketing",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_flow_marketing",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_urban_living",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_urban_living",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_ashoka_buildcon",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_vidhi_enterprise",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_nextgen_agency",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_nextgen_agency",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_durrell_properties",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_bhaumik_podcast",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_fit_life_media",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_neha_personal_brand",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_trend_talk",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_alex_johnson",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_karan_mehta",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_pixel_pulse_media",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_kavya_creations",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_spice_route_foods",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_nimbus_fitness",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_orbit_realty",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_sunrise_dental_care",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_technova_labs",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_mehta_textiles",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_coastal_homes",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_bloom_skincare",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_zenith_logistics",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_urban_brew_cafe",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_the_daily_grind_podcast",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_gamer_guild",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_travel_with_tara",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_finance_simplified",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_desi_kitchen_tales",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_yoga_with_ananya",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_startup_saga",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_codecraft_academy",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_lumen_interiors",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_peak_performance_coaching",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_green_leaf_organics",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_skyline_builders",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_bright_smile_clinic",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_royal_jewellers",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_metro_motors",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_harbor_freight_co",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_nova_legal_associates",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_prime_properties",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_swift_couriers",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_crafted_cocktails",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_rhythm_dance_studio",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_kids_learn_fun",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_pet_paradise",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_fresh_basket",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_vista_eyewear",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_iron_gym",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_mindful_money",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_silverline_events",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_artisan_bakery",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_cloud_nine_travels",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_buildright_infra",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_smart_home_hub",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_elevate_consulting",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_pure_water_systems",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_tech_talk_daily",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_the_startup_show",
+    "companyId": "vth",
+    "since": "2026-08-28T03:30:00.000Z"
+  },
+  {
+    "clientId": "client_global_exports_ltd",
+    "companyId": "vmh",
+    "since": "2026-08-28T03:30:00.000Z"
+  }
+]

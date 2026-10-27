@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@/lib/db/generated/client";
+import type { PrismaClient } from "@/lib/db";
 import { deleteObject } from "@/lib/storage";
 
 /** Daily: permanently delete files that have been in Trash for more than 30 days. */

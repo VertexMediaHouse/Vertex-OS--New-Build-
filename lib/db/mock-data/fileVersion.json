@@ -1,0 +1,20 @@
+[
+  {
+    "id": "ver_brief_1",
+    "fileId": "file_project_brief",
+    "version": 1,
+    "storageKey": "seed/file_project_brief/v1",
+    "size": 2461724.8,
+    "uploadedById": "user_dhrumil",
+    "createdAt": "2026-10-23T05:00:00.000Z"
+  },
+  {
+    "id": "ver_brief_2",
+    "fileId": "file_project_brief",
+    "version": 2,
+    "storageKey": "seed/file_project_brief/v2",
+    "size": 2511724.8,
+    "uploadedById": "user_dhrumil",
+    "createdAt": "2026-10-24T05:00:00.000Z"
+  }
+]

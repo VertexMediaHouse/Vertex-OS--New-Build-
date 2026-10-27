@@ -1,0 +1,98 @@
+[
+  {
+    "id": "ms_project_greenbuild_crm_0",
+    "projectId": "project_greenbuild_crm",
+    "title": "Requirement Gathering",
+    "dueDate": "2026-09-10T03:30:00.000Z",
+    "status": "COMPLETED",
+    "order": 0
+  },
+  {
+    "id": "ms_project_greenbuild_crm_1",
+    "projectId": "project_greenbuild_crm",
+    "title": "UI/UX Design Approval",
+    "dueDate": "2026-09-17T03:30:00.000Z",
+    "status": "COMPLETED",
+    "order": 1
+  },
+  {
+    "id": "ms_project_greenbuild_crm_2",
+    "projectId": "project_greenbuild_crm",
+    "title": "Core CRM Development",
+    "dueDate": "2026-10-03T03:30:00.000Z",
+    "status": "COMPLETED",
+    "order": 2
+  },
+  {
+    "id": "ms_project_greenbuild_crm_3",
+    "projectId": "project_greenbuild_crm",
+    "title": "Integration Setup",
+    "dueDate": "2026-10-15T03:30:00.000Z",
+    "status": "IN_PROGRESS",
+    "order": 3
+  },
+  {
+    "id": "ms_project_greenbuild_crm_4",
+    "projectId": "project_greenbuild_crm",
+    "title": "Testing & QA",
+    "dueDate": "2026-10-25T03:30:00.000Z",
+    "status": "PENDING",
+    "order": 4
+  },
+  {
+    "id": "ms_project_greenbuild_crm_5",
+    "projectId": "project_greenbuild_crm",
+    "title": "Client Review",
+    "dueDate": "2026-10-30T03:30:00.000Z",
+    "status": "PENDING",
+    "order": 5
+  },
+  {
+    "id": "ms_project_greenbuild_crm_6",
+    "projectId": "project_greenbuild_crm",
+    "title": "Final Deployment",
+    "dueDate": "2026-11-04T03:30:00.000Z",
+    "status": "PENDING",
+    "order": 6
+  },
+  {
+    "id": "ms_rocco_web_crm_0",
+    "projectId": "project_rocco_web_crm",
+    "title": "Client UAT",
+    "dueDate": "2026-10-28T03:30:00.000Z",
+    "status": "PENDING",
+    "order": 0
+  },
+  {
+    "id": "ms_ashoka_website_1",
+    "projectId": "project_ashoka_website",
+    "title": "Homepage Development",
+    "dueDate": "2026-10-29T03:30:00.000Z",
+    "status": "IN_PROGRESS",
+    "order": 1
+  },
+  {
+    "id": "ms_nextgen_automation_2",
+    "projectId": "project_nextgen_automation",
+    "title": "Workflow Handover",
+    "dueDate": "2026-10-26T03:30:00.000Z",
+    "status": "PENDING",
+    "order": 2
+  },
+  {
+    "id": "ms_vidhi_erp_3",
+    "projectId": "project_vidhi_erp",
+    "title": "Requirements Sign-off",
+    "dueDate": "2026-11-04T03:30:00.000Z",
+    "status": "PENDING",
+    "order": 3
+  },
+  {
+    "id": "ms_elite_automation_4",
+    "projectId": "project_elite_automation",
+    "title": "Dashboard Prototype",
+    "dueDate": "2026-11-07T03:30:00.000Z",
+    "status": "PENDING",
+    "order": 4
+  }
+]

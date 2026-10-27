@@ -19,9 +19,9 @@ async function must(p: Promise<Response>) {
 }
 
 const createGoal = (json: Record<string, unknown>) => call(api.api.goals.$post({ json: json as never }));
-const updateGoalProgress = (id: string, value: number) => call(api.api.goals[":id"].progress.$post({ param: { id }, json: { value } }));
-const addGoalMilestone = (id: string, title: string, date: string) => must(api.api.goals[":id"].milestones.$post({ param: { id }, json: { title, date } }));
-const toggleGoalMilestone = (milestoneId: string, done: boolean) => must(api.api.goals.milestones[":milestoneId"].toggle.$post({ param: { milestoneId }, json: { done } }));
+const updateGoalProgress = (id: string, value: number) => call(api.api.goals[":id"].progress.$post({ param: { id }, json: { value } } as never));
+const addGoalMilestone = (id: string, title: string, date: string) => must(api.api.goals[":id"].milestones.$post({ param: { id }, json: { title, date } } as never));
+const toggleGoalMilestone = (milestoneId: string, done: boolean) => must(api.api.goals.milestones[":milestoneId"].toggle.$post({ param: { milestoneId }, json: { done } } as never));
 
 const METRICS = [["MANUAL", "Manual (I update it)"], ["REVENUE", "Revenue collected"], ["NEW_CLIENTS", "New clients"], ["PROJECTS_COMPLETED", "Projects completed"], ["VIDEOS_DELIVERED", "Videos delivered"], ["LEADS_WON", "Leads won"], ["BILLABLE_HOURS", "Billable hours"]];
 const UNIT_FOR: Record<string, string> = { REVENUE: "CURRENCY", BILLABLE_HOURS: "HOURS" };

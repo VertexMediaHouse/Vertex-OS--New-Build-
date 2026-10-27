@@ -1,0 +1,74 @@
+[
+  {
+    "id": "ticket_0",
+    "clientId": "client_greenbuild_infra",
+    "projectId": null,
+    "title": "Add a new user",
+    "status": "OPEN",
+    "createdAt": "2026-10-26T03:30:00.000Z",
+    "resolvedAt": null
+  },
+  {
+    "id": "ticket_1",
+    "clientId": "client_rocco_construction",
+    "projectId": null,
+    "title": "Change dashboard colours",
+    "status": "OPEN",
+    "createdAt": "2026-10-25T03:30:00.000Z",
+    "resolvedAt": null
+  },
+  {
+    "id": "ticket_2",
+    "clientId": "client_durrell_properties",
+    "projectId": null,
+    "title": "Export not downloading",
+    "status": "OPEN",
+    "createdAt": "2026-10-24T03:30:00.000Z",
+    "resolvedAt": null
+  },
+  {
+    "id": "ticket_3",
+    "clientId": "client_ashoka_buildcon",
+    "projectId": null,
+    "title": "Update office address",
+    "status": "OPEN",
+    "createdAt": "2026-10-23T03:30:00.000Z",
+    "resolvedAt": null
+  },
+  {
+    "id": "ticket_4",
+    "clientId": "client_nextgen_agency",
+    "projectId": null,
+    "title": "Workflow failed overnight",
+    "status": "OPEN",
+    "createdAt": "2026-10-22T03:30:00.000Z",
+    "resolvedAt": null
+  },
+  {
+    "id": "ticket_5",
+    "clientId": "client_scaleup_co",
+    "projectId": null,
+    "title": "Reset admin password",
+    "status": "OPEN",
+    "createdAt": "2026-10-21T03:30:00.000Z",
+    "resolvedAt": null
+  },
+  {
+    "id": "ticket_6",
+    "clientId": "client_urban_living",
+    "projectId": null,
+    "title": "Add WhatsApp button",
+    "status": "OPEN",
+    "createdAt": "2026-10-20T03:30:00.000Z",
+    "resolvedAt": null
+  },
+  {
+    "id": "ticket_7",
+    "clientId": "client_vidhi_enterprise",
+    "projectId": null,
+    "title": "Invoice template tweak",
+    "status": "RESOLVED",
+    "createdAt": "2026-10-19T03:30:00.000Z",
+    "resolvedAt": "2026-10-26T03:30:00.000Z"
+  }
+]

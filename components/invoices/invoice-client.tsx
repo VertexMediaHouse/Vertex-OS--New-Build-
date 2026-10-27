@@ -12,9 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { api, call } from "@/web/api";
 
 const createInvoice = (json: Record<string, unknown>) => call(api.api.invoices.$post({ json: json as never }));
-const recordPayment = (id: string, json: { amount: number; date: Date; method: string; reference?: string }) => call(api.api.invoices[":id"].payments.$post({ param: { id }, json: json as never }));
+const recordPayment = (id: string, json: { amount: number; date: Date; method: string; reference?: string }) => call(api.api.invoices[":id"].payments.$post({ param: { id }, json } as never));
 const sendReminder = (id: string) => call(api.api.invoices[":id"].reminder.$post({ param: { id } }));
-const setInvoiceState = (id: string, state: "SEND" | "CANCEL") => call(api.api.invoices[":id"].state.$post({ param: { id }, json: { state } }));
+const setInvoiceState = (id: string, state: "SEND" | "CANCEL") => call(api.api.invoices[":id"].state.$post({ param: { id }, json: { state } } as never));
 import { invoiceTotals } from "@/lib/invoices/status";
 import { addDays } from "@/lib/clock";
 import { dayKey } from "@/lib/period";

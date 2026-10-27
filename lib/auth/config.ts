@@ -22,7 +22,7 @@ const google =
 export const googleEnabled = Boolean(google);
 
 export const authOptions = {
-  database: prismaAdapter(db, { provider: "postgresql", transaction: true }),
+  database: prismaAdapter(db as any, { provider: "postgresql", transaction: true }),
   emailAndPassword: {
     enabled: true,
     disableSignUp: true, // accounts are created by invites

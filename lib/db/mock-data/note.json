@@ -1,0 +1,22 @@
+[
+  {
+    "id": "note_1",
+    "companyId": "vmh",
+    "authorId": "user_dhrumil",
+    "title": "Q4 Video Target",
+    "body": "Focus on onboarding 5 new retainer clients for YouTube shorts.",
+    "pinned": true,
+    "createdAt": "2026-10-17T03:30:00.000Z",
+    "updatedAt": "2026-10-25T03:30:00.000Z"
+  },
+  {
+    "id": "note_2",
+    "companyId": "vth",
+    "authorId": "user_dhrumil",
+    "title": "VTH Infrastructure",
+    "body": "Migrate client deployments to Cloudflare Workers and verify latency.",
+    "pinned": false,
+    "createdAt": "2026-10-22T03:30:00.000Z",
+    "updatedAt": "2026-10-26T03:30:00.000Z"
+  }
+]

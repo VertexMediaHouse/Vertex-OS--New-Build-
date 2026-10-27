@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@/lib/db/generated/client";
+import type { PrismaClient } from "@/lib/db";
 
 /** A client of one company who might need the other company's services. */
 export type Rule = { id: string; from: "vmh" | "vth"; to: "vmh" | "vth"; pattern: RegExp; reason: string; requireNoProjectInTarget: boolean };
@@ -15,9 +15,20 @@ export function matchRules(client: { notes: string | null; tags: string[]; compa
   );
 }
 
+type CrossSellClient = {
+  id: string;
+  notes: string | null;
+  tags: string[];
+  companies: { companyId: string }[];
+  projects: { companyId: string }[];
+};
+
 /** Raise alerts for matching clients. Existing alerts (any status) are never re-raised. */
 export async function runCrossSellRules(db: PrismaClient): Promise<number> {
-  const clients = await db.client.findMany({ where: { archivedAt: null }, select: { id: true, notes: true, tags: true, companies: { select: { companyId: true } }, projects: { select: { companyId: true } } } });
+  const clients = (await db.client.findMany({
+    where: { archivedAt: null },
+    select: { id: true, notes: true, tags: true, companies: { select: { companyId: true } }, projects: { select: { companyId: true } } },
+  })) as CrossSellClient[];
   const data = clients.flatMap((c) =>
     matchRules({ notes: c.notes, tags: c.tags, companyIds: c.companies.map((x) => x.companyId), projectCompanyIds: c.projects.map((p) => p.companyId) }).map((r) => ({
       clientId: c.id, fromCompanyId: r.from, toCompanyId: r.to, rule: r.id, reason: r.reason,

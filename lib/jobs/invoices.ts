@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@/lib/db/generated/client";
+import type { PrismaClient } from "@/lib/db";
 import { invoiceStatus } from "@/lib/invoices/status";
 import { notify } from "@/lib/activity";
 

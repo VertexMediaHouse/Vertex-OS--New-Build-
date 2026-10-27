@@ -35,14 +35,14 @@ export default function TimePage() {
   const p = readParams(sp);
   const unit = p.str("view") ?? "week";
   const period = p.str("range") || p.str("from") ? p.period : resolvePeriod({}, now(), "month");
-  const { mine, sheet, chart, tickLines, cats, team, recent, logs, projects, people, canApprove } = data;
+  const { mine, sheet, chart, tickLines, cats, team, recent, logs, projects, people, canApprove, agg, prevAgg, scope, members } = data;
 
-  const m = (f: (r: (typeof data.agg)[number]) => boolean) => data.agg.filter(f).reduce((a, r) => a + r.minutes, 0);
+  const m = (f: (r: (typeof agg)[number]) => boolean) => agg.filter(f).reduce((a, r) => a + r.minutes, 0);
   const total = m(() => true), billable = m((r) => r.billable), nonBill = total - billable;
-  const prevTotal = data.prevAgg.reduce((a, r) => a + r.minutes, 0);
-  const prevBill = data.prevAgg.find((r) => r.billable)?.minutes ?? 0;
-  const split = (f: (co: string) => string | number) => (data.scope === "ALL" ? [{ value: f("vmh"), label: "VMH" }, { value: f("vth"), label: "VTH" }] : undefined);
-  const activeMembers = (co?: string) => new Set(data.members.filter((r) => !co || r.companyId === co).map((r) => r.userId)).size;
+  const prevTotal = prevAgg.reduce((a, r) => a + r.minutes, 0);
+  const prevBill = prevAgg.find((r) => r.billable)?.minutes ?? 0;
+  const split = (f: (co: string) => string | number) => (scope === "ALL" ? [{ value: f("vmh"), label: "VMH" }, { value: f("vth"), label: "VTH" }] : undefined);
+  const activeMembers = (co?: string) => new Set(members.filter((r) => !co || r.companyId === co).map((r) => r.userId)).size;
 
   const catTotal = Object.values(cats).reduce((a, b) => a + b, 0) || 1;
   const catData = ["VIDEO_EDITING", "WEBSITE_DEVELOPMENT", "CRM_ERP", "AUTOMATION", "DESIGN", "MEETINGS", "OTHER"].filter((c) => cats[c]).map((c) => ({ label: WORK_CATEGORY_LABELS[c]!, value: cats[c]!, color: WORK_CATEGORY_COLORS[c]!, href: `/time?cat=${c}` }));

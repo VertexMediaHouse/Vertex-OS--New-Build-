@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { PrismaClient } from "@/lib/db/generated/client";
+import type { PrismaClient } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 
 export const stepSchema = z.object({ subject: z.string().trim().min(1).max(200), body: z.string().trim().min(1).max(20_000), delayDays: z.number().int().min(0).max(90) });

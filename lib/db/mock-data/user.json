@@ -1,0 +1,47 @@
+[
+  {
+    "id": "user_dhrumil",
+    "name": "Dhrumil",
+    "email": "dhrumil@vertexmediahouse.com",
+    "emailVerified": true,
+    "image": null,
+    "kind": "STAFF",
+    "isOwner": true,
+    "title": "Owner (Super Admin)",
+    "timezone": "Asia/Kolkata",
+    "weeklyCapacityHours": 40,
+    "active": true,
+    "createdAt": "2025-09-22T03:30:00.000Z",
+    "updatedAt": "2026-10-26T03:30:00.000Z"
+  },
+  {
+    "id": "user_sheen",
+    "name": "Sheen",
+    "email": "sheen@vertexmediahouse.com",
+    "emailVerified": true,
+    "image": null,
+    "kind": "STAFF",
+    "isOwner": false,
+    "title": "Video Editor & Delivery Specialist",
+    "timezone": "Asia/Kolkata",
+    "weeklyCapacityHours": 40,
+    "active": true,
+    "createdAt": "2025-09-22T03:30:00.000Z",
+    "updatedAt": "2026-10-26T03:30:00.000Z"
+  },
+  {
+    "id": "user_hardik",
+    "name": "Hardik",
+    "email": "hardik@vertexmediahouse.com",
+    "emailVerified": true,
+    "image": null,
+    "kind": "STAFF",
+    "isOwner": false,
+    "title": "Full Stack Engineer & Automation",
+    "timezone": "Asia/Kolkata",
+    "weeklyCapacityHours": 40,
+    "active": true,
+    "createdAt": "2025-09-22T03:30:00.000Z",
+    "updatedAt": "2026-10-26T03:30:00.000Z"
+  }
+]
