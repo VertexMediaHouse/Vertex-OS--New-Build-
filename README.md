@@ -17,7 +17,7 @@ npm run db:fresh              # or: an empty OS, just the two companies and the 
 npm run dev                   # starts services + Next.js on http://localhost:3000
 ```
 
-Log in as `dhrumil@vertexmediahouse.com` with the password in `SEED_PASSWORD` (default `vertex123`).
+Log in as `dhrumil@vertexmediahouse.com` with the password set in `SEED_PASSWORD` (see `.env`).
 Other demo users: rohan@, priya@, aman@, dhruv@vertexmediahouse.com and neha@vertextechhouse.com.
 
 ## Scripts
