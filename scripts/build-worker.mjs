@@ -30,8 +30,20 @@ await esbuild.build({
   mainFields: ["module", "main"],
   conditions: ["workerd", "worker", "import", "module"],
   plugins: [shimDirname],
-  // Node built-ins that Workers provides via nodejs_compat
-  external: ["node:*", "pg-native"],
+  // Node built-ins: cover both "node:fs" (modern) and bare "fs" (legacy) forms.
+  // Cloudflare Workers exposes these via the nodejs_compat compatibility flag.
+  external: [
+    "node:*",
+    // Bare built-in names used by pg, pgpass, split2, etc.
+    "fs", "path", "url", "util", "util/types", "net", "tls", "dns",
+    "stream", "stream/promises", "buffer", "crypto", "os", "http", "https",
+    "events", "assert", "string_decoder", "zlib", "child_process", "worker_threads",
+    "perf_hooks", "async_hooks", "readline",
+    // pg native binding (optional, never present in Workers)
+    "pg-native",
+    // @react-pdf is a Node-only server utility; it must not be bundled into the Worker.
+    "@react-pdf/renderer", "@react-pdf/image",
+  ],
   define: {
     "process.env.NODE_ENV": '"production"',
   },
