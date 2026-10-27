@@ -122612,6 +122612,7 @@ var Prisma;
 })(Prisma || (Prisma = {}));
 function hydrateDates(val) {
   if (val === null || val === void 0) return val;
+  if (val instanceof Date) return val;
   if (typeof val === "string") {
     if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
       const d6 = new Date(val);
@@ -122621,6 +122622,7 @@ function hydrateDates(val) {
   }
   if (Array.isArray(val)) return val.map(hydrateDates);
   if (typeof val === "object") {
+    if (Object.keys(val).length === 0) return null;
     const out = {};
     for (const [k6, v2] of Object.entries(val)) {
       out[k6] = hydrateDates(v2);
