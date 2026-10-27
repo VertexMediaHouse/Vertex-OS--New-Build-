@@ -318,6 +318,7 @@ export namespace Prisma {
 
 function hydrateDates(val: any): any {
   if (val === null || val === undefined) return val;
+  if (val instanceof Date) return val; // already hydrated — recursing would wipe it to `{}`
   if (typeof val === "string") {
     if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
       const d = new Date(val);
@@ -327,6 +328,10 @@ function hydrateDates(val: any): any {
   }
   if (Array.isArray(val)) return val.map(hydrateDates);
   if (typeof val === "object") {
+    // A date cell written back while this field held `{}` (the bug above, now fixed)
+    // round-trips through Sheets as the literal object `{}`. Treat it as a missing date
+    // instead of crashing every caller that expects a Date, string or null here.
+    if (Object.keys(val).length === 0) return null;
     const out: any = {};
     for (const [k, v] of Object.entries(val)) {
       out[k] = hydrateDates(v);
