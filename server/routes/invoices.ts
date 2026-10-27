@@ -51,7 +51,7 @@ export const invoices = new Hono<Env>()
     const page = Math.max(1, Number(c.req.query("page") ?? 1) || 1);
     const base: Prisma.InvoiceWhereInput = { companyId: { in: companyIds } };
     const where: Prisma.InvoiceWhereInput = {
-      companyId: { in: subScope(companyIds, c.req.query("co")) },
+      companyId: { in: subScope(companyIds, c.req.query("co") ?? null) },
       ...(status && { status: status as "PAID" }),
       ...(c.req.query("client") && { clientId: c.req.query("client")! }),
       ...(c.req.query("project") && { projectId: c.req.query("project")! }),

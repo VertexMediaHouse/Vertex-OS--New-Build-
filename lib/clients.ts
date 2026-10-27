@@ -1,12 +1,10 @@
-import "server-only";
 import { db, type Prisma } from "@/lib/db";
 import { scopedClientWhere } from "@/lib/db/scope";
 import { formatRelative } from "@/lib/format";
 import { now } from "@/lib/clock";
 
-// Lives in chart-colors (pure) so client code can use it without pulling in this
-// server-only module — re-exported here for the server callers that already import it.
-export { logoColor } from "@/lib/chart-colors";
+import { logoColor } from "@/lib/chart-colors";
+export { logoColor };
 
 export type ClientFilters = { companyIds: string[]; q?: string | null; status?: string | null; tag?: string | null; owner?: string | null; archived?: boolean };
 

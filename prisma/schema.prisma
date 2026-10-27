@@ -1,11 +1,8 @@
 // Vertex Command Center data model. Money is Decimal(12,2); all times are UTC.
 
 generator client {
-  provider   = "prisma-client"
-  output     = "../lib/db/generated"
-  // workerd has no import.meta.url, which the default (Node) runtime target
-  // needs at module load — this is what crashes the Workers deploy.
-  runtime    = "workerd"
+  provider = "prisma-client"
+  output   = "../lib/db/generated"
 }
 
 datasource db {

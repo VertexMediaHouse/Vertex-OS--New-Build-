@@ -1,4 +1,3 @@
-import "server-only";
 import { z } from "zod";
 import type { PrismaClient } from "@/lib/db/generated/client";
 import { sendEmail } from "@/lib/email";

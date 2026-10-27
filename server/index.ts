@@ -7,6 +7,9 @@ serve({ fetch: app.fetch, port }, ({ port }) => console.log(`[api] http://localh
 
 // Cron jobs run in this process, as they used to in the Next server (instrumentation.ts).
 if (!process.env.DISABLE_JOBS) {
-  const { startJobs } = await import("@/lib/jobs");
-  startJobs().catch((e) => console.error("[jobs] failed to start", e));
+  import("@/lib/jobs")
+    .then(({ startJobs }) => {
+      startJobs().catch((e) => console.error("[jobs] failed to start", e));
+    })
+    .catch((e) => console.error("[jobs] failed to import", e));
 }

@@ -33,7 +33,22 @@ export const WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:5173";
 
 const base = new Hono<Env>();
 
-base.use("*", cors({ origin: WEB_ORIGIN, credentials: true }));
+base.use(
+  "*",
+  cors({
+    origin: (origin) => {
+      if (!origin) return WEB_ORIGIN;
+      if (
+        origin === WEB_ORIGIN ||
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+      ) {
+        return origin;
+      }
+      return null;
+    },
+    credentials: true,
+  })
+);
 
 // Everything answers in the ActionResult shape the frontend already branches on.
 base.onError((err, c) => {

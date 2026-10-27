@@ -1,4 +1,3 @@
-import "server-only";
 import { db } from "@/lib/db";
 import { scopedClientWhere, scopedSharedWhere, scopedWhere, type ScopeFilter } from "@/lib/db/scope";
 import { addDays, addMonthsIST, now, startOfDayIST, startOfMonthIST, startOfWeekIST } from "@/lib/clock";
@@ -6,6 +5,8 @@ import { pctChange, type Period } from "@/lib/period";
 import { workloadPercent } from "./workload";
 import { goalProgress } from "./goals";
 import { parseCompanySettings } from "@/lib/settings";
+
+import { isMemberOnly, type CurrentUser } from "@/lib/auth/permissions";
 
 const num = (v: unknown) => Number(v ?? 0);
 const ACTIVE_PROJECT = { notIn: ["COMPLETED", "CANCELLED"] as ("COMPLETED" | "CANCELLED")[] };
@@ -57,8 +58,9 @@ export async function revenueTrend(s: ScopeFilter) {
   });
 }
 
-export async function projectSummary(s: ScopeFilter, p: Period) {
-  const where = { ...scopedWhere(s), clientId: { not: null } };
+export async function projectSummary(s: ScopeFilter & { user?: CurrentUser }, p: Period) {
+  const memberFilter = s.user && isMemberOnly(s.user) ? { members: { some: { userId: s.user.id } } } : {};
+  const where = { ...scopedWhere(s), ...memberFilter, clientId: { not: null } };
   const [groups, delivered, started, startedPrev, byCompany] = await Promise.all([
     db.project.groupBy({ by: ["status"], _count: true, where: { ...where, status: ACTIVE_PROJECT } }),
     db.project.count({ where: { ...where, status: "COMPLETED", completedAt: { gte: p.from, lt: p.to } } }),
@@ -80,21 +82,22 @@ export async function projectSummary(s: ScopeFilter, p: Period) {
   };
 }
 
-export async function taskSummary(s: ScopeFilter, p: Period) {
+export async function taskSummary(s: ScopeFilter & { user?: CurrentUser }, p: Period) {
   const t = now();
   const today = startOfDayIST(t);
   const tomorrow = addDays(today, 1);
   const weekStart = startOfWeekIST(t);
-  const open = { ...scopedWhere(s), status: { not: "COMPLETED" as const } };
+  const memberFilter = s.user && isMemberOnly(s.user) ? { assigneeId: s.user.id } : {};
+  const open = { ...scopedWhere(s), ...memberFilter, status: { not: "COMPLETED" as const } };
   const [total, pending, dueToday, overdue, completedWeek, upcoming, createdCur, createdPrev, byCompany] = await Promise.all([
     db.task.count({ where: open }),
-    db.task.count({ where: { ...scopedWhere(s), status: "TODO" } }),
+    db.task.count({ where: { ...scopedWhere(s), ...memberFilter, status: "TODO" } }),
     db.task.count({ where: { ...open, dueDate: { gte: today, lt: tomorrow } } }),
     db.task.count({ where: { ...open, dueDate: { lt: today } } }),
-    db.task.count({ where: { ...scopedWhere(s), status: "COMPLETED", completedAt: { gte: weekStart } } }),
+    db.task.count({ where: { ...scopedWhere(s), ...memberFilter, status: "COMPLETED", completedAt: { gte: weekStart } } }),
     db.task.count({ where: { ...open, dueDate: { gte: tomorrow, lt: addDays(today, 8) } } }),
-    db.task.count({ where: { ...scopedWhere(s), createdAt: { gte: p.from, lt: p.to } } }),
-    db.task.count({ where: { ...scopedWhere(s), createdAt: { gte: p.prevFrom, lt: p.prevTo } } }),
+    db.task.count({ where: { ...scopedWhere(s), ...memberFilter, createdAt: { gte: p.from, lt: p.to } } }),
+    db.task.count({ where: { ...scopedWhere(s), ...memberFilter, createdAt: { gte: p.prevFrom, lt: p.prevTo } } }),
     db.task.groupBy({ by: ["companyId"], _count: true, where: open }),
   ]);
   return {
@@ -165,9 +168,10 @@ export function clientCount(s: ScopeFilter) {
 export type TaskFilter = "today" | "overdue" | "week" | "all";
 
 /** The dashboard's open-task list. The buckets match ?due= on the tasks page. */
-export function openTasks(s: ScopeFilter, filter: TaskFilter, take = 8) {
+export function openTasks(s: ScopeFilter & { user?: CurrentUser }, filter: TaskFilter, take = 8) {
   const today = startOfDayIST(now());
-  const open = { ...scopedWhere(s), status: { not: "COMPLETED" as const } };
+  const memberFilter = s.user && isMemberOnly(s.user) ? { assigneeId: s.user.id } : {};
+  const open = { ...scopedWhere(s), ...memberFilter, status: { not: "COMPLETED" as const } };
   const where =
     filter === "today"
       ? { ...open, dueDate: { gte: today, lt: addDays(today, 1) } }
@@ -182,6 +186,28 @@ export function openTasks(s: ScopeFilter, filter: TaskFilter, take = 8) {
     take,
     include: { assignee: { select: { name: true, image: true } }, project: { select: { name: true, client: { select: { name: true } } } } },
   });
+}
+
+/** Hours logged this week by the current user vs their capacity. */
+export async function myLoggedHours(user: CurrentUser, s: ScopeFilter) {
+  const weekStart = startOfWeekIST(now());
+  const weekEnd = addDays(weekStart, 7);
+  const result = await db.timeEntry.aggregate({
+    _sum: { durationMin: true },
+    where: {
+      userId: user.id,
+      companyId: { in: s.companyIds },
+      start: { gte: weekStart, lt: weekEnd },
+    },
+  });
+  const minutes = Number(result._sum.durationMin ?? 0);
+  const capacityHours = user.weeklyCapacityHours || 40;
+  return {
+    minutes,
+    hours: Math.round((minutes / 60) * 10) / 10,
+    capacityHours,
+    pct: Math.min(100, Math.round((minutes / (capacityHours * 60)) * 100)),
+  };
 }
 
 /** Open tasks per person: who is carrying what, and what came back for review. */

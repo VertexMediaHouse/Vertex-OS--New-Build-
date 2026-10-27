@@ -1,4 +1,3 @@
-import "server-only";
 import { db } from "@/lib/db";
 import { addDays, now, startOfDayIST } from "@/lib/clock";
 import { pctChange, type Period } from "@/lib/period";

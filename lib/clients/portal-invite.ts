@@ -1,4 +1,3 @@
-import "server-only";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth/server";
 import type { ActionResult } from "@/lib/validation/result";

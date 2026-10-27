@@ -2,6 +2,7 @@
   "name": "vertex-command-center",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:api": "tsx watch --env-file-if-exists=.env server/index.ts",

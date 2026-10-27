@@ -1,6 +1,7 @@
 // Ported from app/(app)/dashboard/page.tsx. One query feeds every card.
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock, FolderKanban, SquareCheckBig } from "lucide-react";
+import Link from "@/components/ui/link";
 import { useSearchParams } from "@/lib/nav";
 import { BarsChart, ChartLegend, DonutChart, DonutLegend } from "@/components/shared/charts";
 import { DateRangePicker } from "@/components/shared/filters";
@@ -81,6 +82,152 @@ export default function DashboardPage() {
         </div>
         <div className="grid gap-3.5 xl:grid-cols-2">
           <CrossSellCard alerts={data.crossSell} />
+        </div>
+      </div>
+    );
+  }
+
+  if (data.isMember) {
+    const code = (data.scope === "ALL" ? "VMH" : data.scope) as "VMH" | "VTH";
+    const meta = COMPANY_META[code] ?? COMPANY_META.VMH;
+    const projectDonut = donutData(data.projects);
+
+    return (
+      <div className="space-y-4">
+        <PageHeader
+          className="mb-5"
+          title={
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[28px] font-bold text-ink">Welcome, {firstName(data.name)}! 👋</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-text">
+                <span className="size-2 rounded-full bg-brand-strong animate-pulse" />
+                {code} Employee Workspace
+              </span>
+            </div>
+          }
+          subtitle={`${data.role ?? data.title ?? "Team Member"} · ${meta.name} (${meta.tagline})`}
+          actions={
+            <div className="flex items-center gap-3">
+              <Card className="flex items-center gap-3 px-4 py-2.5">
+                <span className="inline-flex size-9 items-center justify-center rounded-lg bg-info-soft text-brand-text">
+                  <Clock className="size-5" aria-hidden />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-ink">{data.myHours?.hours ?? 0}h Logged</span>
+                    <span className="text-2xs text-ink-muted">/ {data.myHours?.capacityHours ?? 40}h capacity</span>
+                  </div>
+                  <div className="mt-1 h-1.5 w-28 overflow-hidden rounded-full bg-surface-muted">
+                    <div
+                      className="h-full rounded-full bg-brand-strong transition-all"
+                      style={{ width: `${data.myHours?.pct ?? 0}%` }}
+                    />
+                  </div>
+                </div>
+              </Card>
+              <Card className="hidden items-center gap-3 px-4 py-2.5 sm:flex">
+                <span className="inline-flex size-9 items-center justify-center rounded-lg bg-review-soft text-review-text">
+                  <CalendarDays className="size-5" aria-hidden />
+                </span>
+                <span>
+                  <span className="block text-xs font-semibold text-ink">{formatLongDate(now())}</span>
+                  <span className="block text-2xs text-ink-muted">Ready to create!</span>
+                </span>
+              </Card>
+            </div>
+          }
+        />
+
+        {/* 4 Employee KPI Cards */}
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+          <Link href="/tasks" className="block transition-transform hover:-translate-y-0.5">
+            <Card className="p-4 hover:border-brand/40">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-ink-muted">My Open Tasks</span>
+                <span className="rounded-md bg-info-soft p-1.5 text-brand-text">
+                  <SquareCheckBig className="size-4" />
+                </span>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-ink">{data.taskSummary.total}</span>
+                {data.taskSummary.dueToday > 0 && (
+                  <span className="text-xs font-medium text-warning-text">({data.taskSummary.dueToday} due today)</span>
+                )}
+                {data.taskSummary.overdue > 0 && (
+                  <span className="text-xs font-medium text-danger-text">({data.taskSummary.overdue} overdue)</span>
+                )}
+              </div>
+              <p className="mt-1 text-2xs text-ink-muted">{data.taskSummary.completedWeek} completed this week</p>
+            </Card>
+          </Link>
+
+          <Link href="/projects" className="block transition-transform hover:-translate-y-0.5">
+            <Card className="p-4 hover:border-brand/40">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-ink-muted">Active Projects</span>
+                <span className="rounded-md bg-success-soft p-1.5 text-success-text">
+                  <FolderKanban className="size-4" />
+                </span>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-ink">{data.projects.active}</span>
+                <span className="text-xs text-ink-muted">assigned to me</span>
+              </div>
+              <p className="mt-1 text-2xs text-ink-muted">{data.projects.inProgress} in progress · {data.projects.delivered} delivered</p>
+            </Card>
+          </Link>
+
+          <Link href="/time" className="block transition-transform hover:-translate-y-0.5">
+            <Card className="p-4 hover:border-brand/40">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-ink-muted">Weekly Logged Time</span>
+                <span className="rounded-md bg-warning-soft p-1.5 text-warning-text">
+                  <Clock className="size-4" />
+                </span>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-ink">{data.myHours?.hours ?? 0}h</span>
+                <span className="text-xs font-semibold text-brand-text">{data.myHours?.pct ?? 0}% capacity</span>
+              </div>
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
+                <div className="h-full rounded-full bg-brand-strong" style={{ width: `${data.myHours?.pct ?? 0}%` }} />
+              </div>
+            </Card>
+          </Link>
+
+          <Link href="/goals" className="block transition-transform hover:-translate-y-0.5">
+            <Card className="p-4 hover:border-brand/40">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-ink-muted">Company Deliverables</span>
+                <span className="rounded-md bg-review-soft p-1.5 text-review-text">
+                  <CheckCircle2 className="size-4" />
+                </span>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-ink">{data.goals.length}</span>
+                <span className="text-xs text-ink-muted">active targets</span>
+              </div>
+              <p className="mt-1 text-2xs text-ink-muted">{data.goals.filter((g: any) => g.progress >= 100).length} goals achieved</p>
+            </Card>
+          </Link>
+        </div>
+
+        {/* Tasks & Project Status Visuals */}
+        <div className="grid gap-3.5 xl:grid-cols-[1.25fr_1fr]">
+          <OpenTasksCard tasks={data.openTasks} filter={data.taskFilter} sp={sp} />
+          <SectionCard title={`Project Status (${code})`} href="/projects">
+            <div className="flex items-center justify-around py-3">
+              <DonutChart data={projectDonut} center={data.projects.active} centerLabel="Active" size={130} />
+              <DonutLegend items={projectDonut} />
+            </div>
+          </SectionCard>
+        </div>
+
+        {/* Notes, Goals & Agenda */}
+        <div className="grid gap-3.5 xl:grid-cols-[1.1fr_1fr_1fr]">
+          <NotesCard ctx={ctx} rows={data.notes} />
+          <GoalsCard goals={data.goals} />
+          <AgendaCard ctx={ctx} events={data.agenda} compact />
         </div>
       </div>
     );

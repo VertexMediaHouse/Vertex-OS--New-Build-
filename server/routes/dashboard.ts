@@ -5,7 +5,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { staffContext, type Env } from "../context";
 import { logActivity } from "@/lib/activity";
-import { assertCan, can } from "@/lib/auth/permissions";
+import { assertCan, can, isMemberOnly, roleLabel } from "@/lib/auth/permissions";
 import { now } from "@/lib/clock";
 import { db } from "@/lib/db";
 import * as M from "@/lib/metrics/dashboard";
@@ -39,7 +39,7 @@ export const dashboard = new Hono<Env>()
     const taskFilter = (TASK_FILTERS as readonly string[]).includes(c.req.query("tasks") ?? "") ? (c.req.query("tasks") as M.TaskFilter) : "today";
     const zeroPeriod = { from: new Date(0), to: new Date(0), prevFrom: new Date(0), prevTo: new Date(0), preset: "month" as const };
 
-    const [revenue, projects, taskSummary, leads, openTasks, tasksByPerson, notes, goals, campaigns, workload, agenda, crossSell, revenueTrend, leadsPipeline] = await Promise.all([
+    const [revenue, projects, taskSummary, leads, openTasks, tasksByPerson, notes, goals, campaigns, workload, agenda, crossSell, revenueTrend, leadsPipeline, myHours] = await Promise.all([
       M.revenueSummary(ctx, period),
       M.projectSummary(ctx, period),
       M.taskSummary(ctx, period),
@@ -54,16 +54,21 @@ export const dashboard = new Hono<Env>()
       M.crossSellAlerts(ctx),
       M.revenueTrend(ctx),
       M.leadSummary(ctx, zeroPeriod),
+      M.myLoggedHours(user, ctx),
     ]);
 
     return c.json({
       scope,
       name: user.name,
+      role: roleLabel(user),
+      title: user.title,
+      isMember: isMemberOnly(user),
       canViewInvoice: can(user, "view", "invoice"),
+      canViewLead: can(user, "view", "lead"),
       companyIds: ctx.companyIds,
       period: { preset: period.preset, from: period.from, to: period.to },
       taskFilter,
-      revenue, projects, taskSummary, leads, openTasks, tasksByPerson, notes, goals, campaigns, workload, agenda, crossSell, revenueTrend, leadsPipeline,
+      revenue, projects, taskSummary, leads, openTasks, tasksByPerson, notes, goals, campaigns, workload, agenda, crossSell, revenueTrend, leadsPipeline, myHours,
     });
   })
   /** Turns a cross-sell alert into a NEW lead in the other company, prefilled with the client. */

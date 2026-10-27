@@ -95,11 +95,47 @@ export function CompanyPills({ scope, allowed }: SwitchProps) {
   );
 }
 
+export type SwitchCardProps = SwitchProps & { collapsed?: boolean };
+
 /** "Switch Company" card at the bottom of the sidebar. */
-export function SwitchCompanyCard({ scope, allowed, collapsed }: SwitchProps & { collapsed?: boolean }) {
+export function SwitchCompanyCard({ scope, allowed, collapsed = false }: SwitchCardProps) {
   const { switchTo } = useSwitchCompany();
   const opts = options(allowed);
-  if (opts.length < 2) return null;
+
+  if (opts.length < 2) {
+    const s = (allowed[0] ?? scope) as Scope;
+    if (s === "ALL") return null;
+    return (
+      <div className="rounded-[10px] bg-sidebar-card p-3 border border-white/5">
+        {!collapsed ? (
+          <div className="flex items-center gap-2.5">
+            <span className={cn(
+              "inline-flex h-[26px] w-[34px] shrink-0 items-center justify-center rounded-md text-[10px] font-bold text-white shadow-sm",
+              s === "VMH" ? "bg-sidebar-vmh-avatar" : "bg-sidebar-vth-avatar",
+            )}>
+              {s}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold text-white">{COMPANY_META[s].name}</p>
+              <p className="text-[10px] text-sidebar-muted">Employee Workspace</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <span
+              className={cn(
+                "inline-flex h-[22px] w-[26px] items-center justify-center rounded text-[9.5px] font-bold text-white",
+                s === "VMH" ? "bg-sidebar-vmh-avatar" : "bg-sidebar-vth-avatar",
+              )}
+            >
+              {s}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-[10px] bg-sidebar-card p-2">
       {!collapsed && <p className="px-2 pt-1.5 pb-2 text-xs text-sidebar-muted">Switch Company</p>}
@@ -121,7 +157,12 @@ export function SwitchCompanyCard({ scope, allowed, collapsed }: SwitchProps & {
                 <Check className="size-3.5" strokeWidth={3} aria-hidden />
               </span>
             ) : (
-              <span className={cn("inline-flex h-[22px] w-[30px] shrink-0 items-center justify-center rounded-md text-[9.5px] font-semibold text-white", s === "VMH" ? "bg-sidebar-vmh-avatar" : "bg-sidebar-vth-avatar")}>
+              <span
+                className={cn(
+                  "inline-flex h-[22px] w-[30px] shrink-0 items-center justify-center rounded-md text-[9.5px] font-semibold text-white",
+                  s === "VMH" ? "bg-sidebar-vmh-avatar" : "bg-sidebar-vth-avatar",
+                )}
+              >
                 {s}
               </span>
             )}

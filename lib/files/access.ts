@@ -1,4 +1,3 @@
-import "server-only";
 import { db } from "@/lib/db";
 import type { CurrentUser } from "@/lib/auth/permissions";
 import { allowedCompanyIds, isMemberOnly } from "@/lib/auth/permissions";

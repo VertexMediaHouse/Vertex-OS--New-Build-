@@ -14,8 +14,8 @@ export const TEAM: {
   role: "ADMIN" | "MANAGER" | "MEMBER";
 }[] = [
   { key: "dhrumil", name: "Dhrumil", email: "dhrumil@vertexmediahouse.com", isOwner: true, title: "Owner (Super Admin)", companies: ["VMH", "VTH"], role: "ADMIN" },
-  { key: "sheen", name: "Sheen", email: "sheen@vertexmediahouse.com", title: "Operations & Delivery", companies: ["VMH", "VTH"], role: "MANAGER" },
-  { key: "hardik", name: "Hardik", email: "hardik@vertexmediahouse.com", title: "Editor & Developer", companies: ["VMH", "VTH"], role: "MANAGER" },
+  { key: "sheen", name: "Sheen", email: "sheen@vertexmediahouse.com", title: "Video Editor & Delivery Specialist", companies: ["VMH"], role: "MEMBER" },
+  { key: "hardik", name: "Hardik", email: "hardik@vertexmediahouse.com", title: "Full Stack Engineer & Automation", companies: ["VTH"], role: "MEMBER" },
 ];
 
 // ── Clients (page 4 table, pages 3, 5, 6, 9, 13) ───────────────────────────────
