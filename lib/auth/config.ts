@@ -48,7 +48,10 @@ export const authOptions = {
   session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
   rateLimit: {
     enabled: process.env.NODE_ENV === "production",
-    storage: "database",
+    // "database" calls adapter.incrementOne, which the Sheets-backed mock db (lib/db)
+    // never implemented — every rate-limited route (sign-in included) hung forever
+    // waiting on it. "memory" is per-isolate, which is fine for login-attempt throttling.
+    storage: "memory",
     customRules: {
       "/sign-in/email": { window: 60, max: 5 },
       "/request-password-reset": { window: 300, max: 3 },

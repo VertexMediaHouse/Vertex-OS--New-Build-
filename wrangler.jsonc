@@ -4,6 +4,12 @@
   "main": "./dist/worker.js",
   "compatibility_date": "2026-10-26",
   "compatibility_flags": ["nodejs_compat"],
+  "kv_namespaces": [
+    {
+      "binding": "SESSIONS",
+      "id": "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+    }
+  ],
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application",
