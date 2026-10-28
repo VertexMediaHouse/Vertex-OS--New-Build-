@@ -1,12 +1,19 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "vertex-os",
+  "name": "vertex-os--new-build",
   "main": "./dist/worker.js",
   "compatibility_date": "2026-10-26",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": [
+      "/api/*"
+    ]
+  },
+  "vars": {
+    "GOOGLE_SHEET_WEBAPP_URL": "https://script.google.com/macros/s/AKfycbz0x8lE6cazrsaXQetZs5o2icwDO9dJ0ytr577hD1zX3-vwHTe7FPm6X1tOLXFmnujvVw/exec"
   }
 }

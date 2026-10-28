@@ -45,6 +45,7 @@ export async function fetchAllFromSheets(): Promise<Record<string, any[]> | null
       method: "GET",
       headers: { Accept: "application/json" },
       redirect: "follow",
+      signal: AbortSignal.timeout(10_000), // Apps Script cold starts can be slow; fail fast and retry next request rather than hang.
     });
 
     if (!res.ok) {
@@ -74,10 +75,13 @@ export async function fetchAllFromSheets(): Promise<Record<string, any[]> | null
 }
 
 /**
- * Syncs a single table's rows directly to its Google Sheet tab.
+ * Upserts specific rows (by `id`) into a Sheet tab — row-level, not a whole-table
+ * overwrite. Two Worker isolates touching different rows of the same table can both
+ * sync without one clobbering the other's write (the old `syncTable` sent the whole
+ * table every time, so whichever isolate synced last wiped out the other's change).
  */
-export async function syncTableToSheet(table: string, rows: any[]): Promise<boolean> {
-  if (!isSheetsConfigured()) return false;
+export async function upsertRowsToSheet(table: string, rows: any[]): Promise<boolean> {
+  if (!isSheetsConfigured() || rows.length === 0) return true;
   const url = getUrl();
 
   try {
@@ -85,28 +89,57 @@ export async function syncTableToSheet(table: string, rows: any[]): Promise<bool
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "syncTable",
-        table,
-        rows: serializedRows,
-      }),
+      body: JSON.stringify({ action: "upsertRows", table, rows: serializedRows }),
       redirect: "follow",
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!res.ok) {
-      console.warn(`[sheets] syncTableToSheet(${table}) failed with status ${res.status}`);
+      console.warn(`[sheets] upsertRowsToSheet(${table}) failed with status ${res.status}`);
       return false;
     }
 
     const json = (await res.json()) as { ok: boolean; count?: number; error?: string };
     if (!json.ok) {
-      console.warn(`[sheets] syncTableToSheet(${table}) error:`, json.error);
+      console.warn(`[sheets] upsertRowsToSheet(${table}) error:`, json.error);
       return false;
     }
 
     return true;
   } catch (err) {
-    console.error(`[sheets] Error syncing table ${table} to Google Sheets:`, err);
+    console.error(`[sheets] Error upserting rows for ${table} to Google Sheets:`, err);
+    return false;
+  }
+}
+
+/** Deletes specific rows (by `id`) from a Sheet tab. */
+export async function deleteRowsFromSheet(table: string, ids: string[]): Promise<boolean> {
+  if (!isSheetsConfigured() || ids.length === 0) return true;
+  const url = getUrl();
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "deleteRows", table, ids }),
+      redirect: "follow",
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!res.ok) {
+      console.warn(`[sheets] deleteRowsFromSheet(${table}) failed with status ${res.status}`);
+      return false;
+    }
+
+    const json = (await res.json()) as { ok: boolean; count?: number; error?: string };
+    if (!json.ok) {
+      console.warn(`[sheets] deleteRowsFromSheet(${table}) error:`, json.error);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error(`[sheets] Error deleting rows for ${table} from Google Sheets:`, err);
     return false;
   }
 }
@@ -126,16 +159,40 @@ export function setWaitUntil(fn: ((p: Promise<unknown>) => void) | null) {
   currentWaitUntil = fn;
 }
 
+/** Rows (and deletes) still waiting to go out for a table, keyed by id so repeat edits to the same row before the sync fires collapse into one. */
+type Pending = { upserts: Map<string, any>; deletes: Set<string> };
+const pendingByTable = new Map<string, Pending>();
 const syncTimers = new Map<string, NodeJS.Timeout>();
 const inFlightSyncs = new Set<string>();
 
-async function runSync(table: string, getRows: () => any[]) {
+function pendingFor(table: string): Pending {
+  let p = pendingByTable.get(table);
+  if (!p) {
+    p = { upserts: new Map(), deletes: new Set() };
+    pendingByTable.set(table, p);
+  }
+  return p;
+}
+
+async function runSync(table: string) {
+  // A sync for this table is already draining the queue — rows added meanwhile stay in
+  // `pending` and that run picks them up in its own next loop iteration below, so this
+  // call can return without losing them (returning here must never silently drop rows).
   if (inFlightSyncs.has(table)) return;
   inFlightSyncs.add(table);
   try {
-    const rows = getRows();
-    const ok = await syncTableToSheet(table, rows);
-    if (ok) console.log(`[sheets] Synced '${table}' (${rows.length} rows) to Google Sheets`);
+    // Loop instead of a single pass: more rows can be queued (by other work in this same
+    // request, via waitUntil) while this fetch is in flight — drain until truly empty.
+    let pending = pendingByTable.get(table);
+    while (pending && (pending.upserts.size > 0 || pending.deletes.size > 0)) {
+      const upserts = [...pending.upserts.values()];
+      const deletes = [...pending.deletes];
+      pending.upserts.clear();
+      pending.deletes.clear();
+      const [upOk, delOk] = await Promise.all([upsertRowsToSheet(table, upserts), deleteRowsFromSheet(table, deletes)]);
+      if (upOk && delOk) console.log(`[sheets] Synced '${table}': ${upserts.length} upserted, ${deletes.length} deleted`);
+      pending = pendingByTable.get(table);
+    }
   } catch (e) {
     console.error(`[sheets] Background sync failed for '${table}':`, e);
   } finally {
@@ -144,24 +201,40 @@ async function runSync(table: string, getRows: () => any[]) {
 }
 
 /**
- * Schedules a background sync of a table to Google Sheets. The mutation in the local
- * memory database completes immediately (0ms latency); the Sheet tab updates async.
- * With a waitUntil registered (Workers), syncs immediately and is kept alive past the
- * response. Otherwise (Node), debounces on a timer since the process stays running.
+ * Queues specific rows for a background upsert to their Sheet tab (row-level, not a
+ * whole-table dump — see upsertRowsToSheet). The mutation in the local memory database
+ * completes immediately (0ms latency); the Sheet tab updates async. With a waitUntil
+ * registered (Workers), syncs immediately and is kept alive past the response.
+ * Otherwise (Node), debounces on a timer since the process stays running.
  */
-export function scheduleTableSync(table: string, getRows: () => any[], delayMs = 1500) {
-  if (!isSheetsConfigured()) return;
+export function scheduleTableSync(table: string, rows: any[], delayMs = 1500) {
+  if (!isSheetsConfigured() || rows.length === 0) return;
+  const pending = pendingFor(table);
+  for (const row of rows) pending.upserts.set(row.id, row);
+  flush(table, delayMs);
+}
 
+/** Queues specific row ids for background deletion from their Sheet tab. */
+export function scheduleTableDelete(table: string, ids: string[], delayMs = 1500) {
+  if (!isSheetsConfigured() || ids.length === 0) return;
+  const pending = pendingFor(table);
+  for (const id of ids) {
+    pending.upserts.delete(id);
+    pending.deletes.add(id);
+  }
+  flush(table, delayMs);
+}
+
+function flush(table: string, delayMs: number) {
   if (currentWaitUntil) {
-    currentWaitUntil(runSync(table, getRows));
+    currentWaitUntil(runSync(table));
     return;
   }
-
   const existingTimer = syncTimers.get(table);
   if (existingTimer) clearTimeout(existingTimer);
   const timer = setTimeout(() => {
     syncTimers.delete(table);
-    void runSync(table, getRows);
+    void runSync(table);
   }, delayMs);
   syncTimers.set(table, timer);
 }

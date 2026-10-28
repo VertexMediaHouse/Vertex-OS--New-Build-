@@ -2,7 +2,7 @@
 // Hydrated on startup from Google Sheets, with local mock fallback.
 // Mutations mutate memory for 0ms latency and async-sync to Google Sheets.
 
-import { fetchAllFromSheets, scheduleTableSync, isSheetsConfigured } from "../sheets";
+import { fetchAllFromSheets, scheduleTableSync, scheduleTableDelete, isSheetsConfigured } from "../sheets";
 import { SCHEMA } from "./schema";
 // Only company/user/membership/account ship with real (non-mock) seed rows, in ./seed.ts.
 // Every business table starts empty here — Google Sheets is the live source of truth —
@@ -399,8 +399,10 @@ export async function initDbFromSheets(force = false): Promise<void> {
     try {
       const sheetsData = await fetchAllFromSheets();
       if (!sheetsData) {
-        console.log("[db] Using local mock store (Google Sheets unreachable or empty)");
-        sheetsHydrated = true;
+        // Fetch failed (timeout, Apps Script cold start, transient 5xx) — don't latch
+        // sheetsHydrated, or this isolate would serve the empty mock store forever.
+        // Next request on this isolate retries instead.
+        console.warn("[db] Sheets fetch failed this attempt; will retry on next request");
         return;
       }
 
@@ -1068,24 +1070,24 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
       }
 
       store[modelName].push(record);
-      scheduleTableSync(modelName, () => store[modelName]);
+      scheduleTableSync(modelName, [record]);
       for (const op of nestedOps) await op();
       return projectItem(record, modelName, select, include);
     },
 
     async createMany(args: any = {}) {
       const items: any[] = Array.isArray(args.data) ? args.data : [args.data];
-      let count = 0;
+      const created: any[] = [];
       for (const it of items) {
         const record = { ...it };
         if (!record.id) record.id = nextId(modelName);
         if (!record.createdAt) record.createdAt = new Date();
         if (!record.updatedAt) record.updatedAt = new Date();
         store[modelName].push(record);
-        count++;
+        created.push(record);
       }
-      if (count > 0) scheduleTableSync(modelName, () => store[modelName]);
-      return { count };
+      if (created.length > 0) scheduleTableSync(modelName, created);
+      return { count: created.length };
     },
 
     async update(args: any = {}) {
@@ -1113,13 +1115,13 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
         }
       }
       item.updatedAt = new Date();
-      scheduleTableSync(modelName, () => store[modelName]);
+      scheduleTableSync(modelName, [item]);
       return projectItem(item, modelName, select, include);
     },
 
     async updateMany(args: any = {}) {
       const { where, data } = args;
-      let count = 0;
+      const changed: any[] = [];
       for (const item of store[modelName]) {
         if (matchesWhere(item, where, modelName)) {
           for (const [k, v] of Object.entries(data)) {
@@ -1130,11 +1132,11 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
             }
           }
           item.updatedAt = new Date();
-          count++;
+          changed.push(item);
         }
       }
-      if (count > 0) scheduleTableSync(modelName, () => store[modelName]);
-      return { count };
+      if (changed.length > 0) scheduleTableSync(modelName, changed);
+      return { count: changed.length };
     },
 
     async delete(args: any = {}) {
@@ -1142,17 +1144,16 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
       const idx = store[modelName].findIndex((x) => matchesWhere(x, where, modelName));
       if (idx === -1) throw new Error(`Record to delete not found in ${modelName}`);
       const [removed] = store[modelName].splice(idx, 1);
-      scheduleTableSync(modelName, () => store[modelName]);
+      scheduleTableDelete(modelName, [removed.id]);
       return projectItem(removed, modelName, select, include);
     },
 
     async deleteMany(args: any = {}) {
       const where = args.where || {};
-      const initial = store[modelName].length;
+      const removed = store[modelName].filter((x) => matchesWhere(x, where, modelName));
       store[modelName] = store[modelName].filter((x) => !matchesWhere(x, where, modelName));
-      const removedCount = initial - store[modelName].length;
-      if (removedCount > 0) scheduleTableSync(modelName, () => store[modelName]);
-      return { count: removedCount };
+      if (removed.length > 0) scheduleTableDelete(modelName, removed.map((r) => r.id));
+      return { count: removed.length };
     },
 
     async upsert(args: any = {}) {
@@ -1224,12 +1225,12 @@ const rawDb = {
   },
 
   async $syncToSheets(table?: string) {
-    const { syncTableToSheet } = await import("../sheets");
+    const { upsertRowsToSheet } = await import("../sheets");
     if (table) {
-      return syncTableToSheet(table, store[table] || []);
+      return upsertRowsToSheet(table, store[table] || []);
     }
     for (const [tbl, rows] of Object.entries(store)) {
-      await syncTableToSheet(tbl, rows);
+      await upsertRowsToSheet(tbl, rows);
     }
     return true;
   },
