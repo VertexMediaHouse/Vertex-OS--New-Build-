@@ -15,7 +15,6 @@ export default {
   async fetch(request: Request, env: Record<string, string>, ctx: unknown) {
     if (!appPromise) {
       for (const [k, v] of Object.entries(env)) if (typeof v === "string") process.env[k] = v;
-      (globalThis as any).__CF_ENV__ = env; // non-string bindings (KV, R2, ...), see server/kv.ts
       appPromise = import("./app");
     }
     const { app } = await appPromise;

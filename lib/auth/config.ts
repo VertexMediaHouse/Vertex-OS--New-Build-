@@ -45,7 +45,18 @@ export const authOptions = {
       weeklyCapacityHours: { type: "number", input: false, defaultValue: 40 },
     },
   },
-  session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
+  session: {
+    expiresIn: 60 * 60 * 24 * 30,
+    updateAge: 60 * 60 * 24,
+    // Cloudflare Workers has no sticky isolate per user: `database` above is the
+    // Sheets-backed in-memory mock db (lib/db), which lives in one isolate's memory
+    // only. A session row written there at login is invisible to whichever isolate
+    // handles the next request, so every post-login request 401'd and bounced back
+    // to /login. cookieCache verifies the session from a signed, encrypted cookie
+    // (JWT-style) instead of reading it back from that store, so no shared/external
+    // session storage is needed — this is better-auth's built-in stateless mode.
+    cookieCache: { enabled: true, maxAge: 60 * 60 * 24 * 30 },
+  },
   rateLimit: {
     enabled: process.env.NODE_ENV === "production",
     // "database" calls adapter.incrementOne, which the Sheets-backed mock db (lib/db)

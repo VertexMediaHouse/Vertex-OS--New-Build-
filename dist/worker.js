@@ -73887,7 +73887,18 @@ var init_config = __esm({
           weeklyCapacityHours: { type: "number", input: false, defaultValue: 40 }
         }
       },
-      session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
+      session: {
+        expiresIn: 60 * 60 * 24 * 30,
+        updateAge: 60 * 60 * 24,
+        // Cloudflare Workers has no sticky isolate per user: `database` above is the
+        // Sheets-backed in-memory mock db (lib/db), which lives in one isolate's memory
+        // only. A session row written there at login is invisible to whichever isolate
+        // handles the next request, so every post-login request 401'd and bounced back
+        // to /login. cookieCache verifies the session from a signed, encrypted cookie
+        // (JWT-style) instead of reading it back from that store, so no shared/external
+        // session storage is needed — this is better-auth's built-in stateless mode.
+        cookieCache: { enabled: true, maxAge: 60 * 60 * 24 * 30 }
+      },
       rateLimit: {
         enabled: true,
         // "database" calls adapter.incrementOne, which the Sheets-backed mock db (lib/db)
@@ -73903,48 +73914,15 @@ var init_config = __esm({
   }
 });
 
-// server/kv.ts
-function sessionsKv() {
-  return globalThis.__CF_ENV__?.SESSIONS;
-}
-var init_kv = __esm({
-  "server/kv.ts"() {
-    "use strict";
-  }
-});
-
 // server/auth.ts
-var kv, auth;
+var auth;
 var init_auth = __esm({
   "server/auth.ts"() {
     "use strict";
     init_dist11();
     init_config();
-    init_kv();
-    kv = sessionsKv();
     auth = betterAuth({
       ...authOptions,
-      // Cloudflare Workers has no sticky isolate per user: the in-memory db (lib/db,
-      // Sheets-backed) that lib/auth/config.ts points `database` at lives in one
-      // isolate's memory only, so a session written at login is invisible to whichever
-      // isolate handles the next request — every request after login 401s and the
-      // client bounces back to /login. secondaryStorage makes session reads/writes go
-      // through KV instead, which is shared across isolates. Falls back to the
-      // in-memory db under `npm run dev`/`start` (plain Node, no KV binding there).
-      secondaryStorage: kv && {
-        get: (key) => kv.get(key),
-        set: (key, value, ttlSeconds) => kv.put(key, value, ttlSeconds ? { expirationTtl: ttlSeconds } : void 0),
-        delete: (key) => kv.delete(key),
-        async getAndDelete(key) {
-          const value = await kv.get(key);
-          await kv.delete(key);
-          return value;
-        },
-        // Only used by the rate-limiter plugin, which this app doesn't enable.
-        increment() {
-          throw new Error("not implemented");
-        }
-      },
       baseURL: process.env.BETTER_AUTH_URL ?? process.env.API_URL ?? `http://localhost:${process.env.API_PORT ?? 4e3}`,
       // In dev the SPA (5173) and the API (4000) are different origins. Deployed, the
       // Cloudflare Worker serves both from one origin (wrangler.json's run_worker_first),
@@ -111845,7 +111823,6 @@ var worker_default = {
   async fetch(request, env3, ctx) {
     if (!appPromise) {
       for (const [k6, v2] of Object.entries(env3)) if (typeof v2 === "string") process.env[k6] = v2;
-      globalThis.__CF_ENV__ = env3;
       appPromise = Promise.resolve().then(() => (init_app(), app_exports));
     }
     const { app: app2 } = await appPromise;
