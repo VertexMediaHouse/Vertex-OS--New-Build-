@@ -93,7 +93,7 @@ export default function FilesPage() {
               {files.map((f) => <Link key={f.id} href={href({ id: f.id })} scroll={false} className="flex flex-col items-center gap-2 rounded-lg border p-4 text-center text-xs hover:bg-accent"><FileIcon ext={f.ext} size={40} /><span className="w-full truncate">{f.name}</span><span className="text-ink-muted">{formatFileSize(f.size)}</span></Link>)}
             </div>
           ) : (
-            <table className="w-full text-xs">
+            <div className="overflow-x-auto"><table className="w-full text-xs">
               <thead><tr className="text-left text-2xs text-ink-2">{["Name", "Type", "Size", "Last Modified", "Shared With", ""].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
               <tbody>
                 {subfolders.map((f) => <tr key={f.id} className="border-b hover:bg-accent"><td className="px-2 py-2"><Link href={href({ folder: f.id, id: null })} className="flex items-center gap-2.5 font-medium text-ink"><FileIcon ext="FOLDER" size={24} folderColor={f.color ?? undefined} />{f.name}</Link></td><td className="px-2 text-ink-muted">Folder</td><td className="px-2">—</td><td className="px-2">{formatDate(new Date(f.updatedAt))}</td><td /><td /></tr>)}
@@ -108,7 +108,7 @@ export default function FilesPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
           {files.length === 0 && subfolders.length === 0 && <EmptyState title={view === "trash" ? "Trash is empty" : "No files here"} hint={view === "trash" ? "Deleted files stay here for 30 days." : undefined} />}
         </Card>

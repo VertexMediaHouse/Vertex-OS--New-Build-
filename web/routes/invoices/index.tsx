@@ -152,10 +152,10 @@ function InvoicePanel({ id, tab, sp }: { id: string; tab: string; sp: Record<str
             <div><p className="font-bold text-ink">Bill To</p><p className="font-semibold text-ink">{inv.client.name}</p><p>{inv.client.address}</p></div>
             {inv.project && <div><p className="font-bold text-ink">Project</p><p>{inv.project.name}</p></div>}
           </div>
-          <table className="mt-3 w-full overflow-hidden rounded border">
+          <div className="overflow-x-auto"><table className="mt-3 w-full overflow-hidden rounded border">
             <thead className="bg-surface-muted text-ink"><tr>{["#", "Description", "Qty", "Rate", "Amount"].map((h, n) => <th key={h} className={`px-1.5 py-1 font-semibold ${n >= 2 ? "text-right" : "text-left"}`}>{h}</th>)}</tr></thead>
             <tbody>{inv.lineItems.map((l: any, n: any) => <tr key={l.id}><td className="px-1.5 py-1">{n + 1}</td><td className="px-1.5 py-1">{l.description}</td><td className="px-1.5 py-1 text-right">{Number(l.qty)}</td><td className="px-1.5 py-1 text-right">{formatMoney(l.rate, inv.currency)}</td><td className="px-1.5 py-1 text-right">{formatMoney(l.amount, inv.currency)}</td></tr>)}</tbody>
-          </table>
+          </table></div>
           <div className="mt-2 ml-auto w-1/2 space-y-0.5">
             <p className="flex justify-between"><span>Subtotal</span><b className="text-ink">{formatMoney(inv.subtotal, inv.currency)}</b></p>
             <p className="flex justify-between"><span>Tax ({Number(inv.taxRate)}%)</span><span>{formatMoney(inv.taxAmount, inv.currency)}</span></p>

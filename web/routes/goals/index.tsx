@@ -124,7 +124,7 @@ function Detailed({ rows, sp, scope, userId, range, people, companies, canCreate
               <FilterSelect param="owner" placeholder="All Owners" options={people.map((x) => ({ value: x.id, label: x.name }))} />
               <SearchInput placeholder="Search goals..." className="w-48" />
             </div>
-            <table className="w-full text-2xs">
+            <div className="overflow-x-auto"><table className="w-full text-2xs">
               <thead><tr className="text-left text-ink-2">{["Goal Title", "Company", "Category", "Start Date", "End Date", "Progress", "Status", "Owner"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
               <tbody>
                 {filtered.map((g) => { const [Icon] = ICONS[g.icon ?? "target"] ?? [Target]; return (
@@ -140,7 +140,7 @@ function Detailed({ rows, sp, scope, userId, range, people, companies, canCreate
                   </tr>
                 ); })}
               </tbody>
-            </table>
+            </table></div>
             {filtered.length === 0 && <EmptyState title="No goals here yet" />}
           </Card>
         </div>
@@ -204,7 +204,7 @@ function Simple({ rows, sp, scope, userId, range, people, companies, canCreate, 
         <DateRangePicker {...range} />
       </Card>
       <Card className="overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto"><table className="w-full">
           <thead><tr className="text-left text-md text-ink-2">{["Goal", "Owner", "Due Date", "Progress", "Status", ""].map((h) => <th key={h} className="bg-surface-muted px-4 py-3 font-medium">{h}</th>)}</tr></thead>
           <tbody>
             {filtered.map((g) => { const [Icon, tone] = ICONS[g.icon ?? "target"] ?? [Target, "green"]; const st = goalStatus({ progress: g.progress, startDate: g.startDate, endDate: g.endDate, now: now() }); return (
@@ -218,7 +218,7 @@ function Simple({ rows, sp, scope, userId, range, people, companies, canCreate, 
               </tr>
             ); })}
           </tbody>
-        </table>
+        </table></div>
         {filtered.length === 0 && <EmptyState title="No goals yet" />}
       </Card>
     </div>

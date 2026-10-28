@@ -3,50 +3,11 @@
 // Mutations mutate memory for 0ms latency and async-sync to Google Sheets.
 
 import { fetchAllFromSheets, scheduleTableSync, isSheetsConfigured } from "../sheets";
-import companyData from "./mock-data/company.json";
-import userData from "./mock-data/user.json";
-import sessionData from "./mock-data/session.json";
-import accountData from "./mock-data/account.json";
-import verificationData from "./mock-data/verification.json";
-import rateLimitData from "./mock-data/rateLimit.json";
-import membershipData from "./mock-data/membership.json";
-import clientData from "./mock-data/client.json";
-import clientCompanyData from "./mock-data/clientCompany.json";
-import projectContactData from "./mock-data/projectContact.json";
-import clientContactData from "./mock-data/clientContact.json";
-import leadData from "./mock-data/lead.json";
-import crossSellAlertData from "./mock-data/crossSellAlert.json";
-import projectData from "./mock-data/project.json";
-import projectMemberData from "./mock-data/projectMember.json";
-import deliverableData from "./mock-data/deliverable.json";
-import milestoneData from "./mock-data/milestone.json";
-import timelinePhaseData from "./mock-data/timelinePhase.json";
-import approvalData from "./mock-data/approval.json";
-import bugData from "./mock-data/bug.json";
-import supportTicketData from "./mock-data/supportTicket.json";
-import taskData from "./mock-data/task.json";
-import checklistItemData from "./mock-data/checklistItem.json";
-import timeEntryData from "./mock-data/timeEntry.json";
-import invoiceData from "./mock-data/invoice.json";
-import invoiceLineItemData from "./mock-data/invoiceLineItem.json";
-import paymentData from "./mock-data/payment.json";
-import goalData from "./mock-data/goal.json";
-import goalMemberData from "./mock-data/goalMember.json";
-import goalMilestoneData from "./mock-data/goalMilestone.json";
-import folderData from "./mock-data/folder.json";
-import fileData from "./mock-data/file.json";
-import fileVersionData from "./mock-data/fileVersion.json";
-import fileShareData from "./mock-data/fileShare.json";
-import emailCampaignData from "./mock-data/emailCampaign.json";
-import campaignRecipientData from "./mock-data/campaignRecipient.json";
-import calendarEventData from "./mock-data/calendarEvent.json";
-import commentData from "./mock-data/comment.json";
-import activityData from "./mock-data/activity.json";
-import notificationData from "./mock-data/notification.json";
-import tagData from "./mock-data/tag.json";
-import contentItemData from "./mock-data/contentItem.json";
-import noteData from "./mock-data/note.json";
-import recurringTaskData from "./mock-data/recurringTask.json";
+import { SCHEMA } from "./schema";
+// Only company/user/membership/account ship with real (non-mock) seed rows, in ./seed.ts.
+// Every business table starts empty here — Google Sheets is the live source of truth —
+// and is typed off a sample row in ./schema.ts instead.
+import { companyData, userData, membershipData, accountData } from "./seed";
 
 // ───────────────────────────── Enums ─────────────────────────────
 
@@ -344,48 +305,48 @@ function hydrateDates(val: any): any {
 const store: Record<string, any[]> = {
   company: hydrateDates(companyData),
   user: hydrateDates(userData),
-  session: hydrateDates(sessionData),
+  session: [],
   account: hydrateDates(accountData),
-  verification: hydrateDates(verificationData),
-  rateLimit: hydrateDates(rateLimitData),
+  verification: [],
+  rateLimit: [],
   membership: hydrateDates(membershipData),
-  client: hydrateDates(clientData),
-  clientCompany: hydrateDates(clientCompanyData),
-  projectContact: hydrateDates(projectContactData),
-  clientContact: hydrateDates(clientContactData),
-  lead: hydrateDates(leadData),
-  crossSellAlert: hydrateDates(crossSellAlertData),
-  project: hydrateDates(projectData),
-  projectMember: hydrateDates(projectMemberData),
-  deliverable: hydrateDates(deliverableData),
-  milestone: hydrateDates(milestoneData),
-  timelinePhase: hydrateDates(timelinePhaseData),
-  approval: hydrateDates(approvalData),
-  bug: hydrateDates(bugData),
-  supportTicket: hydrateDates(supportTicketData),
-  task: hydrateDates(taskData),
-  checklistItem: hydrateDates(checklistItemData),
-  timeEntry: hydrateDates(timeEntryData),
-  invoice: hydrateDates(invoiceData),
-  invoiceLineItem: hydrateDates(invoiceLineItemData),
-  payment: hydrateDates(paymentData),
-  goal: hydrateDates(goalData),
-  goalMember: hydrateDates(goalMemberData),
-  goalMilestone: hydrateDates(goalMilestoneData),
-  folder: hydrateDates(folderData),
-  file: hydrateDates(fileData),
-  fileVersion: hydrateDates(fileVersionData),
-  fileShare: hydrateDates(fileShareData),
-  emailCampaign: hydrateDates(emailCampaignData),
-  campaignRecipient: hydrateDates(campaignRecipientData),
-  calendarEvent: hydrateDates(calendarEventData),
-  comment: hydrateDates(commentData),
-  activity: hydrateDates(activityData),
-  notification: hydrateDates(notificationData),
-  tag: hydrateDates(tagData),
-  contentItem: hydrateDates(contentItemData),
-  note: hydrateDates(noteData),
-  recurringTask: hydrateDates(recurringTaskData),
+  client: [],
+  clientCompany: [],
+  projectContact: [],
+  clientContact: [],
+  lead: [],
+  crossSellAlert: [],
+  project: [],
+  projectMember: [],
+  deliverable: [],
+  milestone: [],
+  timelinePhase: [],
+  approval: [],
+  bug: [],
+  supportTicket: [],
+  task: [],
+  checklistItem: [],
+  timeEntry: [],
+  invoice: [],
+  invoiceLineItem: [],
+  payment: [],
+  goal: [],
+  goalMember: [],
+  goalMilestone: [],
+  folder: [],
+  file: [],
+  fileVersion: [],
+  fileShare: [],
+  emailCampaign: [],
+  campaignRecipient: [],
+  calendarEvent: [],
+  comment: [],
+  activity: [],
+  notification: [],
+  tag: [],
+  contentItem: [],
+  note: [],
+  recurringTask: [],
 };
 
 // "Add Client" and "Convert lead" file in a client under this fixed id (see
@@ -925,7 +886,7 @@ function nextId(prefix: string) {
 
 // ───────────────────────────── Model Delegate Factory ─────────────────────────────
 
-// Known scalar fields come from the model's own mock-data shape; relations added by
+// Known scalar fields come from the model's own schema.ts shape; relations added by
 // `include`/`select` fall through the index signature, so a route handler's return type
 // stays a concrete object (never bare `any`) and Hono's client-side type inference holds.
 type Loose<T> = T & { [key: string]: any };
@@ -1201,48 +1162,48 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
 const rawDb = {
   company: createModelDelegate<Hydrate<(typeof companyData)[number]>>("company"),
   user: createModelDelegate<Hydrate<(typeof userData)[number]>>("user"),
-  session: createModelDelegate<Hydrate<(typeof sessionData)[number]>>("session"),
+  session: createModelDelegate("session"),
   account: createModelDelegate<Hydrate<(typeof accountData)[number]>>("account"),
-  verification: createModelDelegate<Hydrate<(typeof verificationData)[number]>>("verification"),
-  rateLimit: createModelDelegate<Hydrate<(typeof rateLimitData)[number]>>("rateLimit"),
+  verification: createModelDelegate("verification"),
+  rateLimit: createModelDelegate("rateLimit"),
   membership: createModelDelegate<Hydrate<(typeof membershipData)[number]>>("membership"),
-  client: createModelDelegate<Hydrate<(typeof clientData)[number]>>("client"),
-  clientCompany: createModelDelegate<Hydrate<(typeof clientCompanyData)[number]>>("clientCompany"),
-  projectContact: createModelDelegate<Hydrate<(typeof projectContactData)[number]>>("projectContact"),
-  clientContact: createModelDelegate<Hydrate<(typeof clientContactData)[number]>>("clientContact"),
-  lead: createModelDelegate<Hydrate<(typeof leadData)[number]>>("lead"),
-  crossSellAlert: createModelDelegate<Hydrate<(typeof crossSellAlertData)[number]>>("crossSellAlert"),
-  project: createModelDelegate<Hydrate<(typeof projectData)[number]>>("project"),
-  projectMember: createModelDelegate<Hydrate<(typeof projectMemberData)[number]>>("projectMember"),
-  deliverable: createModelDelegate<Hydrate<(typeof deliverableData)[number]>>("deliverable"),
-  milestone: createModelDelegate<Hydrate<(typeof milestoneData)[number]>>("milestone"),
-  timelinePhase: createModelDelegate<Hydrate<(typeof timelinePhaseData)[number]>>("timelinePhase"),
-  approval: createModelDelegate<Hydrate<(typeof approvalData)[number]>>("approval"),
-  bug: createModelDelegate<Hydrate<(typeof bugData)[number]>>("bug"),
-  supportTicket: createModelDelegate<Hydrate<(typeof supportTicketData)[number]>>("supportTicket"),
-  task: createModelDelegate<Hydrate<(typeof taskData)[number]>>("task"),
-  checklistItem: createModelDelegate<Hydrate<(typeof checklistItemData)[number]>>("checklistItem"),
-  timeEntry: createModelDelegate<Hydrate<(typeof timeEntryData)[number]>>("timeEntry"),
-  invoice: createModelDelegate<Hydrate<(typeof invoiceData)[number]>>("invoice"),
-  invoiceLineItem: createModelDelegate<Hydrate<(typeof invoiceLineItemData)[number]>>("invoiceLineItem"),
-  payment: createModelDelegate<Hydrate<(typeof paymentData)[number]>>("payment"),
-  goal: createModelDelegate<Hydrate<(typeof goalData)[number]>>("goal"),
-  goalMember: createModelDelegate<Hydrate<(typeof goalMemberData)[number]>>("goalMember"),
-  goalMilestone: createModelDelegate<Hydrate<(typeof goalMilestoneData)[number]>>("goalMilestone"),
-  folder: createModelDelegate<Hydrate<(typeof folderData)[number]>>("folder"),
-  file: createModelDelegate<Hydrate<(typeof fileData)[number]>>("file"),
-  fileVersion: createModelDelegate<Hydrate<(typeof fileVersionData)[number]>>("fileVersion"),
-  fileShare: createModelDelegate<Hydrate<(typeof fileShareData)[number]>>("fileShare"),
-  emailCampaign: createModelDelegate<Hydrate<(typeof emailCampaignData)[number]>>("emailCampaign"),
-  campaignRecipient: createModelDelegate<Hydrate<(typeof campaignRecipientData)[number]>>("campaignRecipient"),
-  calendarEvent: createModelDelegate<Hydrate<(typeof calendarEventData)[number]>>("calendarEvent"),
-  comment: createModelDelegate<Hydrate<(typeof commentData)[number]>>("comment"),
-  activity: createModelDelegate<Hydrate<(typeof activityData)[number]>>("activity"),
-  notification: createModelDelegate<Hydrate<(typeof notificationData)[number]>>("notification"),
-  tag: createModelDelegate<Hydrate<(typeof tagData)[number]>>("tag"),
-  contentItem: createModelDelegate<Hydrate<(typeof contentItemData)[number]>>("contentItem"),
-  note: createModelDelegate<Hydrate<(typeof noteData)[number]>>("note"),
-  recurringTask: createModelDelegate<Hydrate<(typeof recurringTaskData)[number]>>("recurringTask"),
+  client: createModelDelegate<Hydrate<typeof SCHEMA.client>>("client"),
+  clientCompany: createModelDelegate<Hydrate<typeof SCHEMA.clientCompany>>("clientCompany"),
+  projectContact: createModelDelegate<Hydrate<typeof SCHEMA.projectContact>>("projectContact"),
+  clientContact: createModelDelegate<Hydrate<typeof SCHEMA.clientContact>>("clientContact"),
+  lead: createModelDelegate<Hydrate<typeof SCHEMA.lead>>("lead"),
+  crossSellAlert: createModelDelegate<Hydrate<typeof SCHEMA.crossSellAlert>>("crossSellAlert"),
+  project: createModelDelegate<Hydrate<typeof SCHEMA.project>>("project"),
+  projectMember: createModelDelegate<Hydrate<typeof SCHEMA.projectMember>>("projectMember"),
+  deliverable: createModelDelegate<Hydrate<typeof SCHEMA.deliverable>>("deliverable"),
+  milestone: createModelDelegate<Hydrate<typeof SCHEMA.milestone>>("milestone"),
+  timelinePhase: createModelDelegate<Hydrate<typeof SCHEMA.timelinePhase>>("timelinePhase"),
+  approval: createModelDelegate<Hydrate<typeof SCHEMA.approval>>("approval"),
+  bug: createModelDelegate<Hydrate<typeof SCHEMA.bug>>("bug"),
+  supportTicket: createModelDelegate<Hydrate<typeof SCHEMA.supportTicket>>("supportTicket"),
+  task: createModelDelegate<Hydrate<typeof SCHEMA.task>>("task"),
+  checklistItem: createModelDelegate<Hydrate<typeof SCHEMA.checklistItem>>("checklistItem"),
+  timeEntry: createModelDelegate<Hydrate<typeof SCHEMA.timeEntry>>("timeEntry"),
+  invoice: createModelDelegate<Hydrate<typeof SCHEMA.invoice>>("invoice"),
+  invoiceLineItem: createModelDelegate<Hydrate<typeof SCHEMA.invoiceLineItem>>("invoiceLineItem"),
+  payment: createModelDelegate<Hydrate<typeof SCHEMA.payment>>("payment"),
+  goal: createModelDelegate<Hydrate<typeof SCHEMA.goal>>("goal"),
+  goalMember: createModelDelegate<Hydrate<typeof SCHEMA.goalMember>>("goalMember"),
+  goalMilestone: createModelDelegate<Hydrate<typeof SCHEMA.goalMilestone>>("goalMilestone"),
+  folder: createModelDelegate<Hydrate<typeof SCHEMA.folder>>("folder"),
+  file: createModelDelegate<Hydrate<typeof SCHEMA.file>>("file"),
+  fileVersion: createModelDelegate<Hydrate<typeof SCHEMA.fileVersion>>("fileVersion"),
+  fileShare: createModelDelegate<Hydrate<typeof SCHEMA.fileShare>>("fileShare"),
+  emailCampaign: createModelDelegate<Hydrate<typeof SCHEMA.emailCampaign>>("emailCampaign"),
+  campaignRecipient: createModelDelegate<Hydrate<typeof SCHEMA.campaignRecipient>>("campaignRecipient"),
+  calendarEvent: createModelDelegate<Hydrate<typeof SCHEMA.calendarEvent>>("calendarEvent"),
+  comment: createModelDelegate<Hydrate<typeof SCHEMA.comment>>("comment"),
+  activity: createModelDelegate<Hydrate<typeof SCHEMA.activity>>("activity"),
+  notification: createModelDelegate<Hydrate<typeof SCHEMA.notification>>("notification"),
+  tag: createModelDelegate<Hydrate<typeof SCHEMA.tag>>("tag"),
+  contentItem: createModelDelegate<Hydrate<typeof SCHEMA.contentItem>>("contentItem"),
+  note: createModelDelegate<Hydrate<typeof SCHEMA.note>>("note"),
+  recurringTask: createModelDelegate<Hydrate<typeof SCHEMA.recurringTask>>("recurringTask"),
 
   async $disconnect() {
     // No-op for in-memory client

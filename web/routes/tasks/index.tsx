@@ -74,7 +74,7 @@ export default function TasksPage() {
       {view === "kanban" && <TaskBoard items={board} addHref={addHref} />}
       {view === "list" && (
         <Card className="p-4">
-          <table className="w-full text-2xs">
+          <div className="overflow-x-auto"><table className="w-full text-2xs">
             <thead><tr className="text-left text-ink-2">{["Task", "Company", "Project", "Priority", "Due Date", "Progress", "Status", "Assignee"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
             <tbody>
               {data.tasks.map((tk) => {
@@ -93,7 +93,7 @@ export default function TasksPage() {
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
           {data.tasks.length === 0 && <EmptyState title="No tasks match" />}
         </Card>
       )}
@@ -101,16 +101,16 @@ export default function TasksPage() {
 
       <div className="grid gap-3.5 xl:grid-cols-2">
         <SectionCard title="My Tasks" href="/tasks?view=list">
-          <table className="w-full text-2xs">
+          <div className="overflow-x-auto"><table className="w-full text-2xs">
             <thead><tr className="text-left text-ink-2">{["Task", "Project", "Due Date", "Priority", "Status"].map((h) => <th key={h} className="bg-surface-muted px-2 py-1.5 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
             <tbody>{data.myTasks.map((tk) => <tr key={tk.id} className="border-b last:border-0"><td className="px-2 py-1.5"><Link href={`?id=${tk.id}`} className="flex items-center gap-2 text-ink hover:underline">{tk.assignee && <Avatar person={tk.assignee} size={20} />}{tk.title}</Link></td><td className="px-2 py-1.5 text-ink-2">{tk.project?.client?.name}</td><td className="px-2 py-1.5 text-ink-2">{tk.dueDate && formatShortDate(new Date(tk.dueDate))}</td><td className="px-2 py-1.5"><EnumPill map={PRIORITY} value={tk.priority} size="xs" /></td><td className="px-2 py-1.5"><EnumPill map={TASK_STATUS} value={tk.status} size="xs" /></td></tr>)}</tbody>
-          </table>
+          </table></div>
         </SectionCard>
         <SectionCard title="Team Workload" href="/team">
-          <table className="w-full text-2xs">
+          <div className="overflow-x-auto"><table className="w-full text-2xs">
             <thead><tr className="text-left text-ink-2">{["Team Member", "Assigned", "Completed", "In Progress", "Overdue", "Workload"].map((h) => <th key={h} className="bg-surface-muted px-2 py-1.5 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
             <tbody>{data.workload.map((u) => { const st = workloadState(u.pct); return <tr key={u.id} className="border-b last:border-0"><td className="px-2 py-1.5"><span className="flex items-center gap-2"><Avatar person={u} size={22} />{u.name}</span></td><td className="px-2 py-1.5">{u.assigned}</td><td className="px-2 py-1.5">{u.completed}</td><td className="px-2 py-1.5">{u.inProgress}</td><td className={`px-2 py-1.5 ${u.overdue ? "text-danger-text" : ""}`}>{u.overdue}</td><td className="px-2 py-1.5"><span className="flex items-center gap-2"><ProgressBar value={u.pct} tone={st === "over" ? "danger" : st === "idle" ? "warning" : "success"} className="w-24" />{Math.round(u.pct)}%</span></td></tr>; })}</tbody>
-          </table>
+          </table></div>
           <p className="mt-2 text-[10.5px] text-ink-muted">Workload = hours logged and planned this week ÷ weekly capacity.</p>
         </SectionCard>
       </div>

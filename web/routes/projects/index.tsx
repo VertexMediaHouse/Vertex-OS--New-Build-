@@ -139,7 +139,7 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
   const tabs = TEMPLATES[pr.template].tabs.map((k) => ({ value: k, label: <>{k === "notes" && <StickyNote className="size-3.5" />}{k === "activity" && <ActivityIcon className="size-3.5" />}{TAB_LABELS[k]}</> }));
 
   const taskTable = (
-    <table className="w-full text-2xs">
+    <div className="overflow-x-auto"><table className="w-full text-2xs">
       <thead><tr className="text-left text-ink-2">{["Task", "Assignee", "Due Date", "Status"].map((h) => <th key={h} className="bg-surface-muted px-2 py-1.5 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
       <tbody>
         {tasks.map((tk) => {
@@ -154,7 +154,7 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
           );
         })}
       </tbody>
-    </table>
+    </table></div>
   );
   const fileList = files.length ? files.map((f) => <FileRow key={f.id} name={f.name} ext={f.ext} size={f.size} date={new Date(f.updatedAt)} status={f.status ? <EnumPill map={FILE_STATUS} value={f.status} dot={false} size="xs" /> : undefined} href={`${API_URL}/api/files/${f.id}/download`} />) : <EmptyState title="No files yet" />;
   const noteList = (
@@ -165,10 +165,10 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
   );
   const invoiceTable = (
     <>
-      <table className="w-full text-2xs">
+      <div className="overflow-x-auto"><table className="w-full text-2xs">
         <thead><tr className="text-left text-ink-2">{["Invoice", "Amount", "Status", "Due Date"].map((h) => <th key={h} className="bg-surface-muted px-2 py-1.5 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
         <tbody>{pr.invoices.map((i: any) => <tr key={i.id} className="border-b last:border-0"><td className="px-2 py-1.5"><Link href={`/invoices?id=${i.id}`} className="text-ink hover:underline">#{i.number}</Link></td><td className="px-2 py-1.5 tabular">{formatINR(i.total)}</td><td className="px-2 py-1.5"><EnumPill map={INVOICE_STATUS} value={i.status} size="xs" /></td><td className="px-2 py-1.5 text-ink-2">{formatDate(new Date(i.dueDate))}</td></tr>)}</tbody>
-      </table>
+      </table></div>
       {data.canInvoice && <Link href={`/invoices/new?project=${pr.id}`} className="mt-3 inline-flex h-8 items-center gap-1 rounded-lg bg-brand-soft px-3 text-xs font-semibold text-brand-text"><Plus className="size-3.5" /> Create Invoice</Link>}
     </>
   );

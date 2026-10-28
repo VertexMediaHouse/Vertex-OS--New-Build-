@@ -126,7 +126,7 @@ export default function LeadsPage() {
           </div>
         </SectionCard>
         <SectionCard title="Recent Leads" href="/leads?sort=created">
-          <table className="w-full text-2xs">
+          <div className="overflow-x-auto"><table className="w-full text-2xs">
             <thead>
               <tr className="text-left text-ink-2">
                 {["Name", "Company", "Service", "Value", "Stage", "Owner", "Date"].map((h) => <th key={h} className="bg-surface-muted px-2 py-1.5 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}
@@ -145,7 +145,7 @@ export default function LeadsPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </SectionCard>
       </div>
 

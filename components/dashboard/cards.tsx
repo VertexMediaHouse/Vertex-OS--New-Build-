@@ -186,7 +186,7 @@ export function OpenTasksCard({ tasks, filter, sp }: { tasks: OpenTask[]; filter
 export function TeamTasksCard({ ctx, people }: { ctx: Ctx; people: Json<Awaited<ReturnType<typeof M.tasksByPerson>>> }) {
   return (
     <SectionCard title={`Tasks by Person${suffix(ctx)}`} icon={UsersRound} tone="purple" href="/tasks">
-      <table className="w-full text-2xs">
+      <div className="overflow-x-auto"><table className="w-full text-2xs">
         <thead>
           <tr className="text-left text-ink-2">
             {["Person", "Open", "Today", "Overdue", "In review", "Done this week"].map((h, i) => (
@@ -218,7 +218,7 @@ export function TeamTasksCard({ ctx, people }: { ctx: Ctx; people: Json<Awaited<
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
     </SectionCard>
   );
 }
@@ -363,8 +363,8 @@ export function CrossSellCard({ alerts }: { alerts: Json<Awaited<ReturnType<type
 export function LeadsPipelineCard({ ctx, l }: { ctx: Ctx; l: Leads }) {
   return (
     <SectionCard title={`Leads Pipeline${suffix(ctx)}`} href="/leads">
-      <div className="flex items-stretch gap-3">
-        <div className="grid flex-1 grid-cols-5 divide-x">
+      <div className="flex items-stretch gap-3 overflow-x-auto">
+        <div className="grid min-w-0 flex-1 grid-cols-5 divide-x">
           {l.stages.map((s) => (
             <div key={s.stage} className="px-3 py-1">
               <p className="text-2xs text-ink-2">{STAGE_LABEL[s.stage]}</p>

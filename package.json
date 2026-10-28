@@ -12,9 +12,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test",
-    "mock-data:generate": "tsx --env-file-if-exists=.env scripts/generate-mock-data.ts",
-    "sheets:migrate": "tsx --env-file-if-exists=.env scripts/migrate-to-sheets.ts"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1156.0",

@@ -95,6 +95,7 @@ export function KanbanBoard<T extends { id: string }>({ columns, items, renderCa
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={(e: DragStartEvent) => setActiveId(String(e.active.id))} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
+      <div className="overflow-x-auto">
       <div className={cn("grid gap-3", className)} style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(180px, 1fr))` }}>
         {columns.map((col) => {
           const list = board[col.id] ?? [];
@@ -118,6 +119,7 @@ export function KanbanBoard<T extends { id: string }>({ columns, items, renderCa
             </Column>
           );
         })}
+      </div>
       </div>
       <DragOverlay>{active ? <div className="rotate-1 shadow-lg">{renderCard(active)}</div> : null}</DragOverlay>
     </DndContext>

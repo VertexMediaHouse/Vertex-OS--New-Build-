@@ -85,7 +85,7 @@ export function UnderlineTabs({
 }) {
   const hrefWith = useHrefWith();
   return (
-    <div role="tablist" className={cn("flex items-end gap-1 border-b", className)}>
+    <div role="tablist" className={cn("flex items-end gap-1 overflow-x-auto border-b", className)}>
       {tabs.map((t) => {
         const selected = t.value === active;
         return (

@@ -119,7 +119,7 @@ export function InvoiceBuilder({ companies, clients, projects, entries, defaults
           <Field label="Due date"><Input type="date" value={due} onChange={(e) => setDue(e.target.value)} /></Field>
           <Field label="Currency"><Input value="INR" readOnly /></Field>
         </div>
-        <table className="w-full text-xs">
+        <div className="overflow-x-auto"><table className="w-full text-xs">
           <thead><tr className="text-left text-ink-2">{["Description", "Qty", "Rate", "Amount", ""].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium">{h}</th>)}</tr></thead>
           <tbody>
             {lines.map((l, i) => (
@@ -132,7 +132,7 @@ export function InvoiceBuilder({ companies, clients, projects, entries, defaults
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
         <Button variant="outline" size="sm" onClick={() => setLines((ls) => [...ls, { description: "", qty: 1, rate: 0 }])}><Plus className="size-4" /> Add line</Button>
         {clientEntries.length > 0 && (
           <div className="rounded-lg border p-3">

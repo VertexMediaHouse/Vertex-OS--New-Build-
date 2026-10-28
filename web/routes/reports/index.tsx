@@ -70,9 +70,9 @@ export default function ReportsPage() {
           </div>
           <div className="grid gap-3.5 xl:grid-cols-[1fr_250px]">
             <SectionCard title="Recent Projects Report" href="/reports?tab=projects">
-              <table className="w-full text-2xs"><thead><tr className="text-left text-ink-2">{["Project Name", "Client", "Company", "Start Date", "End Date", "Revenue", "Hours", "Status"].map((h) => <th key={h} className="bg-surface-muted px-2 py-1.5 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
+              <div className="overflow-x-auto"><table className="w-full text-2xs"><thead><tr className="text-left text-ink-2">{["Project Name", "Client", "Company", "Start Date", "End Date", "Revenue", "Hours", "Status"].map((h) => <th key={h} className="bg-surface-muted px-2 py-1.5 font-medium first:rounded-l-md last:rounded-r-md">{h}</th>)}</tr></thead>
                 <tbody>{d.recentProjects.map((x) => <tr key={x.id} className="border-b last:border-0"><td className="px-2 py-2 font-medium text-ink">{x.name}</td><td className="px-2 py-2">{x.client?.name}</td><td className="px-2 py-2"><CompanyBadge code={companyCode(x.companyId)} /></td><td className="px-2 py-2">{formatDate(new Date(x.startDate))}</td><td className="px-2 py-2">{x.dueDate && formatDate(new Date(x.dueDate))}</td><td className="px-2 py-2 tabular">{formatINR(x.revenue)}</td><td className="px-2 py-2">{formatDuration(x.minutes)}</td><td className="px-2 py-2"><EnumPill map={PROJECT_STATUS} value={x.status} size="xs" /></td></tr>)}</tbody>
-              </table>
+              </table></div>
             </SectionCard>
             <SectionCard title="Quick Insights" icon={Lightbulb} tone="amber">
               <ul className="space-y-2">{insightSentences(d.insights).map((s) => { const [Icon, cls] = ({ up: [ArrowUp, "bg-success text-white"], clients: [Users, "bg-brand-soft text-brand-text"], time: [Clock, "bg-review-soft text-review-text"], trophy: [Trophy, "bg-warning-soft text-warning-text"] } as const)[s.tone]; return <li key={s.text} className="flex items-start gap-2.5 rounded-lg border p-2.5 text-xs text-ink"><span className={`inline-flex size-7 shrink-0 items-center justify-center rounded-full ${cls}`}><Icon className="size-3.5" /></span>{s.text}</li>; })}</ul>
@@ -84,17 +84,17 @@ export default function ReportsPage() {
         <Card className="p-4">
           <h2 className="mb-1 text-lg font-bold text-ink">Project profitability</h2>
           <p className="mb-3 text-xs text-ink-muted">Revenue collected ÷ hours logged.</p>
-          <table className="w-full text-xs"><thead><tr className="text-left text-ink-2">{["Project", "Client", "Company", "Collected", "Hours", "₹ / hour"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium">{h}</th>)}</tr></thead>
+          <div className="overflow-x-auto"><table className="w-full text-xs"><thead><tr className="text-left text-ink-2">{["Project", "Client", "Company", "Collected", "Hours", "₹ / hour"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium">{h}</th>)}</tr></thead>
             <tbody>{data.projects.map((x) => <tr key={x.id} className="border-b"><td className="px-2 py-2">{x.name}</td><td className="px-2 py-2">{x.client?.name}</td><td className="px-2 py-2"><CompanyBadge code={companyCode(x.companyId)} /></td><td className="px-2 py-2">{formatINR(x.collected)}</td><td className="px-2 py-2">{formatDuration(x.mins)}</td><td className="px-2 py-2 font-semibold">{x.perHour === null ? "–" : formatINR(x.perHour)}</td></tr>)}</tbody>
-          </table>
+          </table></div>
         </Card>
       )}
       {tab === "team" && (
         <Card className="p-4">
           <h2 className="mb-3 text-lg font-bold text-ink">Team utilisation</h2>
-          <table className="w-full text-xs"><thead><tr className="text-left text-ink-2">{["Member", "Hours", "Billable", "Utilisation (billable ÷ available)"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium">{h}</th>)}</tr></thead>
+          <div className="overflow-x-auto"><table className="w-full text-xs"><thead><tr className="text-left text-ink-2">{["Member", "Hours", "Billable", "Utilisation (billable ÷ available)"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium">{h}</th>)}</tr></thead>
             <tbody>{d.members.map((m) => { const weeks = Math.max(1, (p.period.to.getTime() - p.period.from.getTime()) / (7 * 86_400_000)); const util = (m.billable / (m.capacity * 60 * weeks)) * 100; return <tr key={m.name} className="border-b"><td className="px-2 py-2">{m.name}</td><td className="px-2 py-2">{formatDuration(m.minutes)}</td><td className="px-2 py-2">{formatDuration(m.billable)}</td><td className="px-2 py-2">{Math.round(util)}%</td></tr>; })}</tbody>
-          </table>
+          </table></div>
         </Card>
       )}
       {tab === "financial" && data.ageing && (
@@ -106,9 +106,9 @@ export default function ReportsPage() {
         <div className="grid gap-3.5 xl:grid-cols-2">
           <SectionCard title="Client lifetime value (collected)"><BarList rows={data.clients.paid.map((x) => ({ key: x.clientId, label: data.clients!.names.find((c) => c.id === x.clientId)?.name ?? "", value: x.amount, display: formatINR(x.amount), href: `/clients/${x.clientId}` }))} /></SectionCard>
           <SectionCard title="Lead source performance">
-            <table className="w-full text-xs"><thead><tr className="text-left text-ink-2">{["Source", "Leads", "Won", "Win rate", "Won value"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium">{h}</th>)}</tr></thead>
+            <div className="overflow-x-auto"><table className="w-full text-xs"><thead><tr className="text-left text-ink-2">{["Source", "Leads", "Won", "Win rate", "Won value"].map((h) => <th key={h} className="bg-surface-muted px-2 py-2 font-medium">{h}</th>)}</tr></thead>
               <tbody>{data.clients.sources.map((x) => <tr key={x.s} className="border-b"><td className="px-2 py-2"><Link href={`/leads?source=${x.s}`} className="font-medium text-brand-text hover:underline">{x.s[0] + x.s.slice(1).toLowerCase()}</Link></td><td className="px-2 py-2">{x.leads}</td><td className="px-2 py-2">{x.won}</td><td className="px-2 py-2">{x.leads ? Math.round((x.won / x.leads) * 100) : 0}%</td><td className="px-2 py-2">{formatINR(x.wonValue)}</td></tr>)}</tbody>
-            </table>
+            </table></div>
           </SectionCard>
         </div>
       )}
