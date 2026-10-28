@@ -77,11 +77,11 @@ export default function ProjectsPage() {
                   className={cn("block rounded-[10px] border bg-card p-3 transition-colors", selected ? (vth ? "border-l-2 border-l-vth bg-brand-soft/60" : "border-l-2 border-l-blue bg-brand-soft/60") : "hover:bg-accent")}
                 >
                   <div className="flex items-start gap-3">
-                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-lg font-bold" style={{ background: `${color}1F`, color }}>{pr.client?.name[0]}</span>
+                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-lg font-bold" style={{ background: `${color}1F`, color }}>{(pr.client?.name ?? pr.name ?? "?")[0]}</span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-ink">{pr.client?.name}</p>
+                          <p className="truncate text-sm font-semibold text-ink">{pr.client?.name ?? "No Client"}</p>
                           <p className="truncate text-xs text-ink-muted">{pr.name}</p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
@@ -92,7 +92,7 @@ export default function ProjectsPage() {
                       <div className="mt-2.5 flex items-center gap-3">
                         <ProgressBar value={pr.progress} className="max-w-[150px]" />
                         <span className="text-xs text-ink-2 tabular">{pr.progress}%</span>
-                        <span className="ml-auto"><AvatarStack people={pr.members.map((m) => m.user)} size={22} /></span>
+                        <span className="ml-auto"><AvatarStack people={pr.members?.map((m: any) => m.user ?? (m.name ? m : null)).filter(Boolean)} size={22} /></span>
                       </div>
                     </div>
                   </div>
@@ -130,10 +130,15 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
   const editDialog = (trigger: React.ReactNode) => <NewProjectDialog companies={[pr.companyId as "vmh"]} clients={clients} project={formValues} trigger={trigger} />;
   const accent = vth ? "text-vth-text" : "text-brand-text";
   const dueText = due && <span className={dueRed ? "text-danger-text" : undefined}>{formatDate(due)} ({daysLeft})</span>;
-  const timeline: TimelinePoint[] = (pr.phases.length ? pr.phases.map((ph: any) => ({ label: ph.label, date: ph.date, status: ph.status })) : pr.milestones.map((m: any) => ({ label: m.title, date: m.dueDate, status: m.status }))).map((ph: any, i: any, arr: any) => {
+  const phases = Array.isArray(pr.phases) ? pr.phases : [];
+  const milestones = Array.isArray(pr.milestones) ? pr.milestones : [];
+  const deliverables = Array.isArray(pr.deliverables) ? pr.deliverables : [];
+  const approvals = Array.isArray(pr.approvals) ? pr.approvals : [];
+  const invoices = Array.isArray(pr.invoices) ? pr.invoices : [];
+  const timeline: TimelinePoint[] = (phases.length ? phases.map((ph: any) => ({ label: ph.label, date: ph.date, status: ph.status })) : milestones.map((m: any) => ({ label: m.title, date: m.dueDate, status: m.status }))).map((ph: any, i: any, arr: any) => {
     const firstOpen = arr.findIndex((x: any) => x.status !== "COMPLETED");
     const state = ph.status === "COMPLETED" ? "done" : ph.status === "IN_PROGRESS" ? "current" : i === firstOpen || (i === firstOpen + 1 && arr[firstOpen]?.status === "IN_PROGRESS") ? "next" : "todo";
-    return { label: ph.label, date: formatShortDate(new Date(ph.date)), state };
+    return { label: ph.label, date: ph.date ? formatShortDate(new Date(ph.date)) : "–", state };
   });
 
   const tabs = TEMPLATES[pr.template].tabs.map((k) => ({ value: k, label: <>{k === "notes" && <StickyNote className="size-3.5" />}{k === "activity" && <ActivityIcon className="size-3.5" />}{TAB_LABELS[k]}</> }));
@@ -183,7 +188,7 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
         </div>
       </div>
       <div className="flex flex-wrap items-start gap-4">
-        <span className="inline-flex size-14 shrink-0 items-center justify-center rounded-xl text-2xl font-bold" style={{ background: `${color}1F`, color }}>{pr.client?.name[0]}</span>
+        <span className="inline-flex size-14 shrink-0 items-center justify-center rounded-xl text-2xl font-bold" style={{ background: `${color}1F`, color }}>{(pr.client?.name ?? pr.name ?? "?")[0]}</span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2"><h2 className="text-xl font-bold text-ink">{pr.name}</h2><CompanyBadge code={pr.template} /></div>
           {pr.client && <Link href={`/clients/${pr.clientId}`} className={cn("mt-0.5 inline-flex items-center gap-1 text-sm font-medium hover:underline", accent)}>{pr.client.name} <ExternalLink className="size-3.5" /></Link>}
@@ -208,8 +213,8 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
           <div className="grid gap-3.5 xl:grid-cols-[1fr_1.15fr_0.85fr]">
             <SectionCard title="Project Details" action={editable ? editDialog(<button type="button" className={cn("text-xs hover:underline", accent)}>Edit</button>) : undefined}>
               <KeyValue labelWidth={100} rows={[
-                ["Client", pr.client?.name],
-                ["Company", <span key="c" className="flex items-center gap-1.5"><CompanyBadge code={pr.template} />{pr.company.name} ({pr.company.code})</span>],
+                ["Client", pr.client?.name ?? "–"],
+                ["Company", <span key="c" className="flex items-center gap-1.5"><CompanyBadge code={pr.template} />{pr.company?.name ?? pr.template} ({pr.company?.code ?? pr.template})</span>],
                 ["Project Type", pr.typeLabel],
                 ["Start Date", formatDate(new Date(pr.startDate))],
                 ["Due Date", dueText ?? "–"],
@@ -217,13 +222,13 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
                 ["Priority", <EnumPill key="p" map={PRIORITY} value={pr.priority} />],
                 ["Project Value", <span key="v" className="font-bold">{formatINR(pr.value)}</span>],
                 ["Billing Type", BILLING_LABELS[pr.billingType]],
-                ["Team Members", <AvatarStack key="m" people={pr.members.map((m: any) => m.user)} size={28} />],
+                ["Team Members", <AvatarStack key="m" people={pr.members?.map((m: any) => m.user ?? (m.name ? m : null)).filter(Boolean)} size={28} />],
               ]} />
             </SectionCard>
             <SectionCard title="Project Description">
               <p className="text-xs leading-5 text-ink-2">{pr.description}</p>
               <h3 className="mt-4 mb-1 text-md font-bold text-ink">{vth ? "Key Deliverables" : "Deliverables"}</h3>
-              {pr.deliverables.map((d: any) => {
+              {deliverables.map((d: any) => {
                 const isCount = d.targetCount !== null;
                 const pct = isCount ? ((d.completedCount ?? 0) / (d.targetCount || 1)) * 100 : (d.percent ?? 0);
                 return (
@@ -260,9 +265,9 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
 
           <div className="grid gap-3.5 xl:grid-cols-3">
             {vth ? (
-              <SectionCard title={`Milestones (${pr.milestones.filter((m: any) => m.status === "COMPLETED").length}/${pr.milestones.length} completed)`} icon={Target} tone="purple" href={`?${new URLSearchParams({ ...sp, tab: "milestones" })}`}>
-                {pr.milestones.map((m: any, i: any) => (
-                  <CheckRow key={m.id} round done={m.status === "COMPLETED"} label={`${i + 1}. ${m.title}`} right={<span className="flex items-center gap-2"><span className="w-12 text-2xs text-ink-2">{formatShortDate(new Date(m.dueDate))}</span><EnumPill map={MILESTONE_STATUS} value={m.status} size="xs" /></span>} />
+              <SectionCard title={`Milestones (${milestones.filter((m: any) => m.status === "COMPLETED").length}/${milestones.length} completed)`} icon={Target} tone="purple" href={`?${new URLSearchParams({ ...sp, tab: "milestones" })}`}>
+                {milestones.map((m: any, i: any) => (
+                  <CheckRow key={m.id} round done={m.status === "COMPLETED"} label={`${i + 1}. ${m.title}`} right={<span className="flex items-center gap-2"><span className="w-12 text-2xs text-ink-2">{m.dueDate ? formatShortDate(new Date(m.dueDate)) : "–"}</span><EnumPill map={MILESTONE_STATUS} value={m.status} size="xs" /></span>} />
                 ))}
               </SectionCard>
             ) : (
@@ -271,14 +276,14 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
             {vth ? <SectionCard title={`Tasks (${taskCount} total)`} icon={FileCheck} tone="green" href={`?${new URLSearchParams({ ...sp, tab: "tasks" })}`}>{taskTable}</SectionCard> : <SectionCard title="Recent Files" icon={FileText} tone="blue" href={`?${new URLSearchParams({ ...sp, tab: "files" })}`}>{fileList}</SectionCard>}
             {vth ? <SectionCard title="Recent Files" icon={FileText} tone="blue" href={`?${new URLSearchParams({ ...sp, tab: "files" })}`}>{fileList}</SectionCard> : (
               <SectionCard title="Client Approvals" icon={FolderOpen} tone="orange" href={`?${new URLSearchParams({ ...sp, tab: "access" })}`}>
-                {pr.approvals.map((a: any) => (
+                {approvals.map((a: any) => (
                   <div key={a.id} className="flex items-center gap-3 py-1.5">
-                    <span className="inline-flex size-9 items-center justify-center rounded-md bg-surface-muted text-2xs font-bold text-ink-2">{a.title.slice(0, 2)}</span>
+                    <span className="inline-flex size-9 items-center justify-center rounded-md bg-surface-muted text-2xs font-bold text-ink-2">{(a.title ?? "AP").slice(0, 2)}</span>
                     <div className="min-w-0 flex-1"><p className="text-xs font-semibold text-ink">{a.title}</p><p className="text-2xs text-ink-muted">{a.status === "PENDING" ? "Pending approval" : a.status === "APPROVED" ? `Approved on ${formatShortDate(new Date(a.respondedAt!))}` : `Changes requested on ${formatShortDate(new Date(a.respondedAt!))}`}</p></div>
                     <EnumPill map={APPROVAL_STATUS} value={a.status} dot={false} />
                   </div>
                 ))}
-                {pr.approvals.length === 0 && <EmptyState title="Nothing sent for approval" />}
+                {approvals.length === 0 && <EmptyState title="Nothing sent for approval" />}
               </SectionCard>
             )}
           </div>
@@ -317,7 +322,7 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
       )}
       {tab === "milestones" && (
         <Card className="p-4">
-          {pr.milestones.map((m: any, i: any) => <CheckRow key={m.id} round done={m.status === "COMPLETED"} label={`${i + 1}. ${m.title}`} right={<span className="flex items-center gap-3"><span className="text-2xs text-ink-2">{formatDate(new Date(m.dueDate))}</span><EnumPill map={MILESTONE_STATUS} value={m.status} size="xs" />{editable && <MilestoneToggle id={m.id} status={m.status} />}</span>} />)}
+          {milestones.map((m: any, i: any) => <CheckRow key={m.id} round done={m.status === "COMPLETED"} label={`${i + 1}. ${m.title}`} right={<span className="flex items-center gap-3"><span className="text-2xs text-ink-2">{m.dueDate ? formatDate(new Date(m.dueDate)) : "–"}</span><EnumPill map={MILESTONE_STATUS} value={m.status} size="xs" />{editable && <MilestoneToggle id={m.id} status={m.status} />}</span>} />)}
         </Card>
       )}
       {tab === "files" && <Card className="p-4">{fileList}</Card>}
@@ -336,15 +341,15 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
           <SectionCard title="Client portal access">
             <p className="mb-3 text-xs text-ink-muted">A contact sees a project only once it is shared with them. Sharing this one shows them its files, invoices and deliverables to approve, and nothing else.</p>
             <ul className="space-y-3">
-              {pr.client?.contacts.map((c: any) => (
-                <li key={c.id} className="flex items-center gap-3"><Avatar person={c} size={32} /><div className="min-w-0 flex-1 text-xs"><p className="font-semibold text-ink">{c.name}</p><p className="text-ink-muted">{c.email ?? "No email"}</p></div>{editable && <PortalAccessButton contactId={c.id} projectId={pr.id} active={c.portalAccess} shared={c.projects.length > 0} />}</li>
+              {(pr.client?.contacts ?? []).map((c: any) => (
+                <li key={c.id} className="flex items-center gap-3"><Avatar person={c} size={32} /><div className="min-w-0 flex-1 text-xs"><p className="font-semibold text-ink">{c.name}</p><p className="text-ink-muted">{c.email ?? "No email"}</p></div>{editable && <PortalAccessButton contactId={c.id} projectId={pr.id} active={c.portalAccess} shared={(c.projects ?? []).length > 0} />}</li>
               ))}
             </ul>
           </SectionCard>
           <SectionCard title="Approvals">
             {editable && <RequestApproval projectId={pr.id} files={files.map((f) => ({ id: f.id, name: f.name }))} />}
             <ul className="mt-3 divide-y">
-              {pr.approvals.map((a: any) => <li key={a.id} className="flex items-center gap-3 py-2 text-xs"><span className="flex-1 font-medium text-ink">{a.title}</span><span className="text-ink-muted">{formatShortDate(new Date(a.requestedAt))}</span><EnumPill map={APPROVAL_STATUS} value={a.status} dot={false} size="xs" /></li>)}
+              {approvals.map((a: any) => <li key={a.id} className="flex items-center gap-3 py-2 text-xs"><span className="flex-1 font-medium text-ink">{a.title}</span><span className="text-ink-muted">{a.requestedAt ? formatShortDate(new Date(a.requestedAt)) : "–"}</span><EnumPill map={APPROVAL_STATUS} value={a.status} dot={false} size="xs" /></li>)}
             </ul>
           </SectionCard>
         </div>

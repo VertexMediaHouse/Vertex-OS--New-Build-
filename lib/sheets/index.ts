@@ -113,43 +113,55 @@ export async function syncTableToSheet(table: string, rows: any[]): Promise<bool
 
 // ───────────────────────────── Debounced Sync Queue ─────────────────────────────
 
+/**
+ * On Cloudflare Workers the isolate can be torn down the instant the response is
+ * sent — a bare setTimeout() scheduled here is not guaranteed to ever fire. Workers'
+ * ctx.waitUntil() keeps the isolate alive until the promise passed to it settles, so
+ * server/app.ts registers the current request's waitUntil here before any route runs.
+ * The Node server (npm run start) never calls this, and setTimeout there is fine
+ * because the process stays up.
+ */
+let currentWaitUntil: ((p: Promise<unknown>) => void) | null = null;
+export function setWaitUntil(fn: ((p: Promise<unknown>) => void) | null) {
+  currentWaitUntil = fn;
+}
+
 const syncTimers = new Map<string, NodeJS.Timeout>();
 const inFlightSyncs = new Set<string>();
 
+async function runSync(table: string, getRows: () => any[]) {
+  if (inFlightSyncs.has(table)) return;
+  inFlightSyncs.add(table);
+  try {
+    const rows = getRows();
+    const ok = await syncTableToSheet(table, rows);
+    if (ok) console.log(`[sheets] Synced '${table}' (${rows.length} rows) to Google Sheets`);
+  } catch (e) {
+    console.error(`[sheets] Background sync failed for '${table}':`, e);
+  } finally {
+    inFlightSyncs.delete(table);
+  }
+}
+
 /**
- * Schedules a debounced background sync of a table to Google Sheets.
- * The mutation in the local memory database completes immediately (0ms latency),
- * and the Google Sheet tab is updated asynchronously.
+ * Schedules a background sync of a table to Google Sheets. The mutation in the local
+ * memory database completes immediately (0ms latency); the Sheet tab updates async.
+ * With a waitUntil registered (Workers), syncs immediately and is kept alive past the
+ * response. Otherwise (Node), debounces on a timer since the process stays running.
  */
 export function scheduleTableSync(table: string, getRows: () => any[], delayMs = 1500) {
   if (!isSheetsConfigured()) return;
 
-  const existingTimer = syncTimers.get(table);
-  if (existingTimer) {
-    clearTimeout(existingTimer);
+  if (currentWaitUntil) {
+    currentWaitUntil(runSync(table, getRows));
+    return;
   }
 
-  const timer = setTimeout(async () => {
+  const existingTimer = syncTimers.get(table);
+  if (existingTimer) clearTimeout(existingTimer);
+  const timer = setTimeout(() => {
     syncTimers.delete(table);
-    if (inFlightSyncs.has(table)) {
-      // Re-schedule if another sync is currently writing
-      scheduleTableSync(table, getRows, 1000);
-      return;
-    }
-
-    inFlightSyncs.add(table);
-    try {
-      const rows = getRows();
-      const ok = await syncTableToSheet(table, rows);
-      if (ok) {
-        console.log(`[sheets] Synced '${table}' (${rows.length} rows) to Google Sheets`);
-      }
-    } catch (e) {
-      console.error(`[sheets] Background sync failed for '${table}':`, e);
-    } finally {
-      inFlightSyncs.delete(table);
-    }
+    void runSync(table, getRows);
   }, delayMs);
-
   syncTimers.set(table, timer);
 }

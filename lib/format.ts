@@ -107,15 +107,17 @@ export function formatPercent(value: number): string {
   return `${Math.round(value)}%`;
 }
 
-export function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
+export function initials(name?: string | null): string {
+  if (!name || typeof name !== "string") return "?";
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return parts
     .slice(0, 2)
-    .map((p) => p[0]!.toUpperCase())
+    .map((p) => p[0]?.toUpperCase() ?? "")
     .join("");
 }
 
-export function firstName(name: string): string {
-  return name.split(/\s+/)[0] ?? name;
+export function firstName(name?: string | null): string {
+  if (!name || typeof name !== "string") return "";
+  return name.trim().split(/\s+/)[0] ?? name;
 }

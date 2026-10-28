@@ -66,11 +66,11 @@ export default function InvoicesPage() {
                 <tbody>
                   {rows.map((i) => {
                     const pct = Number(i.total) ? (Number(i.paidAmount) / Number(i.total)) * 100 : 0;
-                    const color = logoColor(i.client.name);
+                    const color = logoColor(i.client?.name);
                     return (
                       <tr key={i.id} className={`border-b ${i.id === openId ? "bg-brand-soft" : "hover:bg-accent"}`}>
                         <td className="px-2 py-2.5"><Link href={`?${new URLSearchParams({ ...sp, id: i.id })}`} scroll={false} className="font-medium text-ink hover:underline">#{i.number}</Link></td>
-                        <td className="px-2 py-2.5"><span className="flex items-center gap-2"><span className="inline-flex size-6 items-center justify-center rounded-md text-xs font-bold" style={{ background: `${color}1F`, color }}>{i.client.name[0]}</span><span className="font-semibold text-ink">{i.client.name}</span></span></td>
+                        <td className="px-2 py-2.5"><span className="flex items-center gap-2"><span className="inline-flex size-6 items-center justify-center rounded-md text-xs font-bold" style={{ background: `${color}1F`, color }}>{(i.client?.name ?? "?")[0]}</span><span className="font-semibold text-ink">{i.client?.name}</span></span></td>
                         <td className="px-2 py-2.5"><CompanyBadge code={companyCode(i.companyId)} /></td>
                         <td className="px-2 py-2.5 text-ink-2">{i.project?.name}</td>
                         <td className="px-2 py-2.5">{formatDate(new Date(i.issueDate))}</td>
@@ -104,7 +104,7 @@ function InvoicePanel({ id, tab, sp }: { id: string; tab: string; sp: Record<str
   const balance = Number(inv.total) - Number(inv.paidAmount);
   const pct = Number(inv.total) ? (Number(inv.paidAmount) / Number(inv.total)) * 100 : 0;
   const closeHref = `?${new URLSearchParams(Object.entries(sp).filter(([k]) => k !== "id" && k !== "tab"))}`;
-  const color = logoColor(inv.client.name);
+  const color = logoColor(inv.client?.name);
   const pdfHref = `${API_URL}/api/invoices/${inv.id}/pdf`;
   return (
     <div className="space-y-3.5">
@@ -113,7 +113,7 @@ function InvoicePanel({ id, tab, sp }: { id: string; tab: string; sp: Record<str
         {tab === "overview" && (
           <>
             <div className="mb-3 flex items-center gap-3">
-              <span className="inline-flex size-10 items-center justify-center rounded-lg text-lg font-bold" style={{ background: `${color}1F`, color }}>{inv.client.name[0]}</span>
+              <span className="inline-flex size-10 items-center justify-center rounded-lg text-lg font-bold" style={{ background: `${color}1F`, color }}>{(inv.client?.name ?? "?")[0]}</span>
               <div className="flex-1"><p className="text-sm font-semibold text-ink">{inv.client.name}</p><p className="text-2xs text-ink-muted">{inv.client.domain}</p></div>
               <Link href={`/clients/${inv.clientId}`} className="text-2xs text-brand-text hover:underline">View Client →</Link>
             </div>

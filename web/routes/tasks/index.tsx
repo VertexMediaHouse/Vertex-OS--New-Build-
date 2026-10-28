@@ -156,7 +156,12 @@ function TaskDrawer({ id, people }: { id: string; people: { id: string; name: st
   if (!data?.task) return null;
   const tk = data.task;
   const t = new Date(data.now);
-  const done = tk.checklist.filter((c: any) => c.done).length;
+  const checklist = Array.isArray(tk.checklist) ? tk.checklist : [];
+  const files = Array.isArray(tk.files) ? tk.files : [];
+  const tags = Array.isArray(tk.tags) ? tk.tags : [];
+  const comments = Array.isArray(data.comments) ? data.comments : [];
+  const activity = Array.isArray(data.activity) ? data.activity : [];
+  const done = checklist.filter((c: any) => c.done).length;
   const dueDate = tk.dueDate ? new Date(tk.dueDate) : null;
   return (
     <UrlSheet title={tk.title} width={380}>
@@ -175,7 +180,7 @@ function TaskDrawer({ id, people }: { id: string; people: { id: string; name: st
           ["Start Date", tk.startDate ? formatDate(new Date(tk.startDate)) : "–"],
           ["Due Date", dueDate ? <span key="d" className={tk.status !== "COMPLETED" && dueDate.getTime() - t.getTime() < 3 * 86_400_000 ? "text-danger-text" : ""}>{formatDate(dueDate)} ({formatDaysLeft(dueDate, t)})</span> : "–"],
           ["Assignee", <TaskFieldSelect key="a" taskId={tk.id} field="assigneeId" value={tk.assigneeId ?? ""} options={[{ value: "", label: "Unassigned" }, ...people.map((x) => ({ value: x.id, label: x.name }))]} />],
-          ["Tags", tk.tags.length ? <span key="t" className="flex flex-wrap gap-1">{tk.tags.map((g) => <span key={g} className="rounded bg-surface-muted px-1.5 py-0.5">{g}</span>)}</span> : "–"],
+          ["Tags", tags.length ? <span key="t" className="flex flex-wrap gap-1">{tags.map((g: any) => <span key={g} className="rounded bg-surface-muted px-1.5 py-0.5">{g}</span>)}</span> : "–"],
           ["Time logged", formatDuration(data.minutes)],
         ]} />
         {/* The review cycle: hand it up when you finish it, approve or return it when it lands with you. */}
@@ -186,20 +191,20 @@ function TaskDrawer({ id, people }: { id: string; people: { id: string; name: st
         ) : null}
         <section><h3 className="mb-1 text-sm font-semibold text-ink">Description</h3><p className="leading-5 text-ink-2">{tk.description}</p></section>
         <section>
-          <h3 className="mb-1 text-sm font-semibold text-ink">Checklist ({done}/{tk.checklist.length})</h3>
-          <ChecklistControls taskId={tk.id} items={tk.checklist.map((c: any) => ({ id: c.id, text: c.text, done: c.done, assignee: c.assignee?.name ?? null }))} />
+          <h3 className="mb-1 text-sm font-semibold text-ink">Checklist ({done}/{checklist.length})</h3>
+          <ChecklistControls taskId={tk.id} items={checklist.map((c: any) => ({ id: c.id, text: c.text, done: c.done, assignee: c.assignee?.name ?? null }))} />
         </section>
         <section>
-          <h3 className="mb-1 text-sm font-semibold text-ink">Files ({tk.files.length})</h3>
-          {tk.files.map((f: any) => <a key={f.id} href={`${API_URL}/api/files/${f.id}/download`} className="flex items-center gap-2 py-1 hover:underline"><FileIcon ext={f.ext} size={26} /><span className="flex-1">{f.name}<span className="block text-ink-muted">{formatFileSize(f.size)} • {formatDate(new Date(f.createdAt))}</span></span></a>)}
+          <h3 className="mb-1 text-sm font-semibold text-ink">Files ({files.length})</h3>
+          {files.map((f: any) => <a key={f.id} href={`${API_URL}/api/files/${f.id}/download`} className="flex items-center gap-2 py-1 hover:underline"><FileIcon ext={f.ext} size={26} /><span className="flex-1">{f.name}<span className="block text-ink-muted">{formatFileSize(f.size)} • {formatDate(new Date(f.createdAt))}</span></span></a>)}
         </section>
         <section>
-          <h3 className="mb-1 text-sm font-semibold text-ink">Comments ({data.comments.length})</h3>
-          {data.comments.map((c) => <div key={c.id} className="flex gap-2 py-1.5"><Avatar person={c.author} size={26} /><div><p><b>{c.author.name}</b> <span className="text-ink-muted">{formatDateTime(new Date(c.createdAt))}</span></p><p className="text-ink-2">{c.body}</p></div></div>)}
+          <h3 className="mb-1 text-sm font-semibold text-ink">Comments ({comments.length})</h3>
+          {comments.map((c: any) => <div key={c.id} className="flex gap-2 py-1.5"><Avatar person={c.author} size={26} /><div><p><b>{c.author?.name}</b> <span className="text-ink-muted">{c.createdAt ? formatDateTime(new Date(c.createdAt)) : ""}</span></p><p className="text-ink-2">{c.body}</p></div></div>)}
           <CommentBox taskId={tk.id} />
         </section>
         {data.canDelete && <DeleteButton action={() => deleteTask(tk.id)} noun="task" name={tk.title} redirectTo="/tasks" />}
-        <section><h3 className="mb-1 text-sm font-semibold text-ink">Activity</h3>{data.activity.map((a) => <p key={a.id} className="py-0.5 text-ink-2">{a.summary} · <span className="text-ink-muted">{formatDateTime(new Date(a.createdAt))}</span></p>)}</section>
+        <section><h3 className="mb-1 text-sm font-semibold text-ink">Activity</h3>{activity.map((a: any) => <p key={a.id} className="py-0.5 text-ink-2">{a.summary} · <span className="text-ink-muted">{a.createdAt ? formatDateTime(new Date(a.createdAt)) : ""}</span></p>)}</section>
       </div>
     </UrlSheet>
   );

@@ -29,7 +29,7 @@ export default function ClientDetailPage() {
     <div className="space-y-3.5">
       <p className="text-xs text-ink-muted"><Link href="/clients" className="hover:underline">Clients</Link> › {client.name}</p>
       <Card className="flex flex-wrap items-center gap-4 p-5">
-        <span className="inline-flex size-14 items-center justify-center rounded-xl text-2xl font-bold" style={{ background: `${color}1F`, color }}>{client.name[0]}</span>
+        <span className="inline-flex size-14 items-center justify-center rounded-xl text-2xl font-bold" style={{ background: `${color}1F`, color }}>{(client.name ?? "?")[0]}</span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-bold text-ink">{client.name}</h1>

@@ -66251,6 +66251,7 @@ __export(sheets_exports, {
   isSheetsConfigured: () => isSheetsConfigured,
   scheduleTableSync: () => scheduleTableSync,
   serializeRowForSheet: () => serializeRowForSheet,
+  setWaitUntil: () => setWaitUntil,
   syncTableToSheet: () => syncTableToSheet
 });
 function isSheetsConfigured() {
@@ -66336,37 +66337,41 @@ async function syncTableToSheet(table2, rows) {
     return false;
   }
 }
+function setWaitUntil(fn) {
+  currentWaitUntil = fn;
+}
+async function runSync(table2, getRows) {
+  if (inFlightSyncs.has(table2)) return;
+  inFlightSyncs.add(table2);
+  try {
+    const rows = getRows();
+    const ok2 = await syncTableToSheet(table2, rows);
+    if (ok2) console.log(`[sheets] Synced '${table2}' (${rows.length} rows) to Google Sheets`);
+  } catch (e6) {
+    console.error(`[sheets] Background sync failed for '${table2}':`, e6);
+  } finally {
+    inFlightSyncs.delete(table2);
+  }
+}
 function scheduleTableSync(table2, getRows, delayMs = 1500) {
   if (!isSheetsConfigured()) return;
-  const existingTimer = syncTimers.get(table2);
-  if (existingTimer) {
-    clearTimeout(existingTimer);
+  if (currentWaitUntil) {
+    currentWaitUntil(runSync(table2, getRows));
+    return;
   }
-  const timer = setTimeout(async () => {
+  const existingTimer = syncTimers.get(table2);
+  if (existingTimer) clearTimeout(existingTimer);
+  const timer = setTimeout(() => {
     syncTimers.delete(table2);
-    if (inFlightSyncs.has(table2)) {
-      scheduleTableSync(table2, getRows, 1e3);
-      return;
-    }
-    inFlightSyncs.add(table2);
-    try {
-      const rows = getRows();
-      const ok2 = await syncTableToSheet(table2, rows);
-      if (ok2) {
-        console.log(`[sheets] Synced '${table2}' (${rows.length} rows) to Google Sheets`);
-      }
-    } catch (e6) {
-      console.error(`[sheets] Background sync failed for '${table2}':`, e6);
-    } finally {
-      inFlightSyncs.delete(table2);
-    }
+    void runSync(table2, getRows);
   }, delayMs);
   syncTimers.set(table2, timer);
 }
-var syncTimers, inFlightSyncs;
+var currentWaitUntil, syncTimers, inFlightSyncs;
 var init_sheets = __esm({
   "lib/sheets/index.ts"() {
     "use strict";
+    currentWaitUntil = null;
     syncTimers = /* @__PURE__ */ new Map();
     inFlightSyncs = /* @__PURE__ */ new Set();
   }
@@ -66529,6 +66534,47 @@ var init_seed = __esm({
 });
 
 // lib/db/index.ts
+var db_exports = {};
+__export(db_exports, {
+  AlertStatus: () => AlertStatus,
+  ApprovalStatus: () => ApprovalStatus,
+  BillingType: () => BillingType,
+  CampaignStatus: () => CampaignStatus,
+  ClientStatus: () => ClientStatus,
+  CompanyCode: () => CompanyCode,
+  ContentChannel: () => ContentChannel,
+  ContentStage: () => ContentStage,
+  Decimal: () => Decimal,
+  EntityType: () => EntityType,
+  EventType: () => EventType,
+  FileStatus: () => FileStatus,
+  FolderCategory: () => FolderCategory,
+  GoalCategory: () => GoalCategory,
+  GoalMetric: () => GoalMetric,
+  GoalScope: () => GoalScope,
+  GoalStatus: () => GoalStatus,
+  GoalUnit: () => GoalUnit,
+  InvoiceStatus: () => InvoiceStatus,
+  IssueStatus: () => IssueStatus,
+  LeadSource: () => LeadSource,
+  LeadStage: () => LeadStage,
+  MemberRole: () => MemberRole,
+  MilestoneStatus: () => MilestoneStatus,
+  PaymentMethod: () => PaymentMethod,
+  Priority: () => Priority,
+  Prisma: () => Prisma,
+  ProductionStage: () => ProductionStage,
+  ProjectStatus: () => ProjectStatus,
+  ProjectTemplate: () => ProjectTemplate,
+  RecipientStatus: () => RecipientStatus,
+  Severity: () => Severity,
+  TaskStatus: () => TaskStatus,
+  TimeEntryStatus: () => TimeEntryStatus,
+  UserKind: () => UserKind,
+  WorkCategory: () => WorkCategory,
+  db: () => db,
+  initDbFromSheets: () => initDbFromSheets
+});
 function hydrateDates(val) {
   if (val === null || val === void 0) return val;
   if (val instanceof Date) return val;
@@ -67001,12 +67047,137 @@ function createModelDelegate(modelName) {
     }
   };
 }
-var Decimal, OuterDecimal, Prisma, store, ROOT_FOLDERS, sheetsHydrated, sheetsHydratingPromise, relations, autoIdCounter, rawDb, db;
+var CompanyCode, UserKind, MemberRole, ClientStatus, LeadStage, LeadSource, AlertStatus, ProjectTemplate, ProjectStatus, WorkCategory, Priority, BillingType, MilestoneStatus, ApprovalStatus, ProductionStage, IssueStatus, Severity, TaskStatus, TimeEntryStatus, InvoiceStatus, PaymentMethod, GoalScope, GoalCategory, GoalMetric, GoalUnit, GoalStatus, FolderCategory, FileStatus, CampaignStatus, RecipientStatus, EventType, EntityType, ContentStage, ContentChannel, Decimal, OuterDecimal, Prisma, store, ROOT_FOLDERS, sheetsHydrated, sheetsHydratingPromise, relations, autoIdCounter, rawDb, db;
 var init_db3 = __esm({
   "lib/db/index.ts"() {
     "use strict";
     init_sheets();
     init_seed();
+    CompanyCode = { VMH: "VMH", VTH: "VTH" };
+    UserKind = { STAFF: "STAFF", CLIENT: "CLIENT" };
+    MemberRole = { ADMIN: "ADMIN", MANAGER: "MANAGER", MEMBER: "MEMBER" };
+    ClientStatus = { ACTIVE: "ACTIVE", ON_HOLD: "ON_HOLD", COMPLETED: "COMPLETED", INACTIVE: "INACTIVE" };
+    LeadStage = { NEW: "NEW", CONTACTED: "CONTACTED", PROPOSAL: "PROPOSAL", NEGOTIATION: "NEGOTIATION", WON: "WON", LOST: "LOST" };
+    LeadSource = { FIVERR: "FIVERR", WEBSITE: "WEBSITE", REFERRAL: "REFERRAL", LINKEDIN: "LINKEDIN", EMAIL: "EMAIL", INSTAGRAM: "INSTAGRAM", OTHER: "OTHER" };
+    AlertStatus = { OPEN: "OPEN", CONVERTED: "CONVERTED", DISMISSED: "DISMISSED" };
+    ProjectTemplate = { VMH: "VMH", VTH: "VTH" };
+    ProjectStatus = {
+      NOT_STARTED: "NOT_STARTED",
+      PLANNING: "PLANNING",
+      IN_PROGRESS: "IN_PROGRESS",
+      EDITING: "EDITING",
+      DEVELOPMENT: "DEVELOPMENT",
+      IN_REVIEW: "IN_REVIEW",
+      CLIENT_REVIEW: "CLIENT_REVIEW",
+      REVISION: "REVISION",
+      ON_HOLD: "ON_HOLD",
+      COMPLETED: "COMPLETED",
+      CANCELLED: "CANCELLED"
+    };
+    WorkCategory = {
+      VIDEO_EDITING: "VIDEO_EDITING",
+      WEBSITE_DEVELOPMENT: "WEBSITE_DEVELOPMENT",
+      CRM_ERP: "CRM_ERP",
+      AUTOMATION: "AUTOMATION",
+      DESIGN: "DESIGN",
+      MEETINGS: "MEETINGS",
+      OTHER: "OTHER"
+    };
+    Priority = { LOW: "LOW", MEDIUM: "MEDIUM", HIGH: "HIGH" };
+    BillingType = {
+      MONTHLY_RETAINER: "MONTHLY_RETAINER",
+      FIXED_SCOPE: "FIXED_SCOPE",
+      RETAINER_HOURS: "RETAINER_HOURS",
+      TIME_AND_MATERIALS: "TIME_AND_MATERIALS"
+    };
+    MilestoneStatus = { PENDING: "PENDING", IN_PROGRESS: "IN_PROGRESS", COMPLETED: "COMPLETED" };
+    ApprovalStatus = { PENDING: "PENDING", APPROVED: "APPROVED", REVISION: "REVISION" };
+    ProductionStage = {
+      EDITING: "EDITING",
+      INTERNAL_QC: "INTERNAL_QC",
+      CLIENT_REVIEW: "CLIENT_REVIEW",
+      REVISION: "REVISION",
+      DELIVERED: "DELIVERED"
+    };
+    IssueStatus = { OPEN: "OPEN", IN_PROGRESS: "IN_PROGRESS", RESOLVED: "RESOLVED", CLOSED: "CLOSED" };
+    Severity = { LOW: "LOW", MEDIUM: "MEDIUM", HIGH: "HIGH", CRITICAL: "CRITICAL" };
+    TaskStatus = { TODO: "TODO", IN_PROGRESS: "IN_PROGRESS", IN_REVIEW: "IN_REVIEW", CLIENT_REVIEW: "CLIENT_REVIEW", COMPLETED: "COMPLETED" };
+    TimeEntryStatus = { RUNNING: "RUNNING", PENDING: "PENDING", APPROVED: "APPROVED", REJECTED: "REJECTED" };
+    InvoiceStatus = { DRAFT: "DRAFT", PENDING: "PENDING", PAID: "PAID", OVERDUE: "OVERDUE", CANCELLED: "CANCELLED" };
+    PaymentMethod = {
+      BANK_TRANSFER: "BANK_TRANSFER",
+      UPI: "UPI",
+      CARD: "CARD",
+      PAYPAL: "PAYPAL",
+      WISE: "WISE",
+      CASH: "CASH",
+      OTHER: "OTHER"
+    };
+    GoalScope = { COMPANY: "COMPANY", TEAM: "TEAM", PERSONAL: "PERSONAL" };
+    GoalCategory = {
+      REVENUE_SALES: "REVENUE_SALES",
+      CLIENT_ACQUISITION: "CLIENT_ACQUISITION",
+      PROJECT_DELIVERY: "PROJECT_DELIVERY",
+      PRODUCT_DEVELOPMENT: "PRODUCT_DEVELOPMENT",
+      TEAM_HIRING: "TEAM_HIRING",
+      PROCESS_AUTOMATION: "PROCESS_AUTOMATION",
+      CONTENT_CREATION: "CONTENT_CREATION",
+      CLIENT_SUCCESS: "CLIENT_SUCCESS",
+      LEARNING_GROWTH: "LEARNING_GROWTH"
+    };
+    GoalMetric = {
+      MANUAL: "MANUAL",
+      REVENUE: "REVENUE",
+      NEW_CLIENTS: "NEW_CLIENTS",
+      PROJECTS_COMPLETED: "PROJECTS_COMPLETED",
+      VIDEOS_DELIVERED: "VIDEOS_DELIVERED",
+      LEADS_WON: "LEADS_WON",
+      BILLABLE_HOURS: "BILLABLE_HOURS"
+    };
+    GoalUnit = { CURRENCY: "CURRENCY", COUNT: "COUNT", PERCENT: "PERCENT", HOURS: "HOURS" };
+    GoalStatus = { ON_TRACK: "ON_TRACK", AT_RISK: "AT_RISK", OFF_TRACK: "OFF_TRACK", COMPLETED: "COMPLETED", OVERDUE: "OVERDUE" };
+    FolderCategory = {
+      CLIENT_FILES: "CLIENT_FILES",
+      PROJECT_FILES: "PROJECT_FILES",
+      DESIGN_ASSETS: "DESIGN_ASSETS",
+      VIDEO_ASSETS: "VIDEO_ASSETS",
+      DOCUMENTS: "DOCUMENTS",
+      TEAM_RESOURCES: "TEAM_RESOURCES"
+    };
+    FileStatus = { DRAFT: "DRAFT", REVIEW: "REVIEW", FINAL: "FINAL" };
+    CampaignStatus = { DRAFT: "DRAFT", SCHEDULED: "SCHEDULED", ACTIVE: "ACTIVE", PAUSED: "PAUSED", COMPLETED: "COMPLETED" };
+    RecipientStatus = { QUEUED: "QUEUED", SENT: "SENT", OPENED: "OPENED", REPLIED: "REPLIED", BOUNCED: "BOUNCED" };
+    EventType = { CALL: "CALL", REVIEW: "REVIEW", FOLLOW_UP: "FOLLOW_UP", MEETING: "MEETING" };
+    EntityType = {
+      LEAD: "LEAD",
+      CLIENT: "CLIENT",
+      PROJECT: "PROJECT",
+      TASK: "TASK",
+      TIME_ENTRY: "TIME_ENTRY",
+      INVOICE: "INVOICE",
+      PAYMENT: "PAYMENT",
+      GOAL: "GOAL",
+      FILE: "FILE",
+      CAMPAIGN: "CAMPAIGN",
+      APPROVAL: "APPROVAL",
+      EVENT: "EVENT"
+    };
+    ContentStage = {
+      IDEA: "IDEA",
+      SCRIPTING: "SCRIPTING",
+      FILMING: "FILMING",
+      EDITING: "EDITING",
+      SCHEDULED: "SCHEDULED",
+      PUBLISHED: "PUBLISHED"
+    };
+    ContentChannel = {
+      YOUTUBE: "YOUTUBE",
+      INSTAGRAM: "INSTAGRAM",
+      LINKEDIN: "LINKEDIN",
+      SHORTS: "SHORTS",
+      PODCAST: "PODCAST",
+      OTHER: "OTHER"
+    };
     Decimal = class _Decimal {
       val;
       constructor(v2) {
@@ -111782,8 +111953,17 @@ var init_app = __esm({
     init_config();
     init_permissions();
     init_scope();
+    init_sheets();
     WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:5173";
     base = new Hono3();
+    base.use("*", async (c6, next) => {
+      try {
+        setWaitUntil(c6.executionCtx.waitUntil.bind(c6.executionCtx));
+      } catch {
+        setWaitUntil(null);
+      }
+      await next();
+    });
     base.use(
       "*",
       cors({
@@ -111826,6 +112006,8 @@ var worker_default = {
       appPromise = Promise.resolve().then(() => (init_app(), app_exports));
     }
     const { app: app2 } = await appPromise;
+    const { initDbFromSheets: initDbFromSheets2 } = await Promise.resolve().then(() => (init_db3(), db_exports));
+    await initDbFromSheets2();
     return app2.fetch(request, env3, ctx);
   }
 };

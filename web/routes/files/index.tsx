@@ -149,11 +149,11 @@ function FilePanel({ id, closeHref, people, tab }: { id: string; closeHref: stri
           <>
             <KeyValue labelWidth={92} rows={[
               ["Location", f.folder ? `${f.folder.parent ? `${f.folder.parent.name} › ` : ""}${f.folder.name}` : "—"],
-              ["Uploaded by", <span key="u" className="flex items-center gap-1.5"><Avatar person={f.uploadedBy} size={20} />{f.uploadedBy.name}</span>],
+              ["Uploaded by", <span key="u" className="flex items-center gap-1.5"><Avatar person={f.uploadedBy} size={20} />{f.uploadedBy?.name ?? "–"}</span>],
               ["Uploaded on", formatFullDateTime(new Date(f.createdAt))],
               ["Last modified", formatFullDateTime(new Date(f.updatedAt))],
               ["Shared with", <AvatarStack key="s" people={f.shares.flatMap((s: any) => (s.user ? [s.user] : []))} size={22} />],
-              ["Tags", f.tags.length ? <span key="t" className="flex flex-wrap gap-1">{f.tags.map((g) => <span key={g} className="rounded bg-brand-soft px-1.5 py-0.5 text-brand-text">{g}</span>)}</span> : "—"],
+              ["Tags", (Array.isArray(f.tags) && f.tags.length) ? <span key="t" className="flex flex-wrap gap-1">{f.tags.map((g) => <span key={g} className="rounded bg-brand-soft px-1.5 py-0.5 text-brand-text">{g}</span>)}</span> : "—"],
             ]} />
             {f.description && <><p className="mt-3 text-xs font-semibold text-ink">Description</p><p className="mt-1 rounded-lg bg-surface-muted p-2.5 text-xs text-ink-2">{f.description}</p></>}
           </>
@@ -161,7 +161,7 @@ function FilePanel({ id, closeHref, people, tab }: { id: string; closeHref: stri
         {tab === "versions" && (
           <ul className="space-y-2 text-xs">
             <li className="flex justify-between"><span><b>v{f.version}</b> (current) · {formatFileSize(f.size)}</span><a href={dl} className="text-brand-text">Download</a></li>
-            {f.versions.map((v: any) => <li key={v.id} className="flex justify-between"><span>v{v.version} · {formatFileSize(v.size)} · {v.uploadedBy.name} · {formatDate(new Date(v.createdAt))}</span><a href={`${dl}?v=${v.version}`} className="text-brand-text">Download</a></li>)}
+            {(f.versions ?? []).map((v: any) => <li key={v.id} className="flex justify-between"><span>v{v.version} · {formatFileSize(v.size)} · {v.uploadedBy?.name ?? ""} · {formatDate(new Date(v.createdAt))}</span><a href={`${dl}?v=${v.version}`} className="text-brand-text">Download</a></li>)}
             {canUpdate && <li className="pt-2"><UploadButton fileId={f.id} label="Upload new version" /></li>}
           </ul>
         )}

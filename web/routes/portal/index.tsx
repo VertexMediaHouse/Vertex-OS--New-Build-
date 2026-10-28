@@ -48,7 +48,7 @@ export default function PortalPage() {
                 <EnumPill map={PROJECT_STATUS} value={p.status} />
                 <span className="w-32"><ProgressBar value={p.progress} /></span>
                 <span className="text-xs text-ink-muted">{p.dueDate ? `Due ${formatDate(new Date(p.dueDate))}` : ""}</span>
-                <span className="text-xs text-ink-muted">Manager: {p.members[0]?.user.name ?? "–"}</span>
+                <span className="text-xs text-ink-muted">Manager: {p.members?.[0]?.user?.name ?? "–"}</span>
               </li>
             ))}
           </ul>

@@ -83,35 +83,39 @@ export function SegmentedBar({ segments, height = 8 }: { segments: { value: numb
 // ── Avatars ─────────────────────────────────────────────────────────────
 const AVATAR_COLORS = ["#E0E7FF:#4338CA", "#FCE7F3:#BE185D", "#DCFCE7:#15803D", "#FEF3C7:#B45309", "#E0F2FE:#0369A1", "#F3E8FF:#7E22CE", "#FFE4E6:#BE123C", "#CCFBF1:#0F766E"];
 
-function avatarColor(name: string) {
+function avatarColor(name?: string | null) {
   let h = 0;
-  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const safeName = typeof name === "string" ? name : "";
+  for (const ch of safeName) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   const [bg, fg] = AVATAR_COLORS[h % AVATAR_COLORS.length]!.split(":");
   return { background: bg, color: fg };
 }
 
-export type AvatarPerson = { name: string; image?: string | null };
+export type AvatarPerson = { name?: string | null; image?: string | null };
 
-export function Avatar({ person, size = 28, ring = false, className }: { person: AvatarPerson; size?: number; ring?: boolean; className?: string }) {
+export function Avatar({ person, size = 28, ring = false, className }: { person?: AvatarPerson | null; size?: number; ring?: boolean; className?: string }) {
+  if (!person) return null;
+  const name = typeof person.name === "string" && person.name.trim() ? person.name : "–";
   const style = { width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.38)) };
   return person.image ? (
-    <img src={person.image} alt={person.name} title={person.name} style={style} className={cn("shrink-0 rounded-full object-cover", ring && "ring-2 ring-white", className)} />
+    <img src={person.image} alt={name} title={name} style={style} className={cn("shrink-0 rounded-full object-cover", ring && "ring-2 ring-white", className)} />
   ) : (
     <span
       role="img"
-      aria-label={person.name}
-      title={person.name}
-      style={{ ...style, ...avatarColor(person.name) }}
+      aria-label={name}
+      title={name}
+      style={{ ...style, ...avatarColor(name) }}
       className={cn("inline-flex shrink-0 items-center justify-center rounded-full font-semibold", ring && "ring-2 ring-white", className)}
     >
-      {initials(person.name)}
+      {initials(name)}
     </span>
   );
 }
 
-export function AvatarStack({ people, max = 3, size = 24 }: { people: AvatarPerson[]; max?: number; size?: number }) {
-  const shown = people.slice(0, max);
-  const extra = people.length - shown.length;
+export function AvatarStack({ people, max = 3, size = 24 }: { people: (AvatarPerson | null | undefined)[]; max?: number; size?: number }) {
+  const validPeople = (people ?? []).filter((p): p is AvatarPerson => Boolean(p && typeof p.name === "string" && p.name.trim()));
+  const shown = validPeople.slice(0, max);
+  const extra = validPeople.length - shown.length;
   return (
     <div className="flex items-center -space-x-2">
       {shown.map((p, i) => (
@@ -209,3 +213,4 @@ export function SectionCard({
 export function Inset({ className, ...props }: React.ComponentProps<"div">) {
   return <div className={cn("rounded-[10px] bg-surface-muted", className)} {...props} />;
 }
+

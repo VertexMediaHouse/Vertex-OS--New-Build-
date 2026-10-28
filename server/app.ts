@@ -28,10 +28,22 @@ import { time } from "./routes/time";
 import { googleEnabled } from "@/lib/auth/config";
 import { ForbiddenError } from "@/lib/auth/permissions";
 import { parseScope, SCOPE_COOKIE } from "@/lib/scope";
+import { setWaitUntil } from "@/lib/sheets";
 
 export const WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:5173";
 
 const base = new Hono<Env>();
+
+// Must run before any route touches the db: lets scheduleTableSync() use
+// ctx.waitUntil() on Workers instead of a setTimeout the isolate can kill early.
+base.use("*", async (c, next) => {
+  try {
+    setWaitUntil(c.executionCtx.waitUntil.bind(c.executionCtx));
+  } catch {
+    setWaitUntil(null); // Node server: no executionCtx, falls back to setTimeout
+  }
+  await next();
+});
 
 base.use(
   "*",

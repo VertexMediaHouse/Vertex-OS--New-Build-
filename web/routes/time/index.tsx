@@ -89,7 +89,7 @@ export default function TimePage() {
                   {sheet.map((e) => (
                     <tr key={e.id} className="border-b">
                       <td className="px-2 py-2">{formatDate(new Date(e.start))}</td>
-                      <td className="px-2 py-2"><span className="flex items-center gap-2"><Avatar person={e.user} size={24} />{e.user.name}</span></td>
+                      <td className="px-2 py-2"><span className="flex items-center gap-2"><Avatar person={e.user} size={24} />{e.user?.name ?? "–"}</span></td>
                       <td className="px-2 py-2"><p className="font-semibold text-ink">{e.project?.client?.name ?? `${companyCode(e.companyId)} Internal`}</p><p className="text-ink-muted">{e.project?.name}</p></td>
                       <td className="px-2 py-2">{e.task?.title ?? e.note}</td>
                       <td className="px-2 py-2"><CompanyBadge code={companyCode(e.companyId)} /></td>
@@ -115,7 +115,7 @@ export default function TimePage() {
             </ul>
           </SectionCard>
           <SectionCard title="Recent Time Entries" href="/time">
-            {recent.map((e) => <div key={e.id} className="flex items-start gap-2.5 py-1.5"><Avatar person={e.user} size={28} /><div className="min-w-0 flex-1 text-2xs"><p className="text-ink-muted">{e.user.name}</p><p className="truncate text-xs font-semibold text-ink">{e.task?.title ?? e.note}</p><p className="text-ink-muted">{e.project?.client?.name ?? "Internal"}</p></div><div className="text-right text-2xs"><p className="text-sm font-bold text-ink">{formatDuration(e.durationMin ?? 0)}</p><p className="text-ink-muted">{formatDateTime(new Date(e.start))}</p></div></div>)}
+            {recent.map((e) => <div key={e.id} className="flex items-start gap-2.5 py-1.5"><Avatar person={e.user} size={28} /><div className="min-w-0 flex-1 text-2xs"><p className="text-ink-muted">{e.user?.name ?? "–"}</p><p className="truncate text-xs font-semibold text-ink">{e.task?.title ?? e.note}</p><p className="text-ink-muted">{e.project?.client?.name ?? "Internal"}</p></div><div className="text-right text-2xs"><p className="text-sm font-bold text-ink">{formatDuration(e.durationMin ?? 0)}</p><p className="text-ink-muted">{formatDateTime(new Date(e.start))}</p></div></div>)}
           </SectionCard>
           <SectionCard title="Time Log Activity" href="/time">
             {logs.map((a) => { const [Icon, cls] = logIcon[a.verb] ?? [Clock, "bg-surface-muted text-ink-2"]; const detail = (a.meta as { detail?: string } | null)?.detail; return <div key={a.id} className="flex items-start gap-2.5 py-1.5 text-2xs"><span className={`inline-flex size-7 shrink-0 items-center justify-center rounded-full ${cls}`}><Icon className="size-3.5" /></span><div className="min-w-0 flex-1"><p className="text-xs text-ink">{a.summary}</p>{detail && <p className="text-ink-muted">{detail}</p>}</div><span className="text-ink-muted">{formatDateTime(new Date(a.createdAt))}</span></div>; })}

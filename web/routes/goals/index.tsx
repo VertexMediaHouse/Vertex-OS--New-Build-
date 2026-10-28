@@ -164,7 +164,7 @@ function GoalPanel({ goal, userId }: { goal: Row; userId: string }) {
         <div className="mt-3 grid grid-cols-2 text-xs"><div><p className="text-ink-muted">Current</p><p className="text-lg font-bold text-ink">{valueText(goal, goal.currentValue)}</p></div><div><p className="text-ink-muted">Target</p><p className="text-lg font-bold text-ink">{valueText(goal, goal.targetValue)}</p></div></div>
         {canEdit && goal.metricType === "MANUAL" && <div className="mt-3"><ProgressEditor goalId={goal.id} value={Number(goal.currentValue)} /></div>}
         {goal.metricType !== "MANUAL" && <p className="mt-2 text-2xs text-ink-muted">Tracked automatically from live data.</p>}
-        <KeyValue className="mt-4" labelWidth={100} rows={[["Company", <span key="c" className="flex items-center gap-1.5"><CompanyBadge code={companyCode(goal.companyId)} />{goal.companyId === "vth" ? "Vertex Tech House" : goal.companyId === "vmh" ? "Vertex Media House" : "Both companies"}</span>], ["Category", GOAL_CATEGORY_LABELS[goal.category]], ["Start Date", formatDate(goal.startDate)], ["End Date", formatDate(goal.endDate)], ["Owner", <span key="o" className="flex items-center gap-2"><Avatar person={goal.owner} size={22} />{goal.owner.name}</span>], ["Team Members", <AvatarStack key="m" people={goal.members.map((m) => m.user)} />]]} />
+        <KeyValue className="mt-4" labelWidth={100} rows={[["Company", <span key="c" className="flex items-center gap-1.5"><CompanyBadge code={companyCode(goal.companyId)} />{goal.companyId === "vth" ? "Vertex Tech House" : goal.companyId === "vmh" ? "Vertex Media House" : "Both companies"}</span>], ["Category", GOAL_CATEGORY_LABELS[goal.category]], ["Start Date", formatDate(goal.startDate)], ["End Date", formatDate(goal.endDate)], ["Owner", <span key="o" className="flex items-center gap-2"><Avatar person={goal.owner} size={22} />{goal.owner?.name ?? "–"}</span>], ["Team Members", <AvatarStack key="m" people={(goal.members ?? []).map((m) => m.user).filter(Boolean)} />]]} />
         {goal.description && <><h3 className="mt-4 text-sm font-bold text-ink">Description</h3><p className="mt-1 text-xs leading-5 text-ink-2">{goal.description}</p></>}
       </Card>
       <SectionCard title={`Milestones (${milestones.filter((m) => m.done).length}/${milestones.length} completed)`} action={canEdit ? <AddMilestone goalId={goal.id} /> : undefined}>
@@ -183,7 +183,7 @@ function Simple({ rows, sp, scope, userId, range, people, companies, canCreate, 
   const tab = sp.tab ?? "my";
   const q = sp.q?.toLowerCase();
   const co = sp.company;
-  const mine = (g: Row) => g.ownerId === userId || g.members.some((m) => m.userId === userId);
+  const mine = (g: Row) => g.ownerId === userId || (g.members ?? []).some((m) => m.userId === userId);
   const filtered = rows.filter((g) => (tab === "my" ? mine(g) : tab === "team" ? g.scope === "TEAM" : g.scope === "COMPANY") && (!q || g.title.toLowerCase().includes(q)) && (!sp.status || g.status === sp.status) && (!co || g.companyId === co || g.companyId === null));
   const n = (s: string) => filtered.filter((g) => g.status === s).length;
 
@@ -210,7 +210,7 @@ function Simple({ rows, sp, scope, userId, range, people, companies, canCreate, 
             {filtered.map((g) => { const [Icon, tone] = ICONS[g.icon ?? "target"] ?? [Target, "green"]; const st = goalStatus({ progress: g.progress, startDate: g.startDate, endDate: g.endDate, now: now() }); return (
               <tr key={g.id} className="border-b last:border-0">
                 <td className="px-4 py-5"><span className="flex items-center gap-4"><IconTile icon={Icon} tone={tone} size="lg" /><span><span className="block text-base font-bold text-ink">{g.title}</span><span className="text-md text-ink-muted">{g.subtitle}</span></span></span></td>
-                <td className="px-4 py-5 text-md">{g.members.length > 1 ? <AvatarStack people={g.members.map((m) => m.user)} size={30} /> : <span className="flex items-center gap-2"><Avatar person={g.owner} size={32} />{g.owner.name}</span>}</td>
+                <td className="px-4 py-5 text-md">{(g.members ?? []).length > 1 ? <AvatarStack people={(g.members ?? []).map((m) => m.user).filter(Boolean)} size={30} /> : <span className="flex items-center gap-2"><Avatar person={g.owner} size={32} />{g.owner?.name ?? "–"}</span>}</td>
                 <td className="px-4 py-5 text-md">{formatDate(g.endDate)}</td>
                 <td className="px-4 py-5"><span className="flex items-center gap-3"><ProgressBar value={g.progress} tone={barTone(g)} height={10} className="w-44" /><span className="text-base font-semibold">{Math.round(g.progress)}%</span></span></td>
                 <td className="px-4 py-5"><EnumPill map={GOAL_STATUS} value={st} size="md" /></td>

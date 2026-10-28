@@ -82,7 +82,7 @@ export default function ClientsPage() {
             <ul className="space-y-2.5">
               {top.map((c) => (
                 <li key={c.id} className="flex items-center gap-2.5 text-xs">
-                  <span className="inline-flex size-6 items-center justify-center rounded-md text-xs font-bold" style={{ background: `${c.logoColor}1F`, color: c.logoColor }}>{c.name[0]}</span>
+                  <span className="inline-flex size-6 items-center justify-center rounded-md text-xs font-bold" style={{ background: `${c.logoColor}1F`, color: c.logoColor }}>{(c.name ?? "?")[0]}</span>
                   <Link href={`/clients/${c.id}`} className="flex-1 truncate text-ink hover:underline">{c.name}</Link>
                   <span className="font-semibold text-ink tabular">{formatINR(c.revenue)}</span>
                 </li>

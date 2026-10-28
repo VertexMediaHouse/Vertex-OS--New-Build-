@@ -285,6 +285,16 @@ function hydrateDates(val: any): any {
       const d = new Date(val);
       if (!isNaN(d.getTime())) return d;
     }
+    // Google Sheets serializes arrays and objects as JSON strings (e.g., tags: "[]" or '["Brief"]')
+    const trimmed = val.trim();
+    if ((trimmed.startsWith("[") && trimmed.endsWith("]")) || (trimmed.startsWith("{") && trimmed.endsWith("}"))) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return hydrateDates(parsed);
+      } catch {
+        // keep raw string if not valid JSON
+      }
+    }
     return val;
   }
   if (Array.isArray(val)) return val.map(hydrateDates);

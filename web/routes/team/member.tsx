@@ -18,7 +18,7 @@ import { useTitle } from "@/web/title";
 export default function TeamMemberPage() {
   const { id = "" } = useParams();
   const { data } = useQuery({ queryKey: ["team", id], queryFn: () => query(api.api.team[":id"].$get({ param: { id } })) });
-  useTitle(data?.user.name ?? "Team");
+  useTitle(data?.user?.name ?? "Team");
   if (!data) return <CardSkeleton className="h-96" />;
   const u = data.user;
   const t = now();

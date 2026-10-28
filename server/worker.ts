@@ -18,6 +18,11 @@ export default {
       appPromise = import("./app");
     }
     const { app } = await appPromise;
+    // Cold isolate: the in-memory store starts empty and lib/db/index.ts kicks off
+    // Sheets hydration on import but doesn't await it — without this, a request that
+    // lands on a fresh isolate can read/write that empty store before hydration lands.
+    const { initDbFromSheets } = await import("@/lib/db");
+    await initDbFromSheets();
     return app.fetch(request, env, ctx as any);
   },
 };
