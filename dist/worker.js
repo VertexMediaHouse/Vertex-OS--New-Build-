@@ -66247,12 +66247,14 @@ var init_prisma_adapter = __esm({
 // lib/sheets/index.ts
 var sheets_exports = {};
 __export(sheets_exports, {
+  deleteRowsFromSheet: () => deleteRowsFromSheet,
   fetchAllFromSheets: () => fetchAllFromSheets,
   isSheetsConfigured: () => isSheetsConfigured,
+  scheduleTableDelete: () => scheduleTableDelete,
   scheduleTableSync: () => scheduleTableSync,
   serializeRowForSheet: () => serializeRowForSheet,
   setWaitUntil: () => setWaitUntil,
-  syncTableToSheet: () => syncTableToSheet
+  upsertRowsToSheet: () => upsertRowsToSheet
 });
 function isSheetsConfigured() {
   return Boolean(process.env.GOOGLE_SHEET_WEBAPP_URL);
@@ -66286,7 +66288,11 @@ async function fetchAllFromSheets() {
     const res = await fetch(`${url2}?action=getAll`, {
       method: "GET",
       headers: { Accept: "application/json" },
-      redirect: "follow"
+      redirect: "follow",
+      // Measured: getAll takes ~18s against the live Apps Script. A 10s budget aborted
+      // every attempt, so hydration never latched and every request re-paid the wait.
+      // ponytail: fixed budget; cache the payload in KV if the sheet keeps growing.
+      signal: AbortSignal.timeout(45e3)
     });
     if (!res.ok) {
       console.warn(`[sheets] fetchAll failed with status ${res.status}`);
@@ -66307,71 +66313,124 @@ async function fetchAllFromSheets() {
     return null;
   }
 }
-async function syncTableToSheet(table2, rows) {
-  if (!isSheetsConfigured()) return false;
+async function upsertRowsToSheet(table2, rows) {
+  if (!isSheetsConfigured() || rows.length === 0) return true;
   const url2 = getUrl();
   try {
     const serializedRows = rows.map(serializeRowForSheet);
     const res = await fetch(url2, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "syncTable",
-        table: table2,
-        rows: serializedRows
-      }),
-      redirect: "follow"
+      body: JSON.stringify({ action: "upsertRows", table: table2, rows: serializedRows }),
+      redirect: "follow",
+      signal: AbortSignal.timeout(1e4)
     });
     if (!res.ok) {
-      console.warn(`[sheets] syncTableToSheet(${table2}) failed with status ${res.status}`);
+      console.warn(`[sheets] upsertRowsToSheet(${table2}) failed with status ${res.status}`);
       return false;
     }
     const json2 = await res.json();
     if (!json2.ok) {
-      console.warn(`[sheets] syncTableToSheet(${table2}) error:`, json2.error);
+      console.warn(`[sheets] upsertRowsToSheet(${table2}) error:`, json2.error);
       return false;
     }
     return true;
   } catch (err) {
-    console.error(`[sheets] Error syncing table ${table2} to Google Sheets:`, err);
+    console.error(`[sheets] Error upserting rows for ${table2} to Google Sheets:`, err);
+    return false;
+  }
+}
+async function deleteRowsFromSheet(table2, ids) {
+  if (!isSheetsConfigured() || ids.length === 0) return true;
+  const url2 = getUrl();
+  try {
+    const res = await fetch(url2, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "deleteRows", table: table2, ids }),
+      redirect: "follow",
+      signal: AbortSignal.timeout(1e4)
+    });
+    if (!res.ok) {
+      console.warn(`[sheets] deleteRowsFromSheet(${table2}) failed with status ${res.status}`);
+      return false;
+    }
+    const json2 = await res.json();
+    if (!json2.ok) {
+      console.warn(`[sheets] deleteRowsFromSheet(${table2}) error:`, json2.error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(`[sheets] Error deleting rows for ${table2} from Google Sheets:`, err);
     return false;
   }
 }
 function setWaitUntil(fn) {
   currentWaitUntil = fn;
 }
-async function runSync(table2, getRows) {
+function pendingFor(table2) {
+  let p4 = pendingByTable.get(table2);
+  if (!p4) {
+    p4 = { upserts: /* @__PURE__ */ new Map(), deletes: /* @__PURE__ */ new Set() };
+    pendingByTable.set(table2, p4);
+  }
+  return p4;
+}
+async function runSync(table2) {
   if (inFlightSyncs.has(table2)) return;
   inFlightSyncs.add(table2);
   try {
-    const rows = getRows();
-    const ok2 = await syncTableToSheet(table2, rows);
-    if (ok2) console.log(`[sheets] Synced '${table2}' (${rows.length} rows) to Google Sheets`);
+    let pending = pendingByTable.get(table2);
+    while (pending && (pending.upserts.size > 0 || pending.deletes.size > 0)) {
+      const upserts = [...pending.upserts.values()];
+      const deletes = [...pending.deletes];
+      pending.upserts.clear();
+      pending.deletes.clear();
+      const [upOk, delOk] = await Promise.all([upsertRowsToSheet(table2, upserts), deleteRowsFromSheet(table2, deletes)]);
+      if (upOk && delOk) console.log(`[sheets] Synced '${table2}': ${upserts.length} upserted, ${deletes.length} deleted`);
+      pending = pendingByTable.get(table2);
+    }
   } catch (e6) {
     console.error(`[sheets] Background sync failed for '${table2}':`, e6);
   } finally {
     inFlightSyncs.delete(table2);
   }
 }
-function scheduleTableSync(table2, getRows, delayMs = 1500) {
-  if (!isSheetsConfigured()) return;
+function scheduleTableSync(table2, rows, delayMs = 1500) {
+  if (!isSheetsConfigured() || rows.length === 0) return;
+  const pending = pendingFor(table2);
+  for (const row of rows) pending.upserts.set(row.id, row);
+  flush(table2, delayMs);
+}
+function scheduleTableDelete(table2, ids, delayMs = 1500) {
+  if (!isSheetsConfigured() || ids.length === 0) return;
+  const pending = pendingFor(table2);
+  for (const id10 of ids) {
+    pending.upserts.delete(id10);
+    pending.deletes.add(id10);
+  }
+  flush(table2, delayMs);
+}
+function flush(table2, delayMs) {
   if (currentWaitUntil) {
-    currentWaitUntil(runSync(table2, getRows));
+    currentWaitUntil(runSync(table2));
     return;
   }
   const existingTimer = syncTimers.get(table2);
   if (existingTimer) clearTimeout(existingTimer);
   const timer = setTimeout(() => {
     syncTimers.delete(table2);
-    void runSync(table2, getRows);
+    void runSync(table2);
   }, delayMs);
   syncTimers.set(table2, timer);
 }
-var currentWaitUntil, syncTimers, inFlightSyncs;
+var currentWaitUntil, pendingByTable, syncTimers, inFlightSyncs;
 var init_sheets = __esm({
   "lib/sheets/index.ts"() {
     "use strict";
     currentWaitUntil = null;
+    pendingByTable = /* @__PURE__ */ new Map();
     syncTimers = /* @__PURE__ */ new Map();
     inFlightSyncs = /* @__PURE__ */ new Set();
   }
@@ -66583,6 +66642,14 @@ function hydrateDates(val) {
       const d6 = new Date(val);
       if (!isNaN(d6.getTime())) return d6;
     }
+    const trimmed = val.trim();
+    if (trimmed.startsWith("[") && trimmed.endsWith("]") || trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return hydrateDates(parsed);
+      } catch {
+      }
+    }
     return val;
   }
   if (Array.isArray(val)) return val.map(hydrateDates);
@@ -66615,8 +66682,7 @@ async function initDbFromSheets(force = false) {
     try {
       const sheetsData = await fetchAllFromSheets();
       if (!sheetsData) {
-        console.log("[db] Using local mock store (Google Sheets unreachable or empty)");
-        sheetsHydrated = true;
+        console.warn("[db] Sheets fetch failed this attempt; will retry on next request");
         return;
       }
       let loadedCount = 0;
@@ -66956,23 +67022,23 @@ function createModelDelegate(modelName) {
         }
       }
       store[modelName].push(record2);
-      scheduleTableSync(modelName, () => store[modelName]);
+      scheduleTableSync(modelName, [record2]);
       for (const op of nestedOps) await op();
       return projectItem(record2, modelName, select, include);
     },
     async createMany(args = {}) {
       const items = Array.isArray(args.data) ? args.data : [args.data];
-      let count = 0;
+      const created = [];
       for (const it of items) {
         const record2 = { ...it };
         if (!record2.id) record2.id = nextId(modelName);
         if (!record2.createdAt) record2.createdAt = /* @__PURE__ */ new Date();
         if (!record2.updatedAt) record2.updatedAt = /* @__PURE__ */ new Date();
         store[modelName].push(record2);
-        count++;
+        created.push(record2);
       }
-      if (count > 0) scheduleTableSync(modelName, () => store[modelName]);
-      return { count };
+      if (created.length > 0) scheduleTableSync(modelName, created);
+      return { count: created.length };
     },
     async update(args = {}) {
       const { where, data, select, include } = args;
@@ -66998,12 +67064,12 @@ function createModelDelegate(modelName) {
         }
       }
       item.updatedAt = /* @__PURE__ */ new Date();
-      scheduleTableSync(modelName, () => store[modelName]);
+      scheduleTableSync(modelName, [item]);
       return projectItem(item, modelName, select, include);
     },
     async updateMany(args = {}) {
       const { where, data } = args;
-      let count = 0;
+      const changed = [];
       for (const item of store[modelName]) {
         if (matchesWhere(item, where, modelName)) {
           for (const [k6, v2] of Object.entries(data)) {
@@ -67014,27 +67080,26 @@ function createModelDelegate(modelName) {
             }
           }
           item.updatedAt = /* @__PURE__ */ new Date();
-          count++;
+          changed.push(item);
         }
       }
-      if (count > 0) scheduleTableSync(modelName, () => store[modelName]);
-      return { count };
+      if (changed.length > 0) scheduleTableSync(modelName, changed);
+      return { count: changed.length };
     },
     async delete(args = {}) {
       const { where, select, include } = args;
       const idx = store[modelName].findIndex((x2) => matchesWhere(x2, where, modelName));
       if (idx === -1) throw new Error(`Record to delete not found in ${modelName}`);
       const [removed] = store[modelName].splice(idx, 1);
-      scheduleTableSync(modelName, () => store[modelName]);
+      scheduleTableDelete(modelName, [removed.id]);
       return projectItem(removed, modelName, select, include);
     },
     async deleteMany(args = {}) {
       const where = args.where || {};
-      const initial = store[modelName].length;
+      const removed = store[modelName].filter((x2) => matchesWhere(x2, where, modelName));
       store[modelName] = store[modelName].filter((x2) => !matchesWhere(x2, where, modelName));
-      const removedCount = initial - store[modelName].length;
-      if (removedCount > 0) scheduleTableSync(modelName, () => store[modelName]);
-      return { count: removedCount };
+      if (removed.length > 0) scheduleTableDelete(modelName, removed.map((r6) => r6.id));
+      return { count: removed.length };
     },
     async upsert(args = {}) {
       const { where, create, update, select, include } = args;
@@ -67561,12 +67626,12 @@ var init_db3 = __esm({
         return initDbFromSheets(true);
       },
       async $syncToSheets(table2) {
-        const { syncTableToSheet: syncTableToSheet2 } = await Promise.resolve().then(() => (init_sheets(), sheets_exports));
+        const { upsertRowsToSheet: upsertRowsToSheet2 } = await Promise.resolve().then(() => (init_sheets(), sheets_exports));
         if (table2) {
-          return syncTableToSheet2(table2, store[table2] || []);
+          return upsertRowsToSheet2(table2, store[table2] || []);
         }
         for (const [tbl, rows] of Object.entries(store)) {
-          await syncTableToSheet2(tbl, rows);
+          await upsertRowsToSheet2(tbl, rows);
         }
         return true;
       }
@@ -74617,7 +74682,7 @@ var init_chart_colors = __esm({
   "lib/chart-colors.ts"() {
     "use strict";
     LOGO_COLORS = ["#2563EB", "#10B981", "#0F172A", "#7C3AED", "#DB2777", "#F59E0B", "#0EA5E9", "#EF4444"];
-    logoColor = (name) => LOGO_COLORS[[...name].reduce((a6, c6) => a6 + c6.charCodeAt(0), 0) % LOGO_COLORS.length];
+    logoColor = (name) => LOGO_COLORS[[...name ?? ""].reduce((a6, c6) => a6 + c6.charCodeAt(0), 0) % LOGO_COLORS.length];
   }
 });
 
@@ -81472,7 +81537,7 @@ function createBufferedReadableStream(upstream, size, logger3) {
     const chunk = value;
     if (done) {
       if (mode !== -1) {
-        const remainder = flush(buffers, mode);
+        const remainder = flush2(buffers, mode);
         if (sizeOf(remainder) > 0) {
           controller.enqueue(remainder);
         }
@@ -81482,7 +81547,7 @@ function createBufferedReadableStream(upstream, size, logger3) {
       const chunkMode = modeOf(chunk, false);
       if (mode !== chunkMode) {
         if (mode >= 0) {
-          controller.enqueue(flush(buffers, mode));
+          controller.enqueue(flush2(buffers, mode));
         }
         mode = chunkMode;
       }
@@ -81502,7 +81567,7 @@ function createBufferedReadableStream(upstream, size, logger3) {
           logger3?.warn(`@smithy/util-stream - stream chunk size ${chunkSize} is below threshold of ${size}, automatically buffering.`);
         }
         if (newSize >= size) {
-          controller.enqueue(flush(buffers, mode));
+          controller.enqueue(flush2(buffers, mode));
         } else {
           await pull(controller);
         }
@@ -81524,7 +81589,7 @@ function merge2(buffers, mode, chunk) {
       return sizeOf(buffers[mode]);
   }
 }
-function flush(buffers, mode) {
+function flush2(buffers, mode) {
   switch (mode) {
     case 0:
       const s4 = buffers[0];
@@ -81577,7 +81642,7 @@ function createBufferedReadable(upstream, size, logger3) {
     const chunkMode = modeOf(chunk, true);
     if (mode !== chunkMode) {
       if (mode >= 0) {
-        downstream.push(flush(buffers, mode));
+        downstream.push(flush2(buffers, mode));
       }
       mode = chunkMode;
     }
@@ -81597,13 +81662,13 @@ function createBufferedReadable(upstream, size, logger3) {
         logger3?.warn(`@smithy/util-stream - stream chunk size ${chunkSize} is below threshold of ${size}, automatically buffering.`);
       }
       if (newSize >= size) {
-        downstream.push(flush(buffers, mode));
+        downstream.push(flush2(buffers, mode));
       }
     }
   });
   upstream.on("end", () => {
     if (mode !== -1) {
-      const remainder = flush(buffers, mode);
+      const remainder = flush2(buffers, mode);
       if (sizeOf(remainder) > 0) {
         downstream.push(remainder);
       }
@@ -112006,8 +112071,11 @@ var worker_default = {
       appPromise = Promise.resolve().then(() => (init_app(), app_exports));
     }
     const { app: app2 } = await appPromise;
-    const { initDbFromSheets: initDbFromSheets2 } = await Promise.resolve().then(() => (init_db3(), db_exports));
-    await initDbFromSheets2();
+    const url2 = new URL(request.url);
+    if (url2.pathname.startsWith("/api/") && !url2.pathname.startsWith("/api/health")) {
+      const { initDbFromSheets: initDbFromSheets2 } = await Promise.resolve().then(() => (init_db3(), db_exports));
+      await initDbFromSheets2();
+    }
     return app2.fetch(request, env3, ctx);
   }
 };

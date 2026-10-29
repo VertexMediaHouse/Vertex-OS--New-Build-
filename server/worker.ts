@@ -19,10 +19,17 @@ export default {
     }
     const { app } = await appPromise;
     // Cold isolate: the in-memory store starts empty and lib/db/index.ts kicks off
-    // Sheets hydration on import but doesn't await it — without this, a request that
-    // lands on a fresh isolate can read/write that empty store before hydration lands.
-    const { initDbFromSheets } = await import("@/lib/db");
-    await initDbFromSheets();
+    // Sheets hydration on import but doesn't await it — a request that lands on a
+    // fresh isolate must not read/write that empty store before hydration lands.
+    //
+    // Only data requests wait. Static assets and the auth/config endpoints the login
+    // page needs are answered immediately: awaiting the ~18s Apps Script call on every
+    // request meant the SPA shell itself could never finish loading.
+    const url = new URL(request.url);
+    if (url.pathname.startsWith("/api/") && !url.pathname.startsWith("/api/health")) {
+      const { initDbFromSheets } = await import("@/lib/db");
+      await initDbFromSheets();
+    }
     return app.fetch(request, env, ctx as any);
   },
 };

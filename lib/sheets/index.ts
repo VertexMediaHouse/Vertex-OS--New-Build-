@@ -45,7 +45,10 @@ export async function fetchAllFromSheets(): Promise<Record<string, any[]> | null
       method: "GET",
       headers: { Accept: "application/json" },
       redirect: "follow",
-      signal: AbortSignal.timeout(10_000), // Apps Script cold starts can be slow; fail fast and retry next request rather than hang.
+      // Measured: getAll takes ~18s against the live Apps Script. A 10s budget aborted
+      // every attempt, so hydration never latched and every request re-paid the wait.
+      // ponytail: fixed budget; cache the payload in KV if the sheet keeps growing.
+      signal: AbortSignal.timeout(45_000),
     });
 
     if (!res.ok) {
