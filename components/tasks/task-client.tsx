@@ -19,7 +19,7 @@ import { Field as F } from "@/components/shared/layout";
 /** Replaces refresh(): the page's query is the source of truth. */
 function useRefresh() {
   const queryClient = useQueryClient();
-  return () => void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+  return () => void queryClient.invalidateQueries({ queryKey: ["tasks"], exact: false });
 }
 
 const createTask = (json: { title: string; companyId: string; projectId?: string; assigneeId?: string; priority: string; status: string; dueDate?: Date; estimatedMinutes?: number; description?: string }) =>
