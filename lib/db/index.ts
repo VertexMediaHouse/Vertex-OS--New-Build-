@@ -283,6 +283,10 @@ function hydrateDates(val: any): any {
   if (val === null || val === undefined) return val;
   if (val instanceof Date) return val; // already hydrated — recursing would wipe it to `{}`
   if (typeof val === "string") {
+    // A blank Sheets cell arrives as "". Treat it as a missing value, like `{}` below,
+    // so date columns reach callers as null instead of a string no one can call
+    // .getTime() on (this blanked the Clients page via formatRelative).
+    if (val.trim() === "") return null;
     if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
       const d = new Date(val);
       if (!isNaN(d.getTime())) return d;

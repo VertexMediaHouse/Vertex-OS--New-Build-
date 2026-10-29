@@ -37,7 +37,7 @@ const externalPrefix = (...prefixes) => ({
 await esbuild.build({
   entryPoints: ["server/worker.ts"],
   bundle: true,
-  outfile: "dist/worker.js",
+  outfile: "dist-worker/worker.js",
   format: "esm",
   target: "esnext",
   platform: "neutral",

@@ -42,8 +42,10 @@ export async function listClients(f: ClientFilters) {
     totalProjects: c.projects.length,
     revenue: c.projects.reduce((a: number, p: any) => a + Number(p.value), 0),
     owner: c.owner?.name ?? null,
-    lastActivityAt: c.lastActivityAt,
-    lastActivity: formatRelative(c.lastActivityAt, t),
+    // A client created on the site has no activity yet (blank Sheets cell -> null),
+    // so fall back to createdAt: callers sort and format this and expect a real Date.
+    lastActivityAt: c.lastActivityAt ?? c.createdAt,
+    lastActivity: formatRelative(c.lastActivityAt ?? c.createdAt, t),
     createdAt: c.createdAt,
     logoColor: logoColor(c.name),
   }));
