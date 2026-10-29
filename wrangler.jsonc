@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "vertex-os--new-build",
+  "name": "vertex-os",
   "main": "./dist-worker/worker.js",
   "compatibility_date": "2026-10-26",
   "compatibility_flags": [
