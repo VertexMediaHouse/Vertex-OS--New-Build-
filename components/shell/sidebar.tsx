@@ -52,7 +52,7 @@ export function SidebarContent({ scope, allowed, modules, forceFull = false, onN
           <LogoMark />
         </div>
       </div>
-      <nav aria-label="Main" className="flex-1 space-y-0.5 overflow-y-auto px-3">
+      <nav aria-label="Main" className="no-scrollbar flex-1 space-y-0.5 overflow-y-auto px-3">
         {NAV.filter((n) => modules.includes(n.module)).map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (

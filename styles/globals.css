@@ -249,6 +249,15 @@
   }
 }
 
+/* Scrolls, but no visible scrollbar track (sidebar nav, command palette). */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @media print {
   aside, header { display: none !important; }
   main { padding: 0 !important; }
