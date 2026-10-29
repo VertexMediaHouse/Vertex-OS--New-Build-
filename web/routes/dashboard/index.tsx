@@ -26,6 +26,8 @@ export default function DashboardPage() {
   const { data } = useQuery({
     queryKey: ["dashboard", sp],
     queryFn: () => query(api.api.dashboard.$get({ query: { range: sp.range, from: sp.from, to: sp.to, tasks: sp.tasks } })),
+    placeholderData: (previousData) => previousData,
+    staleTime: 60_000,
   });
 
   if (!data) return <DashboardSkeleton />;

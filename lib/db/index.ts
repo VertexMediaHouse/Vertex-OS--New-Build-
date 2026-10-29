@@ -2,6 +2,8 @@
 // Hydrated on startup from Google Sheets, with local mock fallback.
 // Mutations mutate memory for 0ms latency and async-sync to Google Sheets.
 
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { fetchAllFromSheets, scheduleTableSync, scheduleTableDelete, isSheetsConfigured } from "../sheets";
 import { SCHEMA } from "./schema";
 // Only company/user/membership/account ship with real (non-mock) seed rows, in ./seed.ts.
@@ -382,9 +384,68 @@ function ensureRootFolders() {
 }
 ensureRootFolders();
 
-// ───────────────────────────── Google Sheets Hydration ─────────────────────────────
+// ───────────────────────────── Google Sheets Hydration & Local Cache ─────────────────────────────
 
-let sheetsHydrated = false;
+const CACHE_DIR = ".data";
+const CACHE_FILE = ".data/sheets-cache.json";
+
+function isNodeEnv(): boolean {
+  return typeof process !== "undefined" && Boolean(process.versions?.node);
+}
+
+function loadCacheFromDisk(): boolean {
+  if (!isNodeEnv()) return false;
+  try {
+    const fullPath = path.resolve(CACHE_FILE);
+    if (!existsSync(fullPath)) return false;
+    const raw = readFileSync(fullPath, "utf8");
+    const sheetsData = JSON.parse(raw);
+    if (!sheetsData || typeof sheetsData !== "object") return false;
+
+    let loadedCount = 0;
+    for (const [table, rows] of Object.entries(sheetsData)) {
+      if (store[table] && Array.isArray(rows) && rows.length > 0) {
+        const validRows = (rows as any[]).filter((r) => !r._placeholder);
+        if (validRows.length > 0) {
+          store[table] = validRows.map(hydrateDates);
+          loadedCount++;
+        }
+      }
+    }
+    ensureRootFolders();
+    console.log(`[db] Instantly restored ${loadedCount} tables from disk cache (${CACHE_FILE})`);
+    return true;
+  } catch (err) {
+    console.warn("[db] Could not restore from disk cache:", err);
+    return false;
+  }
+}
+
+export function saveCacheToDisk(data: Record<string, any[]>): void {
+  if (!isNodeEnv()) return;
+  try {
+    const dir = path.resolve(CACHE_DIR);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    const fullPath = path.resolve(CACHE_FILE);
+    writeFileSync(fullPath, JSON.stringify(data), "utf8");
+  } catch (err) {
+    console.warn("[db] Could not save to disk cache:", err);
+  }
+}
+
+let diskSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+export function scheduleDiskCacheSave(): void {
+  if (!isNodeEnv()) return;
+  if (diskSaveTimeout) clearTimeout(diskSaveTimeout);
+  diskSaveTimeout = setTimeout(() => {
+    saveCacheToDisk(store);
+  }, 1000);
+}
+
+// Restore instantly from disk if cache exists so the app never freezes!
+let sheetsHydrated = loadCacheFromDisk();
 let sheetsHydratingPromise: Promise<void> | null = null;
 
 export async function initDbFromSheets(force = false): Promise<void> {
@@ -400,8 +461,7 @@ export async function initDbFromSheets(force = false): Promise<void> {
       const sheetsData = await fetchAllFromSheets();
       if (!sheetsData) {
         // Fetch failed (timeout, Apps Script cold start, transient 5xx) — don't latch
-        // sheetsHydrated, or this isolate would serve the empty mock store forever.
-        // Next request on this isolate retries instead.
+        // sheetsHydrated if store has never been populated.
         console.warn("[db] Sheets fetch failed this attempt; will retry on next request");
         return;
       }
@@ -417,6 +477,7 @@ export async function initDbFromSheets(force = false): Promise<void> {
         }
       }
       ensureRootFolders();
+      saveCacheToDisk(sheetsData);
       console.log(`[db] Successfully hydrated ${loadedCount} tables from Google Sheets`);
       sheetsHydrated = true;
     } catch (err) {
@@ -429,9 +490,14 @@ export async function initDbFromSheets(force = false): Promise<void> {
   return sheetsHydratingPromise;
 }
 
-// Auto-trigger background hydration if configured
+// Auto-trigger background hydration if configured:
+// If disk cache already hydrated the store, run in background without blocking; otherwise start initial hydration.
 if (typeof process !== "undefined" && process.env?.GOOGLE_SHEET_WEBAPP_URL) {
-  initDbFromSheets().catch((err) => console.error("[db] Initial sheets hydration error:", err));
+  if (sheetsHydrated) {
+    initDbFromSheets(true).catch((err) => console.error("[db] Background sheets refresh error:", err));
+  } else {
+    initDbFromSheets().catch((err) => console.error("[db] Initial sheets hydration error:", err));
+  }
 }
 
 

@@ -61,24 +61,48 @@ export async function revenueTrend(s: ScopeFilter) {
 export async function projectSummary(s: ScopeFilter & { user?: CurrentUser }, p: Period) {
   const memberFilter = s.user && isMemberOnly(s.user) ? { members: { some: { userId: s.user.id } } } : {};
   const where = { ...scopedWhere(s), ...memberFilter, clientId: { not: null } };
-  const [groups, delivered, started, startedPrev, byCompany] = await Promise.all([
-    db.project.groupBy({ by: ["status"], _count: true, where: { ...where, status: ACTIVE_PROJECT } }),
-    db.project.count({ where: { ...where, status: "COMPLETED", completedAt: { gte: p.from, lt: p.to } } }),
-    db.project.count({ where: { ...where, startDate: { gte: p.from, lt: p.to } } }),
-    db.project.count({ where: { ...where, startDate: { gte: p.prevFrom, lt: p.prevTo } } }),
-    db.project.groupBy({ by: ["companyId"], _count: true, where: { ...where, status: ACTIVE_PROJECT } }),
-  ]);
-  const c = (...st: string[]) => groups.filter((g) => st.includes(g.status)).reduce((a, g) => a + g._count, 0);
+  const projects = await db.project.findMany({
+    where,
+    select: { status: true, companyId: true, completedAt: true, startDate: true },
+  });
+
+  let delivered = 0, started = 0, startedPrev = 0, vmh = 0, vth = 0;
+  const statusCounts: Record<string, number> = {};
+
+  for (const pr of projects) {
+    const isCompleted = pr.status === "COMPLETED";
+    const isCancelled = pr.status === "CANCELLED";
+    const isActive = !isCompleted && !isCancelled;
+
+    if (isActive) {
+      statusCounts[pr.status] = (statusCounts[pr.status] ?? 0) + 1;
+      if (pr.companyId === "vmh") vmh++;
+      else if (pr.companyId === "vth") vth++;
+    }
+
+    const completedAt = pr.completedAt ? new Date(pr.completedAt) : null;
+    const startDate = pr.startDate ? new Date(pr.startDate) : null;
+
+    if (isCompleted && completedAt && completedAt >= p.from && completedAt < p.to) delivered++;
+    if (startDate) {
+      if (startDate >= p.from && startDate < p.to) started++;
+      if (startDate >= p.prevFrom && startDate < p.prevTo) startedPrev++;
+    }
+  }
+
+  const c = (...st: string[]) => st.reduce((a, stKey) => a + (statusCounts[stKey] ?? 0), 0);
+  const active = Object.values(statusCounts).reduce((a, v) => a + v, 0);
+
   return {
-    active: c(...groups.map((g) => g.status)),
+    active,
     delta: started - startedPrev,
     notStarted: c("NOT_STARTED", "PLANNING"),
     inProgress: c("IN_PROGRESS", "EDITING", "DEVELOPMENT", "REVISION"),
     inReview: c("IN_REVIEW", "CLIENT_REVIEW"),
     onHold: c("ON_HOLD"),
     delivered,
-    vmh: byCompany.find((r) => r.companyId === "vmh")?._count ?? 0,
-    vth: byCompany.find((r) => r.companyId === "vth")?._count ?? 0,
+    vmh,
+    vth,
   };
 }
 
@@ -86,24 +110,47 @@ export async function taskSummary(s: ScopeFilter & { user?: CurrentUser }, p: Pe
   const t = now();
   const today = startOfDayIST(t);
   const tomorrow = addDays(today, 1);
+  const in8Days = addDays(today, 8);
   const weekStart = startOfWeekIST(t);
   const memberFilter = s.user && isMemberOnly(s.user) ? { assigneeId: s.user.id } : {};
-  const open = { ...scopedWhere(s), ...memberFilter, status: { not: "COMPLETED" as const } };
-  const [total, pending, dueToday, overdue, completedWeek, upcoming, createdCur, createdPrev, byCompany] = await Promise.all([
-    db.task.count({ where: open }),
-    db.task.count({ where: { ...scopedWhere(s), ...memberFilter, status: "TODO" } }),
-    db.task.count({ where: { ...open, dueDate: { gte: today, lt: tomorrow } } }),
-    db.task.count({ where: { ...open, dueDate: { lt: today } } }),
-    db.task.count({ where: { ...scopedWhere(s), ...memberFilter, status: "COMPLETED", completedAt: { gte: weekStart } } }),
-    db.task.count({ where: { ...open, dueDate: { gte: tomorrow, lt: addDays(today, 8) } } }),
-    db.task.count({ where: { ...scopedWhere(s), ...memberFilter, createdAt: { gte: p.from, lt: p.to } } }),
-    db.task.count({ where: { ...scopedWhere(s), ...memberFilter, createdAt: { gte: p.prevFrom, lt: p.prevTo } } }),
-    db.task.groupBy({ by: ["companyId"], _count: true, where: open }),
-  ]);
+
+  const allTasks = await db.task.findMany({
+    where: { ...scopedWhere(s), ...memberFilter },
+    select: { companyId: true, status: true, dueDate: true, completedAt: true, createdAt: true },
+  });
+
+  let total = 0, pending = 0, dueToday = 0, overdue = 0, completedWeek = 0, upcoming = 0;
+  let createdCur = 0, createdPrev = 0, vmh = 0, vth = 0;
+
+  for (const tk of allTasks) {
+    const isCompleted = tk.status === "COMPLETED";
+    const due = tk.dueDate ? new Date(tk.dueDate) : null;
+    const created = tk.createdAt ? new Date(tk.createdAt) : null;
+    const completedAt = tk.completedAt ? new Date(tk.completedAt) : null;
+
+    if (!isCompleted) {
+      total++;
+      if (tk.companyId === "vmh") vmh++;
+      else if (tk.companyId === "vth") vth++;
+
+      if (due) {
+        if (due >= today && due < tomorrow) dueToday++;
+        else if (due < today) overdue++;
+        else if (due >= tomorrow && due < in8Days) upcoming++;
+      }
+    }
+
+    if (tk.status === "TODO") pending++;
+    if (isCompleted && completedAt && completedAt >= weekStart) completedWeek++;
+    if (created) {
+      if (created >= p.from && created < p.to) createdCur++;
+      if (created >= p.prevFrom && created < p.prevTo) createdPrev++;
+    }
+  }
+
   return {
     total, pending, dueToday, overdue, completedWeek, upcoming, delta: createdCur - createdPrev,
-    vmh: byCompany.find((r) => r.companyId === "vmh")?._count ?? 0,
-    vth: byCompany.find((r) => r.companyId === "vth")?._count ?? 0,
+    vmh, vth,
   };
 }
 
@@ -214,6 +261,7 @@ export async function myLoggedHours(user: CurrentUser, s: ScopeFilter) {
 export async function tasksByPerson(s: ScopeFilter) {
   const t = now();
   const today = startOfDayIST(t);
+  const tomorrow = addDays(today, 1);
   const weekStart = startOfWeekIST(t);
   const people = await db.user.findMany({
     where: { kind: "STAFF", memberships: { some: { companyId: { in: s.companyIds } } } },
@@ -224,16 +272,42 @@ export async function tasksByPerson(s: ScopeFilter) {
     where: { ...scopedWhere(s), assigneeId: { in: people.map((p) => p.id) } },
     select: { assigneeId: true, status: true, dueDate: true, completedAt: true },
   });
+
+  const taskMap = new Map<string, typeof tasks>();
+  for (const tk of tasks) {
+    if (!tk.assigneeId) continue;
+    let list = taskMap.get(tk.assigneeId);
+    if (!list) {
+      list = [];
+      taskMap.set(tk.assigneeId, list);
+    }
+    list.push(tk);
+  }
+
   return people.map((p) => {
-    const own = tasks.filter((x) => x.assigneeId === p.id);
-    const open = own.filter((x) => x.status !== "COMPLETED");
+    const own = taskMap.get(p.id) ?? [];
+    let open = 0, todayCount = 0, overdue = 0, inReview = 0, doneWeek = 0;
+    for (const x of own) {
+      const isDone = x.status === "COMPLETED";
+      if (!isDone) {
+        open++;
+        const due = x.dueDate ? new Date(x.dueDate) : null;
+        if (due) {
+          if (due >= today && due < tomorrow) todayCount++;
+          else if (due < today) overdue++;
+        }
+        if (x.status === "IN_REVIEW") inReview++;
+      } else if (x.completedAt && new Date(x.completedAt) >= weekStart) {
+        doneWeek++;
+      }
+    }
     return {
       ...p,
-      open: open.length,
-      today: open.filter((x) => x.dueDate && x.dueDate >= today && x.dueDate < addDays(today, 1)).length,
-      overdue: open.filter((x) => x.dueDate && x.dueDate < today).length,
-      inReview: open.filter((x) => x.status === "IN_REVIEW").length,
-      doneWeek: own.filter((x) => x.status === "COMPLETED" && x.completedAt && x.completedAt >= weekStart).length,
+      open,
+      today: todayCount,
+      overdue,
+      inReview,
+      doneWeek,
     };
   });
 }

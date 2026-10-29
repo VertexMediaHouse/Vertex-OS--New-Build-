@@ -37,25 +37,40 @@ export const dashboard = new Hono<Env>()
     const ctx = { user, scope, companyIds: c.get("companyIds") };
     const period = resolvePeriod({ range: c.req.query("range") ?? null, from: c.req.query("from") ?? null, to: c.req.query("to") ?? null }, now());
     const taskFilter = (TASK_FILTERS as readonly string[]).includes(c.req.query("tasks") ?? "") ? (c.req.query("tasks") as M.TaskFilter) : "today";
-    const zeroPeriod = { from: new Date(0), to: new Date(0), prevFrom: new Date(0), prevTo: new Date(0), preset: "month" as const };
+    const isMember = isMemberOnly(user);
+    const canViewInvoice = can(user, "view", "invoice");
+    const canViewLead = can(user, "view", "lead");
+    const isOwnerScope = scope === "ALL";
 
-    const [revenue, projects, taskSummary, leads, openTasks, tasksByPerson, notes, goals, campaigns, workload, agenda, crossSell, revenueTrend, leadsPipeline, myHours] = await Promise.all([
-      M.revenueSummary(ctx, period),
+    // Baseline metrics required by all dashboards
+    const [openTasks, projects, taskSummary, notes, goals, agenda, myHours] = await Promise.all([
+      M.openTasks(ctx, taskFilter),
       M.projectSummary(ctx, period),
       M.taskSummary(ctx, period),
-      M.leadSummary(ctx, period),
-      M.openTasks(ctx, taskFilter),
-      M.tasksByPerson(ctx),
       M.notes(ctx, user.id),
       M.goalsProgress(ctx),
-      M.activeCampaigns(ctx),
-      M.teamWorkload(ctx),
       M.todaysAgenda(ctx),
-      M.crossSellAlerts(ctx),
-      M.revenueTrend(ctx),
-      M.leadSummary(ctx, zeroPeriod),
       M.myLoggedHours(user, ctx),
     ]);
+
+    // Role- and scope-specific metrics (only computed when visible in UI)
+    const emptyRevenue = { total: 0, trend: 0, collected: 0, outstanding: 0, vmh: 0, vth: 0 };
+    const emptyLeads = { total: 0, delta: 0, stages: [] as { stage: string; count: number }[], pipeline: 0, vmh: 0, vth: 0 };
+
+    const [revenue, leads, tasksByPerson, campaigns, workload, crossSell, revenueTrend] = isMember
+      ? [emptyRevenue, emptyLeads, [], [], [], [], []]
+      : await Promise.all([
+          canViewInvoice ? M.revenueSummary(ctx, period) : Promise.resolve(emptyRevenue),
+          canViewLead ? M.leadSummary(ctx, period) : Promise.resolve(emptyLeads),
+          M.tasksByPerson(ctx),
+          isOwnerScope ? M.activeCampaigns(ctx) : Promise.resolve([]),
+          M.teamWorkload(ctx),
+          isOwnerScope ? M.crossSellAlerts(ctx) : Promise.resolve([]),
+          !isOwnerScope && canViewInvoice ? M.revenueTrend(ctx) : Promise.resolve([]),
+        ]);
+
+    // leadsPipeline reuses leads (pipeline value and stage breakdown are identical, avoiding duplicate queries)
+    const leadsPipeline = leads;
 
     return c.json({
       scope,
