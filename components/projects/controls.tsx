@@ -156,7 +156,7 @@ export function PortalAccessButton({ contactId, projectId, active, shared }: { c
 /** Dates are yyyy-mm-dd, the value an <input type="date"> takes. */
 export type ProjectFormValues = { id: string; companyId: "vmh" | "vth"; clientId: string; name: string; typeLabel: string; category: string; billingType: string; value: number; retainerHours: number | null; startDate: string; dueDate: string; priority: string; summary: string; description: string };
 
-export function NewProjectDialog({ companies, clients, brandGreen, project, trigger }: { companies: ("vmh" | "vth")[]; clients: { id: string; name: string }[]; brandGreen?: boolean; project?: ProjectFormValues; trigger?: React.ReactNode }) {
+export function NewProjectDialog({ companies, clients, people, brandGreen, project, trigger }: { companies: ("vmh" | "vth")[]; clients: { id: string; name: string }[]; people?: { id: string; name: string }[]; brandGreen?: boolean; project?: ProjectFormValues & { assigneeId?: string }; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const { pending, run } = useAction();
   const navigate = useNavigate();
@@ -164,7 +164,7 @@ export function NewProjectDialog({ companies, clients, brandGreen, project, trig
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
-    const values = { companyId: co, clientId: f.clientId!, name: f.name!, typeLabel: f.typeLabel!, category: f.category as "OTHER", billingType: f.billingType as "FIXED_SCOPE", value: Number(f.value || 0), retainerHours: f.retainerHours ? Number(f.retainerHours) : undefined, startDate: f.startDate!, dueDate: f.dueDate || undefined, priority: f.priority as "MEDIUM", summary: f.summary, description: f.description };
+    const values = { companyId: co, clientId: f.clientId!, name: f.name!, typeLabel: f.typeLabel!, category: f.category as "OTHER", billingType: f.billingType as "FIXED_SCOPE", value: Number(f.value || 0), retainerHours: f.retainerHours ? Number(f.retainerHours) : undefined, startDate: f.startDate!, dueDate: f.dueDate || undefined, priority: f.priority as "MEDIUM", summary: f.summary, description: f.description, assigneeId: f.assigneeId || undefined };
     run(async () => {
       const res = project ? await updateProject(project.id, values) : await createProject(values);
       if (res.ok) { setOpen(false); if (!project) navigate(`/projects?id=${res.id}`); }
@@ -188,6 +188,13 @@ export function NewProjectDialog({ companies, clients, brandGreen, project, trig
           <L label="Client" className="col-span-2">
             <select name="clientId" required defaultValue={project?.clientId} className="h-9 w-full rounded-lg border bg-card px-3">{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
           </L>
+          {people && people.length > 0 && (
+            <L label="Assigned Worker" className="col-span-2">
+              <select name="assigneeId" defaultValue={project?.assigneeId ?? people[0]?.id} className="h-9 w-full rounded-lg border bg-card px-3">
+                {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </L>
+          )}
           <L label="Project name" className="col-span-2"><Input name="name" required defaultValue={project?.name} /></L>
           <L label="Project type"><Input name="typeLabel" required defaultValue={project?.typeLabel ?? (vmh ? "Short-form Video Editing" : "Website Development")} /></L>
           <L label="Category">

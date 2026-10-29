@@ -48,7 +48,7 @@ export default function ProjectsPage() {
             <h1 className="text-3xl font-bold text-ink">{vth ? "Projects (VTH)" : "Client Projects"}</h1>
             <p className="mt-0.5 text-md text-ink-muted">{vth ? "Manage all website, CRM, ERP and automation projects" : "Manage and track all client projects"}</p>
           </div>
-          {creatable.length > 0 && <NewProjectDialog companies={creatable} clients={clients} brandGreen={vth} />}
+          {creatable.length > 0 && <NewProjectDialog companies={creatable} clients={clients} people={data.people} brandGreen={vth} />}
         </div>
         <FilterTabs
           param="list"
@@ -127,7 +127,7 @@ function ProjectDetail({ id, tab, sp }: { id: string; tab: string; sp: Record<st
   const dueRed = due ? due.getTime() - t.getTime() < 7 * 86_400_000 : false;
   const color = logoColor(pr.client?.name ?? "?");
   const formValues = { id: pr.id, companyId: pr.companyId as "vmh" | "vth", clientId: pr.clientId ?? "", name: pr.name, typeLabel: pr.typeLabel, category: pr.category, billingType: pr.billingType, value: Number(pr.value), retainerHours: pr.retainerHours, startDate: dayKey(new Date(pr.startDate)), dueDate: due ? dayKey(due) : "", priority: pr.priority, summary: pr.summary ?? "", description: pr.description ?? "" };
-  const editDialog = (trigger: React.ReactNode) => <NewProjectDialog companies={[pr.companyId as "vmh"]} clients={clients} project={formValues} trigger={trigger} />;
+  const editDialog = (trigger: React.ReactNode) => <NewProjectDialog companies={[pr.companyId as "vmh"]} clients={clients} people={people} project={formValues} trigger={trigger} />;
   const accent = vth ? "text-vth-text" : "text-brand-text";
   const dueText = due && <span className={dueRed ? "text-danger-text" : undefined}>{formatDate(due)} ({daysLeft})</span>;
   const phases = Array.isArray(pr.phases) ? pr.phases : [];

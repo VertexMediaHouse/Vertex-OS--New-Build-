@@ -55,7 +55,7 @@ export const dashboard = new Hono<Env>()
 
     // Role- and scope-specific metrics (only computed when visible in UI)
     const emptyRevenue = { total: 0, trend: 0, collected: 0, outstanding: 0, vmh: 0, vth: 0 };
-    const emptyLeads = { total: 0, delta: 0, stages: [] as { stage: string; count: number }[], pipeline: 0, vmh: 0, vth: 0 };
+    const emptyLeads = { total: 0, delta: 0, stages: [] as { stage: "NEW" | "CONTACTED" | "PROPOSAL" | "NEGOTIATION" | "WON"; count: number }[], pipeline: 0, vmh: 0, vth: 0 };
 
     const [revenue, leads, tasksByPerson, campaigns, workload, crossSell, revenueTrend] = isMember
       ? [emptyRevenue, emptyLeads, [], [], [], [], []]

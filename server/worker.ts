@@ -28,7 +28,11 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/api/") && !url.pathname.startsWith("/api/health")) {
       const { initDbFromSheets } = await import("@/lib/db");
-      await initDbFromSheets();
+      if (ctx && typeof (ctx as any).waitUntil === "function") {
+        (ctx as any).waitUntil(initDbFromSheets().catch((err: unknown) => console.error("[worker] Background hydration error:", err)));
+      } else {
+        await initDbFromSheets();
+      }
     }
     return app.fetch(request, env, ctx as any);
   },

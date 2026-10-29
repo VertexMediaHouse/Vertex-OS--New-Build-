@@ -24,7 +24,10 @@ function useRefresh() {
 
 const createTask = (json: { title: string; companyId: string; projectId?: string; assigneeId?: string; priority: string; status: string; dueDate?: Date; estimatedMinutes?: number; description?: string }) =>
   call(api.api.tasks.$post({ json: { ...json, dueDate: json.dueDate?.toISOString() } }));
-const moveTask = async (taskId: string, status: string, beforeId: string | null) => void (await call(api.api.tasks.move.$post({ json: { taskId, status, beforeId } })));
+const moveTask = async (taskId: string, status: string, beforeId: string | null) => {
+  const res = await call(api.api.tasks.move.$post({ json: { taskId, status, beforeId } }));
+  if (!res.ok) throw new Error(res.error ?? "Failed to move task");
+};
 const updateTask = async (taskId: string, patch: Record<string, unknown>) => void (await call(api.api.tasks.update.$post({ json: { taskId, patch } })));
 const toggleChecklist = async (itemId: string, done: boolean) => void (await call(api.api.tasks.checklist.toggle.$post({ json: { itemId, done } })));
 const addChecklistItem = async (taskId: string, text: string) => void (await call(api.api.tasks.checklist.add.$post({ json: { taskId, text } })));
@@ -84,7 +87,7 @@ export function TaskBoard({ items, addHref }: { items: Record<string, BoardTask[
   );
 }
 
-export function NewTaskDialog({ companies, projects, people, open: initialOpen, status }: { companies: ("vmh" | "vth")[]; projects: { id: string; name: string; companyId: string }[]; people: { id: string; name: string }[]; open?: boolean; status?: string }) {
+export function NewTaskDialog({ companies, projects, people, open: initialOpen, status }: { companies: ("vmh" | "vth")[]; projects: { id: string; name: string; companyId: string; client?: { name: string } | null }[]; people: { id: string; name: string }[]; open?: boolean; status?: string }) {
   const [open, setOpen] = useState(Boolean(initialOpen));
   const [pending, start] = useTransition();
   const [co, setCo] = useState(companies[0]!);
@@ -112,7 +115,7 @@ export function NewTaskDialog({ companies, projects, people, open: initialOpen, 
           {companies.length > 1 && (
             <F label="Company"><select value={co} onChange={(e) => setCo(e.target.value as "vmh")} className="h-9 w-full rounded-lg border bg-card px-2">{companies.map((c) => <option key={c} value={c}>{c.toUpperCase()}</option>)}</select></F>
           )}
-          <F label="Project"><select name="projectId" className="h-9 w-full rounded-lg border bg-card px-2"><option value="">No project</option>{projects.filter((p) => p.companyId === co).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></F>
+          <F label="Project"><select name="projectId" className="h-9 w-full rounded-lg border bg-card px-2"><option value="">No project</option>{projects.filter((p) => p.companyId === co).map((p) => <option key={p.id} value={p.id}>{p.client?.name ? `${p.client.name} · ${p.name}` : p.name}</option>)}</select></F>
           <F label="Assignee"><select name="assigneeId" className="h-9 w-full rounded-lg border bg-card px-2"><option value="">Unassigned</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></F>
           <F label="Priority"><select name="priority" defaultValue="MEDIUM" className="h-9 w-full rounded-lg border bg-card px-2"><option>LOW</option><option>MEDIUM</option><option>HIGH</option></select></F>
           <F label="Due date"><Input name="dueDate" type="date" /></F>

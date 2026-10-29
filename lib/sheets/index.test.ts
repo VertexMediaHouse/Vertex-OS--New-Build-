@@ -19,7 +19,7 @@ let fetchCount = 0;
   return { ok: true, json: async () => ({ ok: true, count: body.rows?.length ?? body.ids?.length ?? 0 }) };
 };
 
-const { scheduleTableSync, scheduleTableDelete, setWaitUntil } = await import("./index.ts");
+const { scheduleTableSync, scheduleTableDelete, setWaitUntil } = await import("./index");
 
 const waits: Promise<unknown>[] = [];
 setWaitUntil((p) => waits.push(p));

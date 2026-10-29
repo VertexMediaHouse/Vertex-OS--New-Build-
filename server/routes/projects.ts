@@ -39,6 +39,7 @@ const projectSchema = z.object({
   priority: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"),
   summary: z.string().trim().max(200).optional(),
   description: z.string().trim().max(5000).optional(),
+  assigneeId: z.string().max(64).optional().or(z.literal("")),
 });
 
 async function recomputeProgress(projectId: string) {
@@ -61,11 +62,12 @@ export const projects = new Hono<Env>()
     const tab = (c.req.query("list") ?? "all") as keyof typeof LIST_TABS;
     const statuses = LIST_TABS[tab] ?? null;
     const where: Prisma.ProjectWhereInput = { ...base, ...(statuses && { status: { in: [...statuses] as never } }), ...(q && { OR: [{ name: { contains: q, mode: "insensitive" } }, { client: { name: { contains: q, mode: "insensitive" } } }] }) };
-    const [list, total, counts, clients] = await Promise.all([
+    const [list, total, counts, clients, people] = await Promise.all([
       db.project.findMany({ where, orderBy: [{ createdAt: "asc" }, { id: "asc" }], skip: (page - 1) * PAGE, take: PAGE, include: { client: { select: { name: true } }, members: { include: { user: { select: { name: true, image: true } } } } } }),
       db.project.count({ where }),
       db.project.groupBy({ by: ["status"], _count: true, where: base }),
       db.client.findMany({ where: { archivedAt: null, companies: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+      db.user.findMany({ where: { kind: "STAFF", memberships: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
     ]);
     const tabCount = (k: keyof typeof LIST_TABS) => counts.filter((x) => !LIST_TABS[k] || (LIST_TABS[k] as readonly string[]).includes(x.status)).reduce((a, x) => a + x._count, 0);
     const rows = list.map((x) => ({
@@ -81,6 +83,7 @@ export const projects = new Hono<Env>()
       page,
       pageSize: PAGE,
       clients,
+      people,
       scope,
       tabCounts: { all: tabCount("all"), active: tabCount("active"), review: tabCount("review"), completed: tabCount("completed") },
       creatable: companyIds.filter((x): x is "vmh" | "vth" => can(user, "create", "project", x)),
@@ -141,11 +144,23 @@ export const projects = new Hono<Env>()
     if (!parsed.success) return c.json<ActionResult>({ ok: false, error: parsed.error.issues[0]!.message });
     const d = parsed.data;
     assertCan(user, "create", "project", d.companyId);
+    const { assigneeId, ...projectData } = d;
     const template = d.companyId === "vmh" ? "VMH" : "VTH";
     const project = await db.$transaction(async (tx) => {
-      const p = await tx.project.create({ data: { ...d, template, status: TEMPLATES[template].statuses[0], members: { create: { userId: user.id } } } });
+      const memberUserIds = Array.from(new Set([user.id, ...(assigneeId ? [assigneeId] : [])]));
+      const p = await tx.project.create({
+        data: {
+          ...projectData,
+          template,
+          status: TEMPLATES[template].statuses[0],
+          members: { create: memberUserIds.map((userId) => ({ userId })) },
+        },
+      });
       await tx.clientCompany.upsert({ where: { clientId_companyId: { clientId: d.clientId, companyId: d.companyId } }, create: { clientId: d.clientId, companyId: d.companyId }, update: {} });
       await logActivity(tx, { companyId: d.companyId, actorId: user.id, verb: "created", entityType: "PROJECT", entityId: p.id, summary: `${user.name} started project ${p.name}` });
+      if (assigneeId && assigneeId !== user.id) {
+        await notify(tx, { userIds: [assigneeId], type: "project_assigned", title: `You were assigned to project: ${p.name}`, link: `/projects?id=${p.id}` });
+      }
       return p;
     });
     return c.json<ActionResult>({ ok: true, id: project.id });
@@ -157,13 +172,20 @@ export const projects = new Hono<Env>()
     const project = await projectFor(user, "update", body.projectId);
     const parsed = projectSchema.safeParse(body.input);
     if (!parsed.success) return c.json<ActionResult>({ ok: false, error: parsed.error.issues[0]!.message });
-    const { companyId, ...d } = parsed.data;
+    const { companyId, assigneeId, ...updateData } = parsed.data;
     void companyId;
     await db.$transaction(async (tx) => {
-      await tx.project.update({ where: { id: project.id }, data: d });
+      await tx.project.update({ where: { id: project.id }, data: updateData });
+      if (assigneeId) {
+        await tx.projectMember.upsert({
+          where: { projectId_userId: { projectId: project.id, userId: assigneeId } },
+          create: { projectId: project.id, userId: assigneeId },
+          update: {},
+        });
+      }
       // Moving the project to another client has to link that client to the company, as create does.
-      await tx.clientCompany.upsert({ where: { clientId_companyId: { clientId: d.clientId, companyId: project.companyId } }, create: { clientId: d.clientId, companyId: project.companyId }, update: {} });
-      await logActivity(tx, { companyId: project.companyId, actorId: user.id, verb: "updated", entityType: "PROJECT", entityId: project.id, summary: `${user.name} updated project ${d.name}` });
+      await tx.clientCompany.upsert({ where: { clientId_companyId: { clientId: updateData.clientId, companyId: project.companyId } }, create: { clientId: updateData.clientId, companyId: project.companyId }, update: {} });
+      await logActivity(tx, { companyId: project.companyId, actorId: user.id, verb: "updated", entityType: "PROJECT", entityId: project.id, summary: `${user.name} updated project ${updateData.name}` });
     });
     return c.json<ActionResult>({ ok: true, id: project.id });
   })

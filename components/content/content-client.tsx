@@ -22,7 +22,10 @@ function useRefresh() {
 }
 
 const saveContent = (itemId: string | null, input: unknown) => call(api.api.content.save.$post({ json: { itemId, input } }));
-const moveContent = async (itemId: string, stage: string, beforeId: string | null) => void (await call(api.api.content.move.$post({ json: { itemId, stage, beforeId } })));
+const moveContent = async (itemId: string, stage: string, beforeId: string | null) => {
+  const r = await call(api.api.content.move.$post({ json: { itemId, stage, beforeId } }));
+  if (!r.ok) throw new Error(r.error ?? "Failed to move content item");
+};
 const deleteContent = (itemId: string) => call(api.api.content.delete.$post({ json: { itemId } }));
 
 export type ContentCard = {

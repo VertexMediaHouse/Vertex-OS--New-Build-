@@ -8,8 +8,8 @@ import { fetchAllFromSheets, scheduleTableSync, scheduleTableDelete, isSheetsCon
 import { SCHEMA } from "./schema";
 // Only company/user/membership/account ship with real (non-mock) seed rows, in ./seed.ts.
 // Every business table starts empty here — Google Sheets is the live source of truth —
-// and is typed off a sample row in ./schema.ts instead.
 import { companyData, userData, membershipData, accountData } from "./seed";
+import { bundledCache } from "./bundled-data";
 
 // ───────────────────────────── Enums ─────────────────────────────
 
@@ -444,8 +444,28 @@ export function scheduleDiskCacheSave(): void {
   }, 1000);
 }
 
-// Restore instantly from disk if cache exists so the app never freezes!
-let sheetsHydrated = loadCacheFromDisk();
+function loadInitialData(): boolean {
+  if (loadCacheFromDisk()) return true;
+  if (bundledCache && typeof bundledCache === "object") {
+    let loadedCount = 0;
+    for (const [table, rows] of Object.entries(bundledCache)) {
+      if (store[table] && Array.isArray(rows) && rows.length > 0) {
+        const validRows = (rows as any[]).filter((r) => !r._placeholder);
+        if (validRows.length > 0) {
+          store[table] = validRows.map(hydrateDates);
+          loadedCount++;
+        }
+      }
+    }
+    ensureRootFolders();
+    console.log(`[db] Instantly restored ${loadedCount} tables from bundled cache`);
+    return true;
+  }
+  return false;
+}
+
+// Restore instantly from disk or bundled cache so production never freezes!
+let sheetsHydrated = loadInitialData();
 let sheetsHydratingPromise: Promise<void> | null = null;
 
 export async function initDbFromSheets(force = false): Promise<void> {
@@ -1089,6 +1109,24 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
             }
           }
         }
+        if (args._max) {
+          row._max = {};
+          for (const [field, enabled] of Object.entries(args._max)) {
+            if (enabled) {
+              const vals = gItems.map((it) => it[field]).filter((v) => v !== null && v !== undefined);
+              row._max[field] = vals.length > 0 ? vals.reduce((max, val) => (val > max ? val : max)) : null;
+            }
+          }
+        }
+        if (args._min) {
+          row._min = {};
+          for (const [field, enabled] of Object.entries(args._min)) {
+            if (enabled) {
+              const vals = gItems.map((it) => it[field]).filter((v) => v !== null && v !== undefined);
+              row._min[field] = vals.length > 0 ? vals.reduce((min, val) => (val < min ? val : min)) : null;
+            }
+          }
+        }
         results.push(row);
       }
       return results;
@@ -1104,6 +1142,33 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
         result._sum = {};
         for (const [f, on] of Object.entries(args._sum)) {
           if (on) result._sum[f] = items.reduce((acc, it) => acc + (Number(it[f]) || 0), 0);
+        }
+      }
+      if (args._max) {
+        result._max = {};
+        for (const [f, on] of Object.entries(args._max)) {
+          if (on) {
+            const vals = items.map((it) => it[f]).filter((v) => v !== null && v !== undefined);
+            result._max[f] = vals.length > 0 ? vals.reduce((max, val) => (val > max ? val : max)) : null;
+          }
+        }
+      }
+      if (args._min) {
+        result._min = {};
+        for (const [f, on] of Object.entries(args._min)) {
+          if (on) {
+            const vals = items.map((it) => it[f]).filter((v) => v !== null && v !== undefined);
+            result._min[f] = vals.length > 0 ? vals.reduce((min, val) => (val < min ? val : min)) : null;
+          }
+        }
+      }
+      if (args._avg) {
+        result._avg = {};
+        for (const [f, on] of Object.entries(args._avg)) {
+          if (on) {
+            const vals = items.map((it) => Number(it[f])).filter((v) => !isNaN(v));
+            result._avg[f] = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+          }
         }
       }
       return result;
@@ -1137,6 +1202,7 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
 
       store[modelName].push(record);
       scheduleTableSync(modelName, [record]);
+      scheduleDiskCacheSave();
       for (const op of nestedOps) await op();
       return projectItem(record, modelName, select, include);
     },
@@ -1152,7 +1218,10 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
         store[modelName].push(record);
         created.push(record);
       }
-      if (created.length > 0) scheduleTableSync(modelName, created);
+      if (created.length > 0) {
+        scheduleTableSync(modelName, created);
+        scheduleDiskCacheSave();
+      }
       return { count: created.length };
     },
 
@@ -1182,6 +1251,7 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
       }
       item.updatedAt = new Date();
       scheduleTableSync(modelName, [item]);
+      scheduleDiskCacheSave();
       return projectItem(item, modelName, select, include);
     },
 
@@ -1201,7 +1271,10 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
           changed.push(item);
         }
       }
-      if (changed.length > 0) scheduleTableSync(modelName, changed);
+      if (changed.length > 0) {
+        scheduleTableSync(modelName, changed);
+        scheduleDiskCacheSave();
+      }
       return { count: changed.length };
     },
 
@@ -1211,6 +1284,7 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
       if (idx === -1) throw new Error(`Record to delete not found in ${modelName}`);
       const [removed] = store[modelName].splice(idx, 1);
       scheduleTableDelete(modelName, [removed.id]);
+      scheduleDiskCacheSave();
       return projectItem(removed, modelName, select, include);
     },
 
@@ -1218,7 +1292,10 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
       const where = args.where || {};
       const removed = store[modelName].filter((x) => matchesWhere(x, where, modelName));
       store[modelName] = store[modelName].filter((x) => !matchesWhere(x, where, modelName));
-      if (removed.length > 0) scheduleTableDelete(modelName, removed.map((r) => r.id));
+      if (removed.length > 0) {
+        scheduleTableDelete(modelName, removed.map((r) => r.id));
+        scheduleDiskCacheSave();
+      }
       return { count: removed.length };
     },
 

@@ -36,17 +36,28 @@ export const clients = new Hono<Env>()
     const companyIds = c.get("companyIds");
     if (!can(user, "view", "client")) return c.json({ canView: false as const });
     const p = readParams(c.req.query());
-    const all = await listClients({ companyIds });
     const archived = p.str("archived") === "1";
-    const filtered = await listClients({ companyIds: subScope(companyIds, p.str("co")), q: p.str("q"), status: p.str("status"), tag: p.str("tag"), owner: p.str("owner"), archived });
+    const co = p.str("co");
+    const q = p.str("q");
+    const status = p.str("status");
+    const tag = p.str("tag");
+    const owner = p.str("owner");
+    const hasFilter = Boolean(co || q || status || tag || owner || archived);
+
+    const [all, owners, tags] = await Promise.all([
+      listClients({ companyIds }),
+      db.user.findMany({ where: { kind: "STAFF", memberships: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+      db.tag.findMany({ orderBy: { name: "asc" } }),
+    ]);
+
+    const filtered = hasFilter
+      ? await listClients({ companyIds: subScope(companyIds, co), q, status, tag, owner, archived })
+      : [...all];
+
     const { field, dir } = p.sort(["name", "revenue", "lastActivity"], "lastActivity");
     const key = (x: (typeof filtered)[number]) => (field === "name" ? x.name.toLowerCase() : field === "revenue" ? x.revenue : x.lastActivityAt.getTime());
     filtered.sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0) * (dir === "asc" ? 1 : -1));
     const pageRows = filtered.slice((p.page - 1) * PAGE, p.page * PAGE);
-    const [owners, tags] = await Promise.all([
-      db.user.findMany({ where: { kind: "STAFF", memberships: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
-      db.tag.findMany({ orderBy: { name: "asc" } }),
-    ]);
     return c.json({
       canView: true as const,
       all,

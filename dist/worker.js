@@ -66592,6 +66592,919 @@ var init_seed = __esm({
   }
 });
 
+// lib/db/bundled-data.ts
+var bundledCache;
+var init_bundled_data = __esm({
+  "lib/db/bundled-data.ts"() {
+    "use strict";
+    bundledCache = {
+      "company": [
+        {
+          "id": "vmh",
+          "code": "VMH",
+          "name": "Vertex Media House",
+          "tagline": "Video Editing",
+          "color": "#7231FB",
+          "invoicePrefix": "VMH",
+          "nextInvoiceNumber": 1,
+          "address": "Vertex Media House, Ahmedabad, Gujarat, India",
+          "gstin": "24ABCDE1234F1Z5",
+          "settings": {
+            "goalThresholds": {
+              "onTrack": 0.9,
+              "atRisk": 0.7
+            },
+            "turnaroundTargetHours": {
+              "min": 24,
+              "max": 48
+            },
+            "revenueBasis": "INVOICED",
+            "defaultTaxRate": 0,
+            "defaultHourlyRate": 1500,
+            "paymentTermsDays": 15,
+            "defaultWeeklyCapacityHours": 40
+          },
+          "bankDetails": {
+            "accountName": "Vertex Media House",
+            "upi": "vertexmedia@upi"
+          },
+          "createdAt": "2025-06-14T03:30:00.000Z",
+          "updatedAt": "2026-10-26T03:30:00.000Z"
+        },
+        {
+          "id": "vth",
+          "code": "VTH",
+          "name": "Vertex Tech House",
+          "tagline": "Web, CRM, ERP, Automation",
+          "color": "#00B675",
+          "invoicePrefix": "VTH",
+          "nextInvoiceNumber": 1,
+          "address": "Vertex Tech House, Ahmedabad, Gujarat, India",
+          "gstin": "24ABCDE1234F2Z4",
+          "settings": {
+            "goalThresholds": {
+              "onTrack": 0.9,
+              "atRisk": 0.7
+            },
+            "turnaroundTargetHours": {
+              "min": 24,
+              "max": 48
+            },
+            "revenueBasis": "INVOICED",
+            "defaultTaxRate": 0,
+            "defaultHourlyRate": 1500,
+            "paymentTermsDays": 15,
+            "defaultWeeklyCapacityHours": 40
+          },
+          "bankDetails": {
+            "accountName": "Vertex Tech House",
+            "upi": "vertextech@upi"
+          },
+          "createdAt": "2025-06-14T03:30:00.000Z",
+          "updatedAt": "2026-10-26T03:30:00.000Z"
+        }
+      ],
+      "user": [
+        {
+          "id": "user_dhrumil",
+          "name": "Dhrumil",
+          "email": "dhrumil@vertexmediahouse.com",
+          "emailVerified": true,
+          "image": "",
+          "kind": "STAFF",
+          "isOwner": true,
+          "title": "Owner (Super Admin)",
+          "timezone": "Asia/Kolkata",
+          "weeklyCapacityHours": 40,
+          "active": true,
+          "createdAt": "2025-09-22T03:30:00.000Z",
+          "updatedAt": "2026-10-26T03:30:00.000Z"
+        },
+        {
+          "id": "user_sheen",
+          "name": "Sheen",
+          "email": "sheen@vertexmediahouse.com",
+          "emailVerified": true,
+          "image": "",
+          "kind": "STAFF",
+          "isOwner": false,
+          "title": "Video Editor & Delivery Specialist",
+          "timezone": "Asia/Kolkata",
+          "weeklyCapacityHours": 40,
+          "active": true,
+          "createdAt": "2025-09-22T03:30:00.000Z",
+          "updatedAt": "2026-10-26T03:30:00.000Z"
+        },
+        {
+          "id": "user_hardik",
+          "name": "Hardik",
+          "email": "hardik@vertexmediahouse.com",
+          "emailVerified": true,
+          "image": "",
+          "kind": "STAFF",
+          "isOwner": false,
+          "title": "Full Stack Engineer & Automation",
+          "timezone": "Asia/Kolkata",
+          "weeklyCapacityHours": 40,
+          "active": true,
+          "createdAt": "2025-09-22T03:30:00.000Z",
+          "updatedAt": "2026-10-26T03:30:00.000Z"
+        }
+      ],
+      "session": [
+        {
+          "expiresAt": "2026-11-27T06:21:43.918Z",
+          "token": "je9rf90yWPNzYfyaUNoO8FKYZzIOVSRQ",
+          "createdAt": "2026-10-28T06:21:43.918Z",
+          "updatedAt": "2026-10-28T06:21:43.918Z",
+          "ipAddress": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:158.0) Gecko/20100101 Firefox/158.0",
+          "userId": "user_hardik",
+          "id": "bVVtF7ZNJlYGGppHEqqrhieMXoK66sAU"
+        },
+        {
+          "expiresAt": "2026-11-27T10:16:51.973Z",
+          "token": "DfRAEgbUrbBJ5NQry0CH4I1RCa3fWuc3",
+          "createdAt": "2026-10-28T10:16:51.974Z",
+          "updatedAt": "2026-10-28T10:16:51.974Z",
+          "ipAddress": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+          "userId": "user_dhrumil",
+          "id": "llPsDqKxcNAX7VOjgWeROj9NWUGw9To0"
+        },
+        {
+          "expiresAt": "2026-11-28T02:57:43.482Z",
+          "token": "eiSUiZg6TkhnhAewax9CcFB8I0zYwtcy",
+          "createdAt": "2026-10-29T02:57:43.482Z",
+          "updatedAt": "2026-10-29T02:57:43.482Z",
+          "ipAddress": "",
+          "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Mobile Safari/537.36",
+          "userId": "user_hardik",
+          "id": "01Sj5TKq8pZQiPANPCCdLkGoXs4jmAkS"
+        },
+        {
+          "expiresAt": "2026-11-28T03:01:03.061Z",
+          "token": "gYknU66ewiDxssjDWvanezjJOgYpVVpb",
+          "createdAt": "2026-10-29T03:01:03.061Z",
+          "updatedAt": "2026-10-29T03:01:03.061Z",
+          "ipAddress": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+          "userId": "user_dhrumil",
+          "id": "e8tbpiinhvHCiqwYkYwz8WFJtm37WpPT"
+        },
+        {
+          "expiresAt": "2026-11-28T05:23:56.650Z",
+          "token": "PIgpfLjPsbbc490sU01PVLtUlE4cEDO9",
+          "createdAt": "2026-10-29T05:23:56.650Z",
+          "updatedAt": "2026-10-29T05:23:56.650Z",
+          "ipAddress": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:158.0) Gecko/20100101 Firefox/158.0",
+          "userId": "user_dhrumil",
+          "id": "bGxm6nFE6YIR5TtDwMnQWyiThdtG3uMv"
+        },
+        {
+          "expiresAt": "2026-11-28T06:15:13.125Z",
+          "token": "DAcpFFibKBLQYBUdgE7aGTqPBnvpu7AR",
+          "createdAt": "2026-10-29T06:15:13.136Z",
+          "updatedAt": "2026-10-29T06:15:13.136Z",
+          "ipAddress": "",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:158.0) Gecko/20100101 Firefox/158.0",
+          "userId": "user_dhrumil",
+          "id": "zge2jISFPnMQoFBjelz05loX2VpYnuGS"
+        }
+      ],
+      "account": [
+        {
+          "id": "acc_dhrumil",
+          "userId": "user_dhrumil",
+          "accountId": "user_dhrumil",
+          "providerId": "credential",
+          "password": "e95f0749b8a1a9d313fd8940d82b4b5e:4e072be6cd2b08fc34dbe3851a50a89b8d5082fb2d91377107dd4483368159dfef3ff76007156a27dbc992ccffcf0069ef025835b2daea5c22571c21b2b2745d",
+          "accessToken": "",
+          "refreshToken": "",
+          "idToken": "",
+          "accessTokenExpiresAt": "",
+          "refreshTokenExpiresAt": "",
+          "scope": "",
+          "createdAt": "2025-09-22T03:30:00.000Z",
+          "updatedAt": "2026-10-26T03:30:00.000Z"
+        },
+        {
+          "id": "acc_sheen",
+          "userId": "user_sheen",
+          "accountId": "user_sheen",
+          "providerId": "credential",
+          "password": "e95f0749b8a1a9d313fd8940d82b4b5e:4e072be6cd2b08fc34dbe3851a50a89b8d5082fb2d91377107dd4483368159dfef3ff76007156a27dbc992ccffcf0069ef025835b2daea5c22571c21b2b2745d",
+          "accessToken": "",
+          "refreshToken": "",
+          "idToken": "",
+          "accessTokenExpiresAt": "",
+          "refreshTokenExpiresAt": "",
+          "scope": "",
+          "createdAt": "2025-09-22T03:30:00.000Z",
+          "updatedAt": "2026-10-26T03:30:00.000Z"
+        },
+        {
+          "id": "acc_hardik",
+          "userId": "user_hardik",
+          "accountId": "user_hardik",
+          "providerId": "credential",
+          "password": "e95f0749b8a1a9d313fd8940d82b4b5e:4e072be6cd2b08fc34dbe3851a50a89b8d5082fb2d91377107dd4483368159dfef3ff76007156a27dbc992ccffcf0069ef025835b2daea5c22571c21b2b2745d",
+          "accessToken": "",
+          "refreshToken": "",
+          "idToken": "",
+          "accessTokenExpiresAt": "",
+          "refreshTokenExpiresAt": "",
+          "scope": "",
+          "createdAt": "2025-09-22T03:30:00.000Z",
+          "updatedAt": "2026-10-26T03:30:00.000Z"
+        }
+      ],
+      "verification": [],
+      "rateLimit": [],
+      "membership": [
+        {
+          "userId": "user_dhrumil",
+          "companyId": "vmh",
+          "role": "ADMIN",
+          "modules": [],
+          "createdAt": "2025-09-22T03:30:00.000Z"
+        },
+        {
+          "userId": "user_dhrumil",
+          "companyId": "vth",
+          "role": "ADMIN",
+          "modules": [],
+          "createdAt": "2025-09-22T03:30:00.000Z"
+        },
+        {
+          "userId": "user_sheen",
+          "companyId": "vmh",
+          "role": "MEMBER",
+          "modules": [],
+          "createdAt": "2025-09-22T03:30:00.000Z"
+        },
+        {
+          "userId": "user_hardik",
+          "companyId": "vth",
+          "role": "MEMBER",
+          "modules": [],
+          "createdAt": "2025-09-22T03:30:00.000Z"
+        }
+      ],
+      "client": [
+        {
+          "name": "Dhrumil Sanghvi",
+          "domain": "vertextechhouse.com",
+          "type": "Website",
+          "status": "ACTIVE",
+          "ownerId": "user_dhrumil",
+          "tags": [
+            "website"
+          ],
+          "notes": "",
+          "address": "",
+          "id": "client_1793182648071_1000",
+          "createdAt": "2026-10-28T10:17:28.071Z",
+          "updatedAt": "2026-10-28T10:17:34.734Z",
+          "lastActivityAt": "2026-10-28T10:17:34.733Z"
+        },
+        {
+          "name": "Sheen",
+          "domain": "",
+          "type": "",
+          "status": "ACTIVE",
+          "ownerId": "user_dhrumil",
+          "tags": [],
+          "notes": "",
+          "address": "",
+          "id": "client_1793198497926_1000",
+          "createdAt": "2026-10-28T14:41:37.926Z",
+          "updatedAt": "2026-10-28T14:41:37.926Z",
+          "lastActivityAt": ""
+        },
+        {
+          "name": "Durrell",
+          "domain": "",
+          "type": "Website Development",
+          "status": "ACTIVE",
+          "ownerId": "user_hardik",
+          "tags": "",
+          "notes": "We need to develop 3 websites for him for 3 businesses.",
+          "address": "",
+          "id": "client_1793249090137_1002",
+          "createdAt": "2026-10-29T04:44:50.137Z",
+          "updatedAt": "2026-10-29T04:44:50.137Z",
+          "lastActivityAt": ""
+        }
+      ],
+      "clientCompany": [
+        {
+          "companyId": "vth",
+          "clientId": "client_1793182648071_1000",
+          "id": "clientCompany_1793182648072_1001",
+          "createdAt": "2026-10-28T10:17:28.072Z",
+          "updatedAt": "2026-10-29T04:44:50.137Z"
+        },
+        {
+          "companyId": "vmh",
+          "clientId": "client_1793198497926_1000",
+          "id": "clientCompany_1793198497926_1001",
+          "createdAt": "2026-10-28T14:41:37.926Z",
+          "updatedAt": "2026-10-28T14:41:37.926Z"
+        }
+      ],
+      "projectContact": [],
+      "clientContact": [
+        {
+          "name": 9374437070,
+          "email": "",
+          "isPrimary": true,
+          "clientId": "client_1793182648071_1000",
+          "id": "clientContact_1793182648072_1002",
+          "createdAt": "2026-10-28T10:17:28.072Z",
+          "updatedAt": "2026-10-28T10:17:28.072Z",
+          "phone": ""
+        },
+        {
+          "name": "Durrell",
+          "email": "",
+          "isPrimary": true,
+          "clientId": "client_1793249090137_1002",
+          "id": "clientContact_1793249090137_1003",
+          "createdAt": "2026-10-29T04:44:50.137Z",
+          "updatedAt": "2026-10-29T04:44:50.137Z",
+          "phone": "+1 (762) 688-1953"
+        }
+      ],
+      "lead": [
+        {
+          "id": "lead_1793249017000_1000",
+          "_placeholder": "",
+          "name": "Durrell",
+          "service": "Website Development",
+          "value": 4e4,
+          "companyId": "vth",
+          "source": "WEBSITE",
+          "ownerId": "user_hardik",
+          "contactName": "Durrell",
+          "email": "",
+          "phone": "+1 (762) 688-1953",
+          "notes": "We need to develop 3 websites for him for 3 businesses.",
+          "stage": "WON",
+          "createdAt": "2026-10-29T04:43:37.000Z",
+          "updatedAt": "2026-10-29T04:44:50.137Z",
+          "lastActivityAt": "2026-10-29T04:44:50.137Z",
+          "wonAt": "2026-10-29T04:44:50.137Z",
+          "clientId": "client_1793249090137_1002"
+        }
+      ],
+      "crossSellAlert": [],
+      "project": [
+        {
+          "companyId": "vth",
+          "clientId": "client_1793249090137_1002",
+          "name": "Website Development",
+          "typeLabel": "Website Development",
+          "category": "WEBSITE_DEVELOPMENT",
+          "billingType": "FIXED_SCOPE",
+          "value": 4e4,
+          "startDate": "2026-10-29T04:44:50.137Z",
+          "dueDate": "",
+          "priority": "",
+          "summary": "",
+          "description": "",
+          "template": "VTH",
+          "status": "PLANNING",
+          "id": "project_1793249090137_1005",
+          "createdAt": "2026-10-29T04:44:50.137Z",
+          "updatedAt": "2026-10-29T04:44:50.137Z",
+          "completedAt": ""
+        }
+      ],
+      "projectMember": [
+        {
+          "userId": "user_dhrumil",
+          "projectId": "project_1793182739898_1000",
+          "id": "projectMember_1793182739899_1001",
+          "createdAt": "2026-10-28T10:18:59.899Z",
+          "updatedAt": "2026-10-28T10:18:59.899Z"
+        },
+        {
+          "userId": "user_dhrumil",
+          "projectId": "project_1793198535149_1004",
+          "id": "projectMember_1793198535149_1005",
+          "createdAt": "2026-10-28T14:42:15.149Z",
+          "updatedAt": "2026-10-28T14:42:15.149Z"
+        },
+        {
+          "userId": "user_hardik",
+          "projectId": "project_1793249090137_1005",
+          "id": "projectMember_1793249090137_1006",
+          "createdAt": "2026-10-29T04:44:50.137Z",
+          "updatedAt": "2026-10-29T04:44:50.137Z"
+        }
+      ],
+      "deliverable": [],
+      "milestone": [],
+      "timelinePhase": [],
+      "approval": [],
+      "bug": [],
+      "supportTicket": [],
+      "task": [
+        {
+          "title": "Hardik",
+          "companyId": "vth",
+          "projectId": "",
+          "assigneeId": "user_hardik",
+          "priority": "MEDIUM",
+          "status": "IN_PROGRESS",
+          "description": "",
+          "createdById": "user_hardik",
+          "startDate": "2026-10-28T09:11:00.100Z",
+          "id": "task_1793178660100_1000",
+          "createdAt": "2026-10-28T09:11:00.100Z",
+          "updatedAt": "2026-10-29T06:01:55.630Z",
+          "dueDate": "",
+          "estimatedMinutes": "",
+          "position": 0,
+          "completedAt": "",
+          "progress": ""
+        },
+        {
+          "title": "Complete the QCPC website",
+          "companyId": "vth",
+          "projectId": "project_1793249090137_1005",
+          "assigneeId": "user_hardik",
+          "priority": "MEDIUM",
+          "status": "IN_REVIEW",
+          "description": "",
+          "createdById": "user_dhrumil",
+          "startDate": "2026-10-29T04:51:34.701Z",
+          "id": "task_1793249494701_1002",
+          "createdAt": "2026-10-29T04:51:34.701Z",
+          "updatedAt": "2026-10-29T06:01:58.501Z",
+          "dueDate": "2026-10-31T00:00:00.000Z",
+          "estimatedMinutes": 240,
+          "position": 0,
+          "completedAt": "",
+          "progress": 100
+        }
+      ],
+      "checklistItem": [],
+      "timeEntry": [],
+      "invoice": [],
+      "invoiceLineItem": [],
+      "payment": [],
+      "goal": [],
+      "goalMember": [],
+      "goalMilestone": [],
+      "folder": [
+        {
+          "id": "folder_client_files",
+          "name": "Client Files",
+          "category": "CLIENT_FILES",
+          "parentId": "",
+          "companyId": "",
+          "clientId": "",
+          "projectId": "",
+          "color": "#93C5FD",
+          "deletedAt": "",
+          "createdAt": "2026-10-28T10:00:30.211Z",
+          "updatedAt": "2026-10-28T10:00:30.211Z"
+        },
+        {
+          "id": "folder_project_files",
+          "name": "Project Files",
+          "category": "PROJECT_FILES",
+          "parentId": "",
+          "companyId": "",
+          "clientId": "",
+          "projectId": "",
+          "color": "#93C5FD",
+          "deletedAt": "",
+          "createdAt": "2026-10-28T10:00:30.211Z",
+          "updatedAt": "2026-10-28T10:00:30.211Z"
+        },
+        {
+          "id": "folder_design_assets",
+          "name": "Design Assets",
+          "category": "DESIGN_ASSETS",
+          "parentId": "",
+          "companyId": "",
+          "clientId": "",
+          "projectId": "",
+          "color": "#93C5FD",
+          "deletedAt": "",
+          "createdAt": "2026-10-28T10:00:30.211Z",
+          "updatedAt": "2026-10-28T10:00:30.211Z"
+        },
+        {
+          "id": "folder_video_assets",
+          "name": "Video Assets",
+          "category": "VIDEO_ASSETS",
+          "parentId": "",
+          "companyId": "",
+          "clientId": "",
+          "projectId": "",
+          "color": "#93C5FD",
+          "deletedAt": "",
+          "createdAt": "2026-10-28T10:00:30.211Z",
+          "updatedAt": "2026-10-28T10:00:30.211Z"
+        },
+        {
+          "id": "folder_documents",
+          "name": "Documents",
+          "category": "DOCUMENTS",
+          "parentId": "",
+          "companyId": "",
+          "clientId": "",
+          "projectId": "",
+          "color": "#93C5FD",
+          "deletedAt": "",
+          "createdAt": "2026-10-28T10:00:30.211Z",
+          "updatedAt": "2026-10-28T10:00:30.211Z"
+        },
+        {
+          "id": "folder_team_resources",
+          "name": "Team Resources",
+          "category": "TEAM_RESOURCES",
+          "parentId": "",
+          "companyId": "",
+          "clientId": "",
+          "projectId": "",
+          "color": "#93C5FD",
+          "deletedAt": "",
+          "createdAt": "2026-10-28T10:00:30.211Z",
+          "updatedAt": "2026-10-28T10:00:30.211Z"
+        },
+        {
+          "id": "folder_1793182648072_1003",
+          "name": "Dhrumil Sanghvi",
+          "category": "CLIENT_FILES",
+          "parentId": "folder_client_files",
+          "companyId": "",
+          "clientId": "client_1793182648071_1000",
+          "projectId": "",
+          "color": "",
+          "deletedAt": "",
+          "createdAt": "2026-10-28T10:17:28.072Z",
+          "updatedAt": "2026-10-28T10:17:28.072Z"
+        },
+        {
+          "id": "folder_1793198497926_1002",
+          "name": "Sheen",
+          "category": "CLIENT_FILES",
+          "parentId": "folder_client_files",
+          "companyId": "",
+          "clientId": "client_1793198497926_1000",
+          "projectId": "",
+          "color": "",
+          "deletedAt": "",
+          "createdAt": "2026-10-28T14:41:37.926Z",
+          "updatedAt": "2026-10-28T14:41:37.926Z"
+        },
+        {
+          "id": "folder_1793249090137_1004",
+          "name": "Durrell",
+          "category": "CLIENT_FILES",
+          "parentId": "folder_client_files",
+          "companyId": "",
+          "clientId": "client_1793249090137_1002",
+          "projectId": "",
+          "color": "",
+          "deletedAt": "",
+          "createdAt": "2026-10-29T04:44:50.137Z",
+          "updatedAt": "2026-10-29T04:44:50.137Z"
+        }
+      ],
+      "file": [],
+      "fileVersion": [],
+      "fileShare": [],
+      "emailCampaign": [],
+      "campaignRecipient": [],
+      "calendarEvent": [],
+      "comment": [],
+      "activity": [
+        {
+          "companyId": "vth",
+          "actorId": "user_hardik",
+          "verb": "created",
+          "entityType": "TASK",
+          "entityId": "task_1793178660100_1000",
+          "summary": "Hardik created task Hardik",
+          "id": "activity_1793178660101_1001",
+          "createdAt": "2026-10-28T09:11:00.101Z",
+          "updatedAt": "2026-10-28T09:11:00.101Z"
+        },
+        {
+          "companyId": "vth",
+          "actorId": "user_dhrumil",
+          "verb": "created",
+          "entityType": "CLIENT",
+          "entityId": "client_1793182648071_1000",
+          "summary": "New client added: Dhrumil Sanghvi",
+          "id": "activity_1793182648072_1004",
+          "createdAt": "2026-10-28T10:17:28.072Z",
+          "updatedAt": "2026-10-28T10:17:28.072Z"
+        },
+        {
+          "companyId": "vth",
+          "actorId": "user_dhrumil",
+          "verb": "updated",
+          "entityType": "CLIENT",
+          "entityId": "client_1793182648071_1000",
+          "summary": "Dhrumil updated Dhrumil Sanghvi",
+          "id": "activity_1793182654736_1005",
+          "createdAt": "2026-10-28T10:17:34.736Z",
+          "updatedAt": "2026-10-28T10:17:34.736Z"
+        },
+        {
+          "companyId": "vmh",
+          "actorId": "user_dhrumil",
+          "verb": "created",
+          "entityType": "PROJECT",
+          "entityId": "project_1793182739898_1000",
+          "summary": "Dhrumil started project Vertex WEbsite",
+          "id": "activity_1793182739904_1002",
+          "createdAt": "2026-10-28T10:18:59.904Z",
+          "updatedAt": "2026-10-28T10:18:59.904Z"
+        },
+        {
+          "companyId": "vmh",
+          "actorId": "user_dhrumil",
+          "verb": "status",
+          "entityType": "PROJECT",
+          "entityId": "project_1793182739898_1000",
+          "summary": "Dhrumil set Vertex WEbsite to In Progress",
+          "id": "activity_1793183086273_1000",
+          "createdAt": "2026-10-28T10:24:46.273Z",
+          "updatedAt": "2026-10-28T10:24:46.273Z"
+        },
+        {
+          "companyId": "vmh",
+          "actorId": "user_dhrumil",
+          "verb": "created",
+          "entityType": "CLIENT",
+          "entityId": "client_1793198497926_1000",
+          "summary": "New client added: Sheen",
+          "id": "activity_1793198497926_1003",
+          "createdAt": "2026-10-28T14:41:37.926Z",
+          "updatedAt": "2026-10-28T14:41:37.926Z"
+        },
+        {
+          "companyId": "vth",
+          "actorId": "user_dhrumil",
+          "verb": "created",
+          "entityType": "PROJECT",
+          "entityId": "project_1793198535149_1004",
+          "summary": "Dhrumil started project Sheen",
+          "id": "activity_1793198535149_1006",
+          "createdAt": "2026-10-28T14:42:15.149Z",
+          "updatedAt": "2026-10-28T14:42:15.149Z"
+        },
+        {
+          "companyId": "vth",
+          "actorId": "user_dhrumil",
+          "verb": "created",
+          "entityType": "TASK",
+          "entityId": "task_1793198565747_1007",
+          "summary": "Dhrumil created task sheen",
+          "id": "activity_1793198565747_1008",
+          "createdAt": "2026-10-28T14:42:45.747Z",
+          "updatedAt": "2026-10-28T14:42:45.747Z"
+        },
+        {
+          "companyId": "vth",
+          "actorId": "user_hardik",
+          "verb": "submitted",
+          "entityType": "TASK",
+          "entityId": "task_1793198565747_1007",
+          "summary": "Hardik sent sheen for review",
+          "id": "activity_1793198590465_1011",
+          "createdAt": "2026-10-28T14:43:10.465Z",
+          "updatedAt": "2026-10-28T14:43:10.465Z"
+        },
+        {
+          "companyId": "vmh",
+          "actorId": "user_dhrumil",
+          "verb": "created",
+          "entityType": "LEAD",
+          "entityId": "lead_1793249017000_1000",
+          "summary": "New lead added: Durrell",
+          "id": "activity_1793249017000_1001",
+          "createdAt": "2026-10-29T04:43:37.000Z",
+          "updatedAt": "2026-10-29T04:43:37.000Z"
+        },
+        {
+          "companyId": "vmh",
+          "actorId": "user_dhrumil",
+          "verb": "updated",
+          "entityType": "LEAD",
+          "entityId": "lead_1793249017000_1000",
+          "summary": "Dhrumil updated Durrell",
+          "id": "activity_1793249086355_1000",
+          "createdAt": "2026-10-29T04:44:46.355Z",
+          "updatedAt": "2026-10-29T04:44:46.355Z"
+        },
+        {
+          "companyId": "vth",
+          "actorId": "user_dhrumil",
+          "verb": "converted",
+          "entityType": "LEAD",
+          "entityId": "lead_1793249017000_1000",
+          "summary": "Dhrumil converted Durrell to a client",
+          "id": "activity_1793249090137_1007",
+          "createdAt": "2026-10-29T04:44:50.137Z",
+          "updatedAt": "2026-10-29T04:44:50.137Z"
+        },
+        {
+          "companyId": "vth",
+          "actorId": "user_dhrumil",
+          "verb": "deleted",
+          "entityType": "PROJECT",
+          "entityId": "project_1793198535149_1004",
+          "summary": "Dhrumil deleted project Sheen",
+          "id": "activity_1793249104698_1008",
+          "createdAt": "2026-10-29T04:45:04.698Z",
+          "updatedAt": "2026-10-29T04:45:04.698Z"
+        },
+        {
+          "companyId": "vth",
+          "actorId": "user_dhrumil",
+          "verb": "created",
+          "entityType": "TASK",
+          "entityId": "task_1793249494701_1002",
+          "summary": "Dhrumil created task Complete the QCPC website",
+          "id": "activity_1793249494701_1003",
+          "createdAt": "2026-10-29T04:51:34.701Z",
+          "updatedAt": "2026-10-29T04:51:34.701Z"
+        },
+        {
+          "companyId": "vth",
+          "actorId": "user_dhrumil",
+          "verb": "updated",
+          "entityType": "TASK",
+          "entityId": "task_1793249494701_1002",
+          "summary": "Dhrumil updated Complete the QCPC website",
+          "id": "activity_1793249530716_1005",
+          "createdAt": "2026-10-29T04:52:10.716Z",
+          "updatedAt": "2026-10-29T04:52:10.716Z"
+        },
+        {
+          "companyId": "vmh",
+          "actorId": "user_dhrumil",
+          "verb": "deleted",
+          "entityType": "PROJECT",
+          "entityId": "project_1793182739898_1000",
+          "summary": "Dhrumil deleted project Vertex WEbsite",
+          "id": "activity_1793249725436_1009",
+          "createdAt": "2026-10-29T04:55:25.436Z",
+          "updatedAt": "2026-10-29T04:55:25.436Z"
+        },
+        {
+          "companyId": "vth",
+          "actorId": "user_dhrumil",
+          "verb": "moved",
+          "entityType": "TASK",
+          "entityId": "task_1793249494701_1002",
+          "summary": "Dhrumil moved Complete the QCPC website to In Review",
+          "id": "activity_1793252695581_1000",
+          "createdAt": "2026-10-29T05:44:55.581Z",
+          "updatedAt": "2026-10-29T05:44:55.581Z"
+        },
+        {
+          "companyId": "vth",
+          "actorId": "user_dhrumil",
+          "verb": "completed",
+          "entityType": "TASK",
+          "entityId": "task_1793249494701_1002",
+          "summary": "Dhrumil marked task as completed",
+          "id": "activity_1793253711167_1002",
+          "createdAt": "2026-10-29T06:01:51.167Z",
+          "updatedAt": "2026-10-29T06:01:51.167Z"
+        },
+        {
+          "companyId": "vth",
+          "actorId": "user_dhrumil",
+          "verb": "moved",
+          "entityType": "TASK",
+          "entityId": "task_1793178660100_1000",
+          "summary": "Dhrumil moved Hardik to In Progress",
+          "id": "activity_1793253715630_1004",
+          "createdAt": "2026-10-29T06:01:55.630Z",
+          "updatedAt": "2026-10-29T06:01:55.630Z"
+        },
+        {
+          "companyId": "vth",
+          "actorId": "user_dhrumil",
+          "verb": "moved",
+          "entityType": "TASK",
+          "entityId": "task_1793249494701_1002",
+          "summary": "Dhrumil moved Complete the QCPC website to In Review",
+          "id": "activity_1793253718501_1006",
+          "createdAt": "2026-10-29T06:01:58.501Z",
+          "updatedAt": "2026-10-29T06:01:58.501Z"
+        }
+      ],
+      "notification": [
+        {
+          "userId": "user_hardik",
+          "type": "task_assigned",
+          "title": "New task: sheen",
+          "link": "/tasks?id=task_1793198565747_1007",
+          "id": "notification_1793198565747_1009",
+          "createdAt": "2026-10-28T14:42:45.747Z",
+          "updatedAt": "2026-10-28T14:42:45.747Z"
+        },
+        {
+          "userId": "user_dhrumil",
+          "type": "task_review",
+          "title": 'Hardik finished "sheen" \u2014 your review',
+          "link": "/tasks?id=task_1793198565747_1007",
+          "id": "notification_1793198590465_1010",
+          "createdAt": "2026-10-28T14:43:10.465Z",
+          "updatedAt": "2026-10-28T14:43:10.465Z"
+        },
+        {
+          "userId": "user_hardik",
+          "type": "lead_assigned",
+          "title": "You own a new lead: Durrell",
+          "link": "/leads?id=lead_1793249017000_1000",
+          "id": "notification_1793249086355_1001",
+          "createdAt": "2026-10-29T04:44:46.355Z",
+          "updatedAt": "2026-10-29T04:44:46.355Z"
+        },
+        {
+          "userId": "user_hardik",
+          "type": "task_assigned",
+          "title": "New task: Complete the QCPC website",
+          "link": "/tasks?id=task_1793249494701_1002",
+          "id": "notification_1793249494701_1004",
+          "createdAt": "2026-10-29T04:51:34.701Z",
+          "updatedAt": "2026-10-29T04:51:34.701Z"
+        },
+        {
+          "userId": "user_hardik",
+          "type": "task_status",
+          "title": "Complete the QCPC website \u2192 In Review",
+          "link": "/tasks?id=task_1793249494701_1002",
+          "id": "notification_1793252695581_1001",
+          "createdAt": "2026-10-29T05:44:55.581Z",
+          "updatedAt": "2026-10-29T05:44:55.581Z"
+        },
+        {
+          "userId": "user_hardik",
+          "type": "task_status",
+          "title": "Complete the QCPC website \u2192 Completed",
+          "link": "/tasks?id=task_1793249494701_1002",
+          "id": "notification_1793253711167_1003",
+          "createdAt": "2026-10-29T06:01:51.167Z",
+          "updatedAt": "2026-10-29T06:01:51.167Z"
+        },
+        {
+          "userId": "user_hardik",
+          "type": "task_status",
+          "title": "Hardik \u2192 In Progress",
+          "link": "/tasks?id=task_1793178660100_1000",
+          "id": "notification_1793253715631_1005",
+          "createdAt": "2026-10-29T06:01:55.631Z",
+          "updatedAt": "2026-10-29T06:01:55.631Z"
+        },
+        {
+          "userId": "user_hardik",
+          "type": "task_status",
+          "title": "Complete the QCPC website \u2192 In Review",
+          "link": "/tasks?id=task_1793249494701_1002",
+          "id": "notification_1793253718501_1007",
+          "createdAt": "2026-10-29T06:01:58.501Z",
+          "updatedAt": "2026-10-29T06:01:58.501Z"
+        }
+      ],
+      "tag": [],
+      "contentItem": [],
+      "note": [],
+      "recurringTask": [
+        {
+          "title": "sheen",
+          "companyId": "vth",
+          "assigneeId": "user_hardik",
+          "projectId": "project_1793198535149_1004",
+          "priority": "LOW",
+          "estimatedMinutes": 30,
+          "weekdays": [
+            5
+          ],
+          "createdById": "user_hardik",
+          "id": "recurringTask_1793198677046_1012",
+          "createdAt": "2026-10-28T14:44:37.046Z",
+          "updatedAt": "2026-10-28T14:44:37.046Z"
+        }
+      ]
+    };
+  }
+});
+
 // lib/db/index.ts
 var db_exports = {};
 __export(db_exports, {
@@ -66723,6 +67636,25 @@ function scheduleDiskCacheSave() {
   diskSaveTimeout = setTimeout(() => {
     saveCacheToDisk(store);
   }, 1e3);
+}
+function loadInitialData() {
+  if (loadCacheFromDisk()) return true;
+  if (bundledCache && typeof bundledCache === "object") {
+    let loadedCount = 0;
+    for (const [table2, rows] of Object.entries(bundledCache)) {
+      if (store[table2] && Array.isArray(rows) && rows.length > 0) {
+        const validRows = rows.filter((r6) => !r6._placeholder);
+        if (validRows.length > 0) {
+          store[table2] = validRows.map(hydrateDates);
+          loadedCount++;
+        }
+      }
+    }
+    ensureRootFolders();
+    console.log(`[db] Instantly restored ${loadedCount} tables from bundled cache`);
+    return true;
+  }
+  return false;
 }
 async function initDbFromSheets(force = false) {
   if (!isSheetsConfigured()) {
@@ -67034,6 +67966,24 @@ function createModelDelegate(modelName) {
             }
           }
         }
+        if (args._max) {
+          row._max = {};
+          for (const [field, enabled] of Object.entries(args._max)) {
+            if (enabled) {
+              const vals = gItems.map((it) => it[field]).filter((v2) => v2 !== null && v2 !== void 0);
+              row._max[field] = vals.length > 0 ? vals.reduce((max, val) => val > max ? val : max) : null;
+            }
+          }
+        }
+        if (args._min) {
+          row._min = {};
+          for (const [field, enabled] of Object.entries(args._min)) {
+            if (enabled) {
+              const vals = gItems.map((it) => it[field]).filter((v2) => v2 !== null && v2 !== void 0);
+              row._min[field] = vals.length > 0 ? vals.reduce((min, val) => val < min ? val : min) : null;
+            }
+          }
+        }
         results.push(row);
       }
       return results;
@@ -67048,6 +67998,33 @@ function createModelDelegate(modelName) {
         result._sum = {};
         for (const [f6, on] of Object.entries(args._sum)) {
           if (on) result._sum[f6] = items.reduce((acc, it) => acc + (Number(it[f6]) || 0), 0);
+        }
+      }
+      if (args._max) {
+        result._max = {};
+        for (const [f6, on] of Object.entries(args._max)) {
+          if (on) {
+            const vals = items.map((it) => it[f6]).filter((v2) => v2 !== null && v2 !== void 0);
+            result._max[f6] = vals.length > 0 ? vals.reduce((max, val) => val > max ? val : max) : null;
+          }
+        }
+      }
+      if (args._min) {
+        result._min = {};
+        for (const [f6, on] of Object.entries(args._min)) {
+          if (on) {
+            const vals = items.map((it) => it[f6]).filter((v2) => v2 !== null && v2 !== void 0);
+            result._min[f6] = vals.length > 0 ? vals.reduce((min, val) => val < min ? val : min) : null;
+          }
+        }
+      }
+      if (args._avg) {
+        result._avg = {};
+        for (const [f6, on] of Object.entries(args._avg)) {
+          if (on) {
+            const vals = items.map((it) => Number(it[f6])).filter((v2) => !isNaN(v2));
+            result._avg[f6] = vals.length > 0 ? vals.reduce((a6, b6) => a6 + b6, 0) / vals.length : null;
+          }
         }
       }
       return result;
@@ -67077,6 +68054,7 @@ function createModelDelegate(modelName) {
       }
       store[modelName].push(record2);
       scheduleTableSync(modelName, [record2]);
+      scheduleDiskCacheSave();
       for (const op of nestedOps) await op();
       return projectItem(record2, modelName, select, include);
     },
@@ -67091,7 +68069,10 @@ function createModelDelegate(modelName) {
         store[modelName].push(record2);
         created.push(record2);
       }
-      if (created.length > 0) scheduleTableSync(modelName, created);
+      if (created.length > 0) {
+        scheduleTableSync(modelName, created);
+        scheduleDiskCacheSave();
+      }
       return { count: created.length };
     },
     async update(args = {}) {
@@ -67119,6 +68100,7 @@ function createModelDelegate(modelName) {
       }
       item.updatedAt = /* @__PURE__ */ new Date();
       scheduleTableSync(modelName, [item]);
+      scheduleDiskCacheSave();
       return projectItem(item, modelName, select, include);
     },
     async updateMany(args = {}) {
@@ -67137,7 +68119,10 @@ function createModelDelegate(modelName) {
           changed.push(item);
         }
       }
-      if (changed.length > 0) scheduleTableSync(modelName, changed);
+      if (changed.length > 0) {
+        scheduleTableSync(modelName, changed);
+        scheduleDiskCacheSave();
+      }
       return { count: changed.length };
     },
     async delete(args = {}) {
@@ -67146,13 +68131,17 @@ function createModelDelegate(modelName) {
       if (idx === -1) throw new Error(`Record to delete not found in ${modelName}`);
       const [removed] = store[modelName].splice(idx, 1);
       scheduleTableDelete(modelName, [removed.id]);
+      scheduleDiskCacheSave();
       return projectItem(removed, modelName, select, include);
     },
     async deleteMany(args = {}) {
       const where = args.where || {};
       const removed = store[modelName].filter((x2) => matchesWhere(x2, where, modelName));
       store[modelName] = store[modelName].filter((x2) => !matchesWhere(x2, where, modelName));
-      if (removed.length > 0) scheduleTableDelete(modelName, removed.map((r6) => r6.id));
+      if (removed.length > 0) {
+        scheduleTableDelete(modelName, removed.map((r6) => r6.id));
+        scheduleDiskCacheSave();
+      }
       return { count: removed.length };
     },
     async upsert(args = {}) {
@@ -67172,6 +68161,7 @@ var init_db3 = __esm({
     "use strict";
     init_sheets();
     init_seed();
+    init_bundled_data();
     CompanyCode = { VMH: "VMH", VTH: "VTH" };
     UserKind = { STAFF: "STAFF", CLIENT: "CLIENT" };
     MemberRole = { ADMIN: "ADMIN", MANAGER: "MANAGER", MEMBER: "MEMBER" };
@@ -67396,7 +68386,7 @@ var init_db3 = __esm({
     CACHE_DIR = ".data";
     CACHE_FILE = ".data/sheets-cache.json";
     diskSaveTimeout = null;
-    sheetsHydrated = loadCacheFromDisk();
+    sheetsHydrated = loadInitialData();
     sheetsHydratingPromise = null;
     if (typeof process !== "undefined" && process.env?.GOOGLE_SHEET_WEBAPP_URL) {
       if (sheetsHydrated) {
@@ -75140,17 +76130,23 @@ var init_clients2 = __esm({
       const companyIds = c6.get("companyIds");
       if (!can(user, "view", "client")) return c6.json({ canView: false });
       const p4 = readParams(c6.req.query());
-      const all = await listClients({ companyIds });
       const archived = p4.str("archived") === "1";
-      const filtered = await listClients({ companyIds: subScope(companyIds, p4.str("co")), q: p4.str("q"), status: p4.str("status"), tag: p4.str("tag"), owner: p4.str("owner"), archived });
+      const co = p4.str("co");
+      const q4 = p4.str("q");
+      const status = p4.str("status");
+      const tag2 = p4.str("tag");
+      const owner = p4.str("owner");
+      const hasFilter = Boolean(co || q4 || status || tag2 || owner || archived);
+      const [all, owners, tags] = await Promise.all([
+        listClients({ companyIds }),
+        db.user.findMany({ where: { kind: "STAFF", memberships: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+        db.tag.findMany({ orderBy: { name: "asc" } })
+      ]);
+      const filtered = hasFilter ? await listClients({ companyIds: subScope(companyIds, co), q: q4, status, tag: tag2, owner, archived }) : [...all];
       const { field, dir } = p4.sort(["name", "revenue", "lastActivity"], "lastActivity");
       const key = (x2) => field === "name" ? x2.name.toLowerCase() : field === "revenue" ? x2.revenue : x2.lastActivityAt.getTime();
       filtered.sort((a6, b6) => (key(a6) < key(b6) ? -1 : key(a6) > key(b6) ? 1 : 0) * (dir === "asc" ? 1 : -1));
       const pageRows = filtered.slice((p4.page - 1) * PAGE, p4.page * PAGE);
-      const [owners, tags] = await Promise.all([
-        db.user.findMany({ where: { kind: "STAFF", memberships: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
-        db.tag.findMany({ orderBy: { name: "asc" } })
-      ]);
       return c6.json({
         canView: true,
         all,
@@ -110842,7 +111838,8 @@ var init_projects = __esm({
       dueDate: external_exports.coerce.date().optional(),
       priority: external_exports.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"),
       summary: external_exports.string().trim().max(200).optional(),
-      description: external_exports.string().trim().max(5e3).optional()
+      description: external_exports.string().trim().max(5e3).optional(),
+      assigneeId: external_exports.string().max(64).optional().or(external_exports.literal(""))
     });
     projects = new Hono3().use(...staffContext).get("/", async (c6) => {
       const user = c6.get("user");
@@ -110856,11 +111853,12 @@ var init_projects = __esm({
       const tab = c6.req.query("list") ?? "all";
       const statuses = LIST_TABS[tab] ?? null;
       const where = { ...base2, ...statuses && { status: { in: [...statuses] } }, ...q4 && { OR: [{ name: { contains: q4, mode: "insensitive" } }, { client: { name: { contains: q4, mode: "insensitive" } } }] } };
-      const [list, total, counts, clients2] = await Promise.all([
+      const [list, total, counts, clients2, people] = await Promise.all([
         db.project.findMany({ where, orderBy: [{ createdAt: "asc" }, { id: "asc" }], skip: (page - 1) * PAGE3, take: PAGE3, include: { client: { select: { name: true } }, members: { include: { user: { select: { name: true, image: true } } } } } }),
         db.project.count({ where }),
         db.project.groupBy({ by: ["status"], _count: true, where: base2 }),
-        db.client.findMany({ where: { archivedAt: null, companies: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } })
+        db.client.findMany({ where: { archivedAt: null, companies: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+        db.user.findMany({ where: { kind: "STAFF", memberships: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { name: "asc" } })
       ]);
       const tabCount = (k6) => counts.filter((x2) => !LIST_TABS[k6] || LIST_TABS[k6].includes(x2.status)).reduce((a6, x2) => a6 + x2._count, 0);
       const rows = list.map((x2) => ({
@@ -110876,6 +111874,7 @@ var init_projects = __esm({
         page,
         pageSize: PAGE3,
         clients: clients2,
+        people,
         scope,
         tabCounts: { all: tabCount("all"), active: tabCount("active"), review: tabCount("review"), completed: tabCount("completed") },
         creatable: companyIds.filter((x2) => can(user, "create", "project", x2))
@@ -110934,11 +111933,23 @@ var init_projects = __esm({
       if (!parsed.success) return c6.json({ ok: false, error: parsed.error.issues[0].message });
       const d6 = parsed.data;
       assertCan(user, "create", "project", d6.companyId);
+      const { assigneeId, ...projectData } = d6;
       const template = d6.companyId === "vmh" ? "VMH" : "VTH";
       const project = await db.$transaction(async (tx) => {
-        const p4 = await tx.project.create({ data: { ...d6, template, status: TEMPLATES[template].statuses[0], members: { create: { userId: user.id } } } });
+        const memberUserIds = Array.from(/* @__PURE__ */ new Set([user.id, ...assigneeId ? [assigneeId] : []]));
+        const p4 = await tx.project.create({
+          data: {
+            ...projectData,
+            template,
+            status: TEMPLATES[template].statuses[0],
+            members: { create: memberUserIds.map((userId) => ({ userId })) }
+          }
+        });
         await tx.clientCompany.upsert({ where: { clientId_companyId: { clientId: d6.clientId, companyId: d6.companyId } }, create: { clientId: d6.clientId, companyId: d6.companyId }, update: {} });
         await logActivity(tx, { companyId: d6.companyId, actorId: user.id, verb: "created", entityType: "PROJECT", entityId: p4.id, summary: `${user.name} started project ${p4.name}` });
+        if (assigneeId && assigneeId !== user.id) {
+          await notify(tx, { userIds: [assigneeId], type: "project_assigned", title: `You were assigned to project: ${p4.name}`, link: `/projects?id=${p4.id}` });
+        }
         return p4;
       });
       return c6.json({ ok: true, id: project.id });
@@ -110948,12 +111959,19 @@ var init_projects = __esm({
       const project = await projectFor(user, "update", body.projectId);
       const parsed = projectSchema.safeParse(body.input);
       if (!parsed.success) return c6.json({ ok: false, error: parsed.error.issues[0].message });
-      const { companyId, ...d6 } = parsed.data;
+      const { companyId, assigneeId, ...updateData } = parsed.data;
       void companyId;
       await db.$transaction(async (tx) => {
-        await tx.project.update({ where: { id: project.id }, data: d6 });
-        await tx.clientCompany.upsert({ where: { clientId_companyId: { clientId: d6.clientId, companyId: project.companyId } }, create: { clientId: d6.clientId, companyId: project.companyId }, update: {} });
-        await logActivity(tx, { companyId: project.companyId, actorId: user.id, verb: "updated", entityType: "PROJECT", entityId: project.id, summary: `${user.name} updated project ${d6.name}` });
+        await tx.project.update({ where: { id: project.id }, data: updateData });
+        if (assigneeId) {
+          await tx.projectMember.upsert({
+            where: { projectId_userId: { projectId: project.id, userId: assigneeId } },
+            create: { projectId: project.id, userId: assigneeId },
+            update: {}
+          });
+        }
+        await tx.clientCompany.upsert({ where: { clientId_companyId: { clientId: updateData.clientId, companyId: project.companyId } }, create: { clientId: updateData.clientId, companyId: project.companyId }, update: {} });
+        await logActivity(tx, { companyId: project.companyId, actorId: user.id, verb: "updated", entityType: "PROJECT", entityId: project.id, summary: `${user.name} updated project ${updateData.name}` });
       });
       return c6.json({ ok: true, id: project.id });
     }).post("/status", async (c6) => {
@@ -111573,7 +112591,7 @@ var init_tasks = __esm({
           include: { project: { select: { name: true, client: { select: { name: true } } } }, assignee: { select: { name: true } } }
         }),
         db.project.findMany({ where: { companyId: { in: companyIds }, status: { not: "COMPLETED" } }, select: { id: true, name: true, companyId: true, client: { select: { name: true } } }, orderBy: { name: "asc" } }),
-        db.user.findMany({ where: { kind: "STAFF", isOwner: false, memberships: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
+        db.user.findMany({ where: { kind: "STAFF", memberships: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
         Promise.all([
           db.task.groupBy({ by: ["companyId"], _count: true, where: base2 }),
           db.task.groupBy({ by: ["companyId"], _count: true, where: { ...base2, status: "TODO" } }),
@@ -112200,7 +113218,11 @@ var worker_default = {
     const url2 = new URL(request.url);
     if (url2.pathname.startsWith("/api/") && !url2.pathname.startsWith("/api/health")) {
       const { initDbFromSheets: initDbFromSheets2 } = await Promise.resolve().then(() => (init_db3(), db_exports));
-      await initDbFromSheets2();
+      if (ctx && typeof ctx.waitUntil === "function") {
+        ctx.waitUntil(initDbFromSheets2().catch((err) => console.error("[worker] Background hydration error:", err)));
+      } else {
+        await initDbFromSheets2();
+      }
     }
     return app2.fetch(request, env3, ctx);
   }

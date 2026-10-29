@@ -139,7 +139,7 @@ export const tasks = new Hono<Env>()
         include: { project: { select: { name: true, client: { select: { name: true } } } }, assignee: { select: { name: true } } },
       }),
       db.project.findMany({ where: { companyId: { in: companyIds }, status: { not: "COMPLETED" } }, select: { id: true, name: true, companyId: true, client: { select: { name: true } } }, orderBy: { name: "asc" } }),
-      db.user.findMany({ where: { kind: "STAFF", isOwner: false, memberships: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
+      db.user.findMany({ where: { kind: "STAFF", memberships: { some: { companyId: { in: companyIds } } } }, select: { id: true, name: true }, orderBy: { createdAt: "asc" } }),
       Promise.all([
         db.task.groupBy({ by: ["companyId"], _count: true, where: base }),
         db.task.groupBy({ by: ["companyId"], _count: true, where: { ...base, status: "TODO" } }),

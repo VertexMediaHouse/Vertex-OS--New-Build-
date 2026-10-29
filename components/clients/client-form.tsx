@@ -67,8 +67,7 @@ export function ClientFormDialog({ companies, owners, client }: { companies: ("v
             ))}
           </fieldset>
           <L label="Owner">
-            <select name="ownerId" defaultValue={client?.ownerId} className="h-9 w-full rounded-lg border border-input bg-card px-3">
-              <option value="">Me</option>
+            <select name="ownerId" defaultValue={client?.ownerId ?? owners[0]?.id} className="h-9 w-full rounded-lg border border-input bg-card px-3">
               {owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
           </L>

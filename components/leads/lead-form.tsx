@@ -68,7 +68,6 @@ export function LeadFormDialog({ owners, companies, lead, trigger }: { owners: {
           </F>
           <F label="Owner" className="col-span-2">
             <select className={field} {...form.register("ownerId")}>
-              <option value="">Me</option>
               {owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
           </F>
