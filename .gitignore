@@ -55,3 +55,6 @@ yarn-error.log*
 # build output
 /dist
 /dist-worker
+
+# stale local Postgres data dir (pre sheets-rewrite backend)
+/.data/
