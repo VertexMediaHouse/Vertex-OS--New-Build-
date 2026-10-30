@@ -282,7 +282,7 @@ export namespace Prisma {
 
 // ───────────────────────────── Data Store & Date Hydration ─────────────────────────────
 
-function hydrateDates(val: any): any {
+export function hydrateDates(val: any): any {
   if (val === null || val === undefined) return val;
   if (val instanceof Date) return val; // already hydrated — recursing would wipe it to `{}`
   if (typeof val === "string") {
@@ -290,6 +290,12 @@ function hydrateDates(val: any): any {
     // so date columns reach callers as null instead of a string no one can call
     // .getTime() on (this blanked the Clients page via formatRelative).
     if (val.trim() === "") return null;
+    // Sheets renders a real `true`/`false` written by serializeRowForSheet as the
+    // literal cell text TRUE/FALSE (its native boolean format). Left as a string,
+    // "FALSE" is truthy in JS — every boolean column (isOwner, active, done, ...)
+    // read back as on regardless of its actual value.
+    if (val === "TRUE") return true;
+    if (val === "FALSE") return false;
     if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
       const d = new Date(val);
       if (!isNaN(d.getTime())) return d;
