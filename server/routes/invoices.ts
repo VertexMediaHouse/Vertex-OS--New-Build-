@@ -83,7 +83,7 @@ export const invoices = new Hono<Env>()
       db.comment.findMany({ where: { entityType: "INVOICE", entityId: inv.id }, orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } }),
       db.activity.findMany({ where: { entityId: inv.id, entityType: { in: ["INVOICE", "PAYMENT"] } }, orderBy: { createdAt: "desc" }, take: 15, include: { actor: { select: { name: true } } } }),
     ]);
-    return c.json({ found: true as const, inv, notes, activity, canUpdate: can(user, "update", "invoice", inv.companyId) });
+    return c.json({ found: true as const, inv, notes, activity, canUpdate: can(user, "update", "invoice", inv.companyId), canDelete: can(user, "delete", "invoice", inv.companyId) });
   })
   /** Everything the invoice builder needs. */
   .get("/builder", ...staffContext, async (c) => {
@@ -213,6 +213,30 @@ export const invoices = new Hono<Env>()
       // Cancelling frees its time entries for another invoice.
       ...(s === "CANCEL" ? [db.timeEntry.updateMany({ where: { invoiceId: inv.id }, data: { invoiceId: null } })] : []),
       db.activity.create({ data: { companyId: inv.companyId, actorId: user.id, verb: s === "CANCEL" ? "cancelled" : "sent", entityType: "INVOICE", entityId: inv.id, summary: `${user.name} ${s === "CANCEL" ? "cancelled" : "sent"} invoice #${inv.number}` } }),
+    ]);
+    return c.json<ActionResult>({ ok: true });
+  })
+
+  .post("/delete", ...staffContext, async (c) => {
+    const user = c.get("user");
+    const { invoiceId } = await c.req.json<{ invoiceId: string }>();
+    const inv = await db.invoice.findUniqueOrThrow({ where: { id: id.parse(invoiceId) } });
+    assertCan(user, "delete", "invoice", inv.companyId);
+    // Money that has been received is a record, not a draft — deleting it would lose
+    // the payment history. Cancelling keeps the number and the audit trail.
+    const paid = Number(inv.paidAmount) || 0;
+    if (paid > 0) {
+      return c.json<ActionResult>({ ok: false, error: `Invoice #${inv.number} has ${formatMoney(paid, inv.currency)} paid against it. Cancel it instead.` });
+    }
+    if (inv.status === "PAID") {
+      return c.json<ActionResult>({ ok: false, error: `Invoice #${inv.number} is marked paid. Cancel it instead.` });
+    }
+    await db.$transaction([
+      // Line items belong to the invoice; its time entries are released, not deleted.
+      db.invoiceLineItem.deleteMany({ where: { invoiceId: inv.id } }),
+      db.timeEntry.updateMany({ where: { invoiceId: inv.id }, data: { invoiceId: null } }),
+      db.invoice.delete({ where: { id: inv.id } }),
+      db.activity.create({ data: { companyId: inv.companyId, actorId: user.id, verb: "deleted", entityType: "INVOICE", entityId: inv.id, summary: `${user.name} deleted invoice #${inv.number}` } }),
     ]);
     return c.json<ActionResult>({ ok: true });
   });

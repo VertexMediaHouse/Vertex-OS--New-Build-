@@ -77,6 +77,7 @@ export const goals = new Hono<Env>()
       milestones,
       activity: rows.map((a) => ({ id: a.id, actor: a.actor, summary: a.summary, time: formatRelative(a.createdAt, t) })),
       canUpdate: can(user, "update", "goal"),
+      canDelete: can(user, "delete", "goal"),
     });
   })
   .post("/", async (c) => {
@@ -120,5 +121,22 @@ export const goals = new Hono<Env>()
     const done = z.boolean().parse((await c.req.json<{ done: boolean }>()).done);
     await db.goalMilestone.update({ where: { id: m.id }, data: { done } });
     if (done) await logActivity(db, { companyId: goal.companyId, actorId: user.id, verb: "milestone", entityType: "GOAL", entityId: goal.id, summary: `${user.name} marked milestone as completed` });
+    return c.json<ActionResult>({ ok: true });
+  })
+
+  .post("/delete", async (c) => {
+    const user = c.get("user");
+    const { goalId } = await c.req.json<{ goalId: string }>();
+    const goal = await db.goal.findUniqueOrThrow({ where: { id: id.parse(goalId) } });
+    // Owning a goal lets you edit it, but not delete it — that stays a "delete goal"
+    // right, so a member can't remove a company target they were added to.
+    assertCan(user, "delete", "goal", goal.companyId ?? undefined);
+    await db.$transaction([
+      // Members and milestones exist only as part of the goal.
+      db.goalMember.deleteMany({ where: { goalId: goal.id } }),
+      db.goalMilestone.deleteMany({ where: { goalId: goal.id } }),
+      db.goal.delete({ where: { id: goal.id } }),
+      db.activity.create({ data: { companyId: goal.companyId, actorId: user.id, verb: "deleted", entityType: "GOAL", entityId: goal.id, summary: `${user.name} deleted goal ${goal.title}` } }),
+    ]);
     return c.json<ActionResult>({ ok: true });
   });

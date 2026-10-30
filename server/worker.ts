@@ -18,21 +18,28 @@ export default {
       appPromise = import("./app");
     }
     const { app } = await appPromise;
-    // Cold isolate: the in-memory store starts empty and lib/db/index.ts kicks off
-    // Sheets hydration on import but doesn't await it — a request that lands on a
-    // fresh isolate must not read/write that empty store before hydration lands.
+    // Requests answer in ms: reads are served from the in-memory store and hydration
+    // runs in the background. Reads come from the CSV endpoint now (~2s for all 44
+    // tabs, ~0.6s for a few), so a refresh no longer costs the old ~16s Apps Script
+    // getAll — but it still isn't on the request's critical path.
     //
-    // Only data requests wait. Static assets and the auth/config endpoints the login
-    // page needs are answered immediately: awaiting the ~18s Apps Script call on every
-    // request meant the SPA shell itself could never finish loading.
+    // What makes that safe is in lib/db: hydration MERGES the arriving snapshot into
+    // the store instead of replacing it, and rows this isolate created/deleted while
+    // the fetch was in flight are preserved (see writtenIds/deletedIds). Before that,
+    // a landing snapshot wiped concurrent writes — the "saved it, then it vanished"
+    // inconsistency.
+    //
+    // /api/auth/* is the one path that does wait, in server/app.ts: a cold isolate has
+    // no users until the auth tabs land, so the first login would otherwise fail.
     const url = new URL(request.url);
     if (url.pathname.startsWith("/api/") && !url.pathname.startsWith("/api/health")) {
       const { initDbFromSheets } = await import("@/lib/db");
-      if (ctx && typeof (ctx as any).waitUntil === "function") {
-        (ctx as any).waitUntil(initDbFromSheets().catch((err: unknown) => console.error("[worker] Background hydration error:", err)));
-      } else {
-        await initDbFromSheets();
-      }
+      const hydrating = initDbFromSheets().catch((err: unknown) => console.error("[worker] Background hydration error:", err));
+      // With waitUntil (Workers) the isolate is kept alive past the response. Without
+      // it, awaiting keeps hydration from being dropped entirely — a bare floating
+      // promise let the first request read a store that was still empty.
+      if (ctx && typeof (ctx as any).waitUntil === "function") (ctx as any).waitUntil(hydrating);
+      else await hydrating;
     }
     return app.fetch(request, env, ctx as any);
   },

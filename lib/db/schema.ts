@@ -2,6 +2,10 @@
 // the model delegates below type each table from one sample row here, while the
 // actual local store starts empty and Google Sheets is the live source of truth.
 export const SCHEMA = {
+  company: { id: "", code: "VMH" as "VMH" | "VTH", name: "", tagline: "", color: "", invoicePrefix: "", nextInvoiceNumber: 1, address: "", gstin: "", settings: {} as any, bankDetails: {} as any, createdAt: "", updatedAt: "" },
+  user: { id: "", name: "", email: "", emailVerified: true, image: null as string | null, kind: "STAFF" as "STAFF" | "CLIENT", isOwner: true, title: "", timezone: "", weeklyCapacityHours: 40, active: true, createdAt: "", updatedAt: "" },
+  membership: { userId: "", companyId: "", role: "ADMIN" as "ADMIN" | "MANAGER" | "MEMBER", modules: [] as string[], createdAt: "" },
+  account: { id: "", userId: "", accountId: "", providerId: "", password: "", accessToken: null as string | null, refreshToken: null as string | null, idToken: null as string | null, accessTokenExpiresAt: null as string | null, refreshTokenExpiresAt: null as string | null, scope: null as string | null, createdAt: "", updatedAt: "" },
   activity: {"id":"act_0","companyId":"vmh","actorId":"user_sheen","verb":"uploaded","entityType":"FILE","entityId":"file_short_01_final_mp4","summary":"Priya uploaded final video for Alex Johnson","meta":null,"createdAt":"2026-10-27T07:39:12.658Z"},
   approval: {"id":"appr_bright_0","projectId":"project_bright_labs_shorts","title":"Short #1","fileId":null,"status":"APPROVED","requestedAt":"2026-10-25T03:30:00.000Z","respondedAt":"2026-10-25T09:30:00.000Z","respondedByContactId":"contact_bright_labs_0","comment":null},
   bug: {"id":"bug_0","projectId":"project_greenbuild_crm","title":"Lead import skips rows with empty phone","severity":"HIGH","status":"OPEN","createdAt":"2026-10-25T03:30:00.000Z","resolvedAt":null},

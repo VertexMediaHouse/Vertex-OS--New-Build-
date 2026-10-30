@@ -4,12 +4,15 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { fetchAllFromSheets, scheduleTableSync, scheduleTableDelete, isSheetsConfigured } from "../sheets";
+import {
+  fetchAllFromSheets,
+  scheduleTableSync as queueTableSync,
+  scheduleTableDelete as queueTableDelete,
+  isSheetsConfigured,
+} from "../sheets";
+import { isCsvConfigured } from "../sheets/csv";
 import { SCHEMA } from "./schema";
-// Only company/user/membership/account ship with real (non-mock) seed rows, in ./seed.ts.
-// Every business table starts empty here — Google Sheets is the live source of truth —
-import { companyData, userData, membershipData, accountData } from "./seed";
-import { bundledCache } from "./bundled-data";
+// Google Sheets is the live source of truth. All tables start empty and hydrate from Sheets.
 
 // ───────────────────────────── Enums ─────────────────────────────
 
@@ -318,14 +321,63 @@ function hydrateDates(val: any): any {
   return val;
 }
 
+/**
+ * Fills in columns the sheet's header row doesn't have yet, as null.
+ *
+ * Tabs drift from the code's shape: a column only exists once some write actually
+ * carried a value for it (upsertRows grows the header row on demand), so e.g. the
+ * `task` tab has no `parentId` column until the first subtask is created. Without
+ * this those fields read back as `undefined` rather than `null`.
+ *
+ * It mattered because `undefined` and `null` are not interchangeable everywhere:
+ * `Object.entries()` skips neither, but `'col' in row` is false, JSON.stringify drops
+ * the key, and `??`/`?.` chains behave differently from a real null. Normalizing here
+ * means the store always holds the full row shape, exactly as the database did.
+ */
+function defaultFor(sample: unknown): any {
+  // An array column must stay an array: callers map/filter over tags, weekdays and
+  // attendeeIds without guarding, so a null there is a crash rather than a blank.
+  if (Array.isArray(sample)) return [];
+  // A numeric column must stay numeric: goal progress, invoice totals and counters are
+  // read straight into arithmetic (lib/metrics/goals.ts calls .toString() on them), so
+  // a null or undefined there throws instead of reading as zero.
+  if (typeof sample === "number") return 0;
+  return null;
+}
+
+function normalizeRow(table: string, row: any): any {
+  const shape = (SCHEMA as Record<string, any>)[table];
+  if (!shape) return row;
+  for (const [col, sample] of Object.entries(shape)) {
+    const v = row[col];
+    if (v === undefined) {
+      row[col] = defaultFor(sample);
+      continue;
+    }
+    // A numeric column that's blank in the sheet arrives as null (hydrateDates maps
+    // "" -> null so date columns read as missing). Arithmetic callers can't take that:
+    // goalProgress() does Number(v.toString()) and threw on the null. Treat a blank
+    // number as 0, which is what the database's column default gave before.
+    if (v === null && typeof sample === "number") row[col] = 0;
+    // Likewise an array column: a blank cell is an empty list, not a missing value.
+    else if (v === null && Array.isArray(sample)) row[col] = [];
+  }
+  return row;
+}
+
+/** Sheet rows -> store rows: drop placeholders, parse dates/JSON, fill missing columns. */
+function fromSheet(table: string, rows: any[]): any[] {
+  return rows.filter((r) => !r._placeholder).map((r) => normalizeRow(table, hydrateDates(r)));
+}
+
 const store: Record<string, any[]> = {
-  company: hydrateDates(companyData),
-  user: hydrateDates(userData),
+  company: [],
+  user: [],
   session: [],
-  account: hydrateDates(accountData),
+  account: [],
   verification: [],
   rateLimit: [],
-  membership: hydrateDates(membershipData),
+  membership: [],
   client: [],
   clientCompany: [],
   projectContact: [],
@@ -409,9 +461,9 @@ function loadCacheFromDisk(): boolean {
     let loadedCount = 0;
     for (const [table, rows] of Object.entries(sheetsData)) {
       if (store[table] && Array.isArray(rows) && rows.length > 0) {
-        const validRows = (rows as any[]).filter((r) => !r._placeholder);
+        const validRows = fromSheet(table, rows as any[]);
         if (validRows.length > 0) {
-          store[table] = validRows.map(hydrateDates);
+          store[table] = validRows;
           loadedCount++;
         }
       }
@@ -448,44 +500,144 @@ export function scheduleDiskCacheSave(): void {
   }, 1000);
 }
 
-function loadInitialData(): boolean {
-  if (loadCacheFromDisk()) return true;
-  if (bundledCache && typeof bundledCache === "object") {
-    let loadedCount = 0;
-    for (const [table, rows] of Object.entries(bundledCache)) {
-      if (store[table] && Array.isArray(rows) && rows.length > 0) {
-        const validRows = (rows as any[]).filter((r) => !r._placeholder);
-        if (validRows.length > 0) {
-          store[table] = validRows.map(hydrateDates);
-          loadedCount++;
-        }
-      }
-    }
-    ensureRootFolders();
-    console.log(`[db] Instantly restored ${loadedCount} tables from bundled cache`);
-    return true;
-  }
-  return false;
+function loadInitialData(): void {
+  loadCacheFromDisk();
 }
 
-// Restore instantly from disk or bundled cache so production never freezes!
-let sheetsHydrated = loadInitialData();
+loadInitialData();
 let sheetsHydratingPromise: Promise<void> | null = null;
 
+/**
+ * When the store last took a real Sheets snapshot (0 = never, only bundled/disk data).
+ * Requests are always served from memory in ms and never await the Sheets read; this
+ * timestamp just keeps a cold isolate from re-fetching on every single request.
+ */
+let lastHydratedAt = 0;
+// ponytail: fixed 5-minute window. Writes are applied to memory and pushed to Sheets
+// immediately, so this only bounds how fast an edit made in a *different* isolate
+// shows up here. Shorten it, or move the store to KV/D1, if that lag starts to bite.
+const HYDRATE_TTL_MS = 5 * 60_000;
+
+/**
+ * Ids this isolate has written since the last successful hydration. A Sheets fetch
+ * (~2s for all tabs via CSV, ~16s via the Apps Script fallback) can start before a
+ * write and finish after it, so the arriving snapshot is older than the write; these
+ * ids mark the rows that must survive the merge.
+ */
+const writtenIds = new Map<string, Set<string>>();
+/** Ids deleted here since the last hydration — must be dropped from an older snapshot. */
+const deletedIds = new Map<string, Set<string>>();
+
+function mark(map: Map<string, Set<string>>, table: string, ids: string[]) {
+  let s = map.get(table);
+  if (!s) map.set(table, (s = new Set()));
+  for (const id of ids) s.add(id);
+}
+
+function scheduleTableSync(table: string, rows: any[]) {
+  const ids = rows.map((r) => r.id);
+  mark(writtenIds, table, ids);
+  for (const id of ids) deletedIds.get(table)?.delete(id); // re-created after a delete
+  queueTableSync(table, rows);
+}
+
+function scheduleTableDelete(table: string, ids: string[]) {
+  mark(deletedIds, table, ids);
+  for (const id of ids) writtenIds.get(table)?.delete(id);
+  queueTableDelete(table, ids);
+}
+
+/** True once a real Sheets snapshot has landed in this isolate. */
+export function isDbHydrated(): boolean {
+  return lastHydratedAt > 0 || (!isSheetsConfigured() && !isCsvConfigured());
+}
+
+/**
+ * Queries call this first. It resolves instantly in the normal case — the store is
+ * already populated, so reads stay in the ms range and never block on Sheets.
+ *
+ * It only waits in one situation: this isolate has never completed a real snapshot
+ * and a fetch is in flight. Serving that moment from memory is what returned stale
+ * bundled rows and made updates/deletes miss rows that exist in the sheet. A periodic
+ * TTL refresh never waits — it swaps data in underneath, in the background.
+ */
+async function awaitFirstHydration(): Promise<void> {
+  if (isDbHydrated() || !sheetsHydratingPromise) return;
+  await sheetsHydratingPromise;
+}
+
+/**
+ * Tables the login path needs: Better Auth looks up the session, its user, the
+ * password hash and the user's company membership.
+ *
+ * These used to be seeded from a committed snapshot so a cold isolate could serve
+ * /api/auth/* before any Sheets read landed. That snapshot is gone (Sheets is the only
+ * source of truth now), and a Worker isolate has no disk cache to fall back on — so
+ * without this an isolate starts with zero users and the first login fails.
+ *
+ * Awaiting a read is only affordable because these four tabs come from the CSV
+ * endpoint in ~0.6s (the Apps Script getAll was 16s). See lib/sheets/csv.ts.
+ */
+const AUTH_TABLES = ["user", "session", "account", "membership"];
+
+let authHydratedAt = 0;
+let authHydratingPromise: Promise<void> | null = null;
+
+/**
+ * Loads just the auth tables, awaited. Call before serving an auth request on an
+ * isolate that may be cold; a full hydration (or a fresh enough one) makes it a no-op.
+ */
+export async function ensureAuthTables(): Promise<void> {
+  // Either backend can serve these: CSV needs GOOGLE_SHEET_ID, Apps Script needs
+  // GOOGLE_SHEET_WEBAPP_URL. Gating on the webhook alone skipped hydration entirely
+  // on a CSV-only deploy and left the store empty.
+  if (!isSheetsConfigured() && !isCsvConfigured()) return;
+  if (lastHydratedAt > 0 || Date.now() - authHydratedAt < HYDRATE_TTL_MS) return;
+  if (authHydratingPromise) return authHydratingPromise;
+
+  authHydratingPromise = (async () => {
+    try {
+      const data = await fetchAllFromSheets(AUTH_TABLES);
+      if (!data) return; // leave authHydratedAt alone so the next request retries
+      for (const [table, rows] of Object.entries(data)) {
+        if (!store[table] || !Array.isArray(rows)) continue;
+        const valid = fromSheet(table, rows);
+        // Only replace a table the sheet actually has rows for: a transient empty
+        // read must not log every user out.
+        if (valid.length > 0) store[table] = valid;
+      }
+      authHydratedAt = Date.now();
+    } catch (err) {
+      console.error("[db] Auth hydration failed:", err);
+    } finally {
+      authHydratingPromise = null;
+    }
+  })();
+
+  return authHydratingPromise;
+}
+
 export async function initDbFromSheets(force = false): Promise<void> {
-  if (!isSheetsConfigured()) {
-    sheetsHydrated = true;
+  if (!isSheetsConfigured() && !isCsvConfigured()) {
+    lastHydratedAt = Date.now();
     return;
   }
-  if (sheetsHydrated && !force) return;
-  if (sheetsHydratingPromise && !force) return sheetsHydratingPromise;
+  // Fresh enough — serve from memory. Without this a never-latching flag made every
+  // request start its own full fetch.
+  if (!force && Date.now() - lastHydratedAt < HYDRATE_TTL_MS) return;
+  // Always join an in-flight fetch, even when forcing: two concurrent `force` calls
+  // would otherwise both fetch and the slower one's snapshot would overwrite rows
+  // written between the two.
+  if (sheetsHydratingPromise) return sheetsHydratingPromise;
 
   sheetsHydratingPromise = (async () => {
     try {
-      const sheetsData = await fetchAllFromSheets();
+      // `store`'s keys are the tab names; pass them so the CSV path knows what to
+      // read (it has no workbook-wide listing like Apps Script's getAll).
+      const sheetsData = await fetchAllFromSheets(Object.keys(store));
       if (!sheetsData) {
-        // Fetch failed (timeout, Apps Script cold start, transient 5xx) — don't latch
-        // sheetsHydrated if store has never been populated.
+        // Fetch failed (timeout, Apps Script cold start, transient 5xx) — leave
+        // lastHydratedAt alone so the next request retries.
         console.warn("[db] Sheets fetch failed this attempt; will retry on next request");
         return;
       }
@@ -493,9 +645,22 @@ export async function initDbFromSheets(force = false): Promise<void> {
       let loadedCount = 0;
       for (const [table, rows] of Object.entries(sheetsData)) {
         if (store[table] && Array.isArray(rows) && rows.length > 0) {
-          const validRows = rows.filter((r) => !r._placeholder);
+          const validRows = fromSheet(table, rows);
           if (validRows.length > 0) {
-            store[table] = validRows.map(hydrateDates);
+            // Merge, don't replace. The fetch isn't instant; a write that lands in this
+            // isolate meanwhile is already queued for Sheets but won't be in this
+            // (older) snapshot, so a wholesale `store[table] = ...` would erase it
+            // from memory and the row would disappear until the next hydration.
+            const tombstoned = deletedIds.get(table);
+            const fresh = validRows.filter((r) => !tombstoned?.has(r.id));
+            const freshIds = new Set(fresh.map((r) => r.id));
+            const written = writtenIds.get(table);
+            const localOnly = store[table].filter((r) => r.id && !freshIds.has(r.id) && written?.has(r.id));
+            store[table] = [...fresh, ...localOnly];
+            // These rows are now reflected in (or re-merged over) the snapshot; stop
+            // tracking them so the sets can't grow without bound.
+            written?.clear();
+            tombstoned?.clear();
             loadedCount++;
           }
         }
@@ -503,7 +668,7 @@ export async function initDbFromSheets(force = false): Promise<void> {
       ensureRootFolders();
       saveCacheToDisk(sheetsData);
       console.log(`[db] Successfully hydrated ${loadedCount} tables from Google Sheets`);
-      sheetsHydrated = true;
+      lastHydratedAt = Date.now();
     } catch (err) {
       console.error("[db] Error hydrating from Google Sheets:", err);
     } finally {
@@ -514,14 +679,18 @@ export async function initDbFromSheets(force = false): Promise<void> {
   return sheetsHydratingPromise;
 }
 
-// Auto-trigger background hydration if configured:
-// If disk cache already hydrated the store, run in background without blocking; otherwise start initial hydration.
-if (typeof process !== "undefined" && process.env?.GOOGLE_SHEET_WEBAPP_URL) {
-  if (sheetsHydrated) {
-    initDbFromSheets(true).catch((err) => console.error("[db] Background sheets refresh error:", err));
-  } else {
-    initDbFromSheets().catch((err) => console.error("[db] Initial sheets hydration error:", err));
-  }
+// Kick off the first real snapshot as soon as the module loads, so a cold isolate is
+// already fetching by the time the first query runs.
+//
+// Auth goes first, on its own: Google throttles concurrent CSV reads (4 tabs ~0.6s,
+// but all 45 at once ~9s), so firing the full snapshot immediately made the awaited
+// auth read contend with 45 other fetches and take 1.7s instead of 0.6s. Logging in
+// is what blocks the user, so it gets the bandwidth first.
+if (typeof process !== "undefined" && (process.env?.GOOGLE_SHEET_ID || process.env?.GOOGLE_SHEET_WEBAPP_URL)) {
+  ensureAuthTables()
+    .catch((err) => console.error("[db] Initial auth hydration error:", err))
+    .then(() => initDbFromSheets())
+    .catch((err) => console.error("[db] Initial sheets hydration error:", err));
 }
 
 
@@ -1030,7 +1199,7 @@ type ModelDelegate<T extends Record<string, any>> = {
 function createModelDelegate<T extends Record<string, any> = Record<string, any>>(modelName: string): ModelDelegate<T> {
   return {
     async findMany(args: any = {}) {
-      if (!sheetsHydrated && sheetsHydratingPromise) await sheetsHydratingPromise;
+      await awaitFirstHydration();
       let items = store[modelName] || [];
       if (args.where) items = items.filter((x) => matchesWhere(x, args.where, modelName));
       if (args.distinct) {
@@ -1053,7 +1222,7 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
     },
 
     async findFirst(args: any = {}) {
-      if (!sheetsHydrated && sheetsHydratingPromise) await sheetsHydratingPromise;
+      await awaitFirstHydration();
       let items = store[modelName] || [];
       if (args.where) items = items.filter((x) => matchesWhere(x, args.where, modelName));
       if (args.orderBy) items = applyOrderBy(items, args.orderBy);
@@ -1078,14 +1247,14 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
     },
 
     async count(args: any = {}) {
-      if (!sheetsHydrated && sheetsHydratingPromise) await sheetsHydratingPromise;
+      await awaitFirstHydration();
       let items = store[modelName] || [];
       if (args.where) items = items.filter((x) => matchesWhere(x, args.where, modelName));
       return items.length;
     },
 
     async groupBy(args: any = {}) {
-      if (!sheetsHydrated && sheetsHydratingPromise) await sheetsHydratingPromise;
+      await awaitFirstHydration();
       let items = store[modelName] || [];
       if (args.where) items = items.filter((x) => matchesWhere(x, args.where, modelName));
       const byFields: string[] = Array.isArray(args.by) ? args.by : [args.by];
@@ -1137,7 +1306,7 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
     },
 
     async aggregate(args: any = {}) {
-      if (!sheetsHydrated && sheetsHydratingPromise) await sheetsHydratingPromise;
+      await awaitFirstHydration();
       let items = store[modelName] || [];
       if (args.where) items = items.filter((x) => matchesWhere(x, args.where, modelName));
       const result: any = {};
@@ -1184,6 +1353,11 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
       if (!record.id) record.id = nextId(modelName);
       if (!record.createdAt) record.createdAt = new Date();
       if (!record.updatedAt) record.updatedAt = new Date();
+      // A create carries only what its form/route collected, so columns the table
+      // knows about are missing — the real database filled those from its own column
+      // defaults. Without this, creating a goal left startValue/currentValue undefined
+      // and goalProgress() threw on .toString().
+      normalizeRow(modelName, record);
 
       // Handle nested creates
       const nestedOps: Array<() => Promise<void>> = [];
@@ -1230,6 +1404,9 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
     },
 
     async update(args: any = {}) {
+      // Must see the real rows first: updating against a not-yet-hydrated store threw
+      // "Record to update not found" for rows that exist in the sheet.
+      await awaitFirstHydration();
       const { where, data, select, include } = args;
       const idx = store[modelName].findIndex((x) => matchesWhere(x, where, modelName));
       if (idx === -1) throw new Error(`Record to update not found in ${modelName}`);
@@ -1260,6 +1437,7 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
     },
 
     async updateMany(args: any = {}) {
+      await awaitFirstHydration();
       const { where, data } = args;
       const changed: any[] = [];
       for (const item of store[modelName]) {
@@ -1283,6 +1461,7 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
     },
 
     async delete(args: any = {}) {
+      await awaitFirstHydration();
       const { where, select, include } = args;
       const idx = store[modelName].findIndex((x) => matchesWhere(x, where, modelName));
       if (idx === -1) throw new Error(`Record to delete not found in ${modelName}`);
@@ -1293,6 +1472,7 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
     },
 
     async deleteMany(args: any = {}) {
+      await awaitFirstHydration();
       const where = args.where || {};
       const removed = store[modelName].filter((x) => matchesWhere(x, where, modelName));
       store[modelName] = store[modelName].filter((x) => !matchesWhere(x, where, modelName));
@@ -1318,13 +1498,13 @@ function createModelDelegate<T extends Record<string, any> = Record<string, any>
 // ───────────────────────────── Database Client ─────────────────────────────
 
 const rawDb = {
-  company: createModelDelegate<Hydrate<(typeof companyData)[number]>>("company"),
-  user: createModelDelegate<Hydrate<(typeof userData)[number]>>("user"),
+  company: createModelDelegate<Hydrate<typeof SCHEMA.company>>("company"),
+  user: createModelDelegate<Hydrate<typeof SCHEMA.user>>("user"),
   session: createModelDelegate("session"),
-  account: createModelDelegate<Hydrate<(typeof accountData)[number]>>("account"),
+  account: createModelDelegate<Hydrate<typeof SCHEMA.account>>("account"),
   verification: createModelDelegate("verification"),
   rateLimit: createModelDelegate("rateLimit"),
-  membership: createModelDelegate<Hydrate<(typeof membershipData)[number]>>("membership"),
+  membership: createModelDelegate<Hydrate<typeof SCHEMA.membership>>("membership"),
   client: createModelDelegate<Hydrate<typeof SCHEMA.client>>("client"),
   clientCompany: createModelDelegate<Hydrate<typeof SCHEMA.clientCompany>>("clientCompany"),
   projectContact: createModelDelegate<Hydrate<typeof SCHEMA.projectContact>>("projectContact"),

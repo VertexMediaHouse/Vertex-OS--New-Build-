@@ -1,9 +1,10 @@
 // Ported from app/(app)/goals/page.tsx: Prisma reads moved to server/routes/goals.ts,
 // the filtering and chart maths stay here unchanged.
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, AlertTriangle, BarChart3, Clock, FileText, FolderCheck, GraduationCap, LineChart, MonitorPlay, MoreVertical, Rocket, Smile, Target, UserPlus, Users, Video, Workflow, type LucideIcon } from "lucide-react";
 import { ChartLegend, DonutChart, DonutLegend, LinesChart } from "@/components/shared/charts";
 import { ActivityRow } from "@/components/shared/display";
+import { DeleteButton } from "@/components/shared/delete-button";
 import { DateRangePicker, FilterSelect, SearchInput } from "@/components/shared/filters";
 import { KpiCard, KpiTile } from "@/components/shared/kpi-card";
 import { CardSkeleton, EmptyState, KeyValue, PageHeader } from "@/components/shared/layout";
@@ -19,7 +20,7 @@ import { goalStatus } from "@/lib/metrics/goals";
 import { useSearchParams } from "@/lib/nav";
 import { dayKey, lastDay, parseDay, type Period } from "@/lib/period";
 import { GOAL_STATUS } from "@/lib/status";
-import { api, query } from "@/web/api";
+import { api, call, query } from "@/web/api";
 import { useTitle } from "@/web/title";
 
 const ICONS: Record<string, [LucideIcon, TileTone]> = {
@@ -51,6 +52,8 @@ const fetchGoals = (q: Record<string, string>) => query(api.api.goals.$get({ que
 
 const valueText = (g: Row, v: unknown) => (g.unit === "CURRENCY" ? formatINR(Number(v)) : g.unit === "PERCENT" ? `${Number(v)}%` : g.unit === "HOURS" ? `${Number(v)}h` : String(Number(v)));
 const barTone = (g: Row) => (g.status === "COMPLETED" || g.progress >= 100 ? "success" : g.status === "OVERDUE" || g.status === "OFF_TRACK" ? "danger" : "primary") as "success";
+
+const deleteGoal = (goalId: string) => call(api.api.goals.delete.$post({ json: { goalId } }));
 
 export default function GoalsPage() {
   useTitle("Goals");
@@ -151,9 +154,10 @@ function Detailed({ rows, sp, scope, userId, range, people, companies, canCreate
 }
 
 function GoalPanel({ goal, userId }: { goal: Row; userId: string }) {
+  const queryClient = useQueryClient();
   const { data } = useQuery({ queryKey: ["goals", "panel", goal.id], queryFn: () => query(api.api.goals[":id"].panel.$get({ param: { id: goal.id } })) });
   if (!data) return <CardSkeleton className="h-96" />;
-  const { milestones, activity, canUpdate } = data;
+  const { milestones, activity, canUpdate, canDelete } = data;
   const canEdit = canUpdate || goal.ownerId === userId;
   return (
     <div className="space-y-3.5">
@@ -166,6 +170,16 @@ function GoalPanel({ goal, userId }: { goal: Row; userId: string }) {
         {goal.metricType !== "MANUAL" && <p className="mt-2 text-2xs text-ink-muted">Tracked automatically from live data.</p>}
         <KeyValue className="mt-4" labelWidth={100} rows={[["Company", <span key="c" className="flex items-center gap-1.5"><CompanyBadge code={companyCode(goal.companyId)} />{goal.companyId === "vth" ? "Vertex Tech House" : goal.companyId === "vmh" ? "Vertex Media House" : "Both companies"}</span>], ["Category", GOAL_CATEGORY_LABELS[goal.category]], ["Start Date", formatDate(goal.startDate)], ["End Date", formatDate(goal.endDate)], ["Owner", <span key="o" className="flex items-center gap-2"><Avatar person={goal.owner} size={22} />{goal.owner?.name ?? "–"}</span>], ["Team Members", <AvatarStack key="m" people={(goal.members ?? []).map((m) => m.user).filter(Boolean)} />]]} />
         {goal.description && <><h3 className="mt-4 text-sm font-bold text-ink">Description</h3><p className="mt-1 text-xs leading-5 text-ink-2">{goal.description}</p></>}
+        {canDelete && (
+          <div className="mt-4 border-t pt-3">
+            <DeleteButton
+              action={async () => { const r = await deleteGoal(goal.id); if (r.ok) await queryClient.invalidateQueries({ queryKey: ["goals"] }); return r; }}
+              noun="goal"
+              name={goal.title}
+              redirectTo="/goals"
+            />
+          </div>
+        )}
       </Card>
       <SectionCard title={`Milestones (${milestones.filter((m) => m.done).length}/${milestones.length} completed)`} action={canEdit ? <AddMilestone goalId={goal.id} /> : undefined}>
         {milestones.map((m) => <label key={m.id} className="flex items-center gap-2.5 py-1.5 text-xs">{canEdit ? <MilestoneCheck id={m.id} done={m.done} label={m.title} /> : <input type="checkbox" checked={m.done} readOnly className="size-4" />}<span className="flex-1 text-ink">{m.title}</span><span className="text-ink-muted">{formatShortDate(new Date(m.date))}</span></label>)}

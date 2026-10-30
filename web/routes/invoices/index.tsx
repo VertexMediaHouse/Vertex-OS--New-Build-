@@ -1,5 +1,5 @@
 // Ported from app/(app)/invoices/page.tsx: the Prisma work moved to server/routes/invoices.ts.
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleDollarSign, Clock, Download, ExternalLink, Maximize2, Plus, Users, Wallet } from "lucide-react";
 import { ActivityRow } from "@/components/shared/display";
 import { ClearFilters, FilterSelect, SearchInput } from "@/components/shared/filters";
@@ -10,14 +10,17 @@ import { FilterTabs, Pagination, UnderlineTabs } from "@/components/shared/nav";
 import { CompanyBadge, EnumPill, companyCode } from "@/components/shared/pills";
 import { Card, ProgressBar } from "@/components/shared/primitives";
 import { InvoiceActions } from "@/components/invoices/invoice-client";
+import { DeleteButton } from "@/components/shared/delete-button";
 import Link from "@/components/ui/link";
 import { now } from "@/lib/clock";
 import { logoColor } from "@/lib/chart-colors";
 import { formatDate, formatDaysLeft, formatMoney, formatRelative } from "@/lib/format";
 import { useSearchParams } from "@/lib/nav";
 import { INVOICE_STATUS } from "@/lib/status";
-import { API_URL, api, query } from "@/web/api";
+import { API_URL, api, call, query } from "@/web/api";
 import { useTitle } from "@/web/title";
+
+const deleteInvoice = (invoiceId: string) => call(api.api.invoices.delete.$post({ json: { invoiceId } }));
 
 export default function InvoicesPage() {
   useTitle("Invoices");
@@ -95,11 +98,12 @@ export default function InvoicesPage() {
 }
 
 function InvoicePanel({ id, tab, sp }: { id: string; tab: string; sp: Record<string, string> }) {
+  const queryClient = useQueryClient();
   const { data } = useQuery({ queryKey: ["invoices", "panel", id], queryFn: () => query(api.api.invoices[":id"].panel.$get({ param: { id } })) });
   if (!data) return <CardSkeleton className="h-96" />;
   if (!data.found) return null;
 
-  const { inv, notes, activity, canUpdate } = data;
+  const { inv, notes, activity, canUpdate, canDelete } = data;
   const t = now();
   const balance = Number(inv.total) - Number(inv.paidAmount);
   const pct = Number(inv.total) ? (Number(inv.paidAmount) / Number(inv.total)) * 100 : 0;
@@ -128,6 +132,16 @@ function InvoicePanel({ id, tab, sp }: { id: string; tab: string; sp: Record<str
             ]} />
             <div className="mt-3 flex items-center gap-3"><ProgressBar value={pct} /><span className="text-xs font-semibold">{Math.round(pct)}%</span></div>
             {canUpdate && <div className="mt-4"><InvoiceActions id={inv.id} status={inv.status} balance={balance} currency={inv.currency} /></div>}
+            {canDelete && (
+              <div className="mt-4 border-t pt-3">
+                <DeleteButton
+                  action={async () => { const r = await deleteInvoice(inv.id); if (r.ok) await queryClient.invalidateQueries({ queryKey: ["invoices"] }); return r; }}
+                  noun="invoice"
+                  name={`Invoice #${inv.number}`}
+                  redirectTo="/invoices"
+                />
+              </div>
+            )}
           </>
         )}
         {tab === "payments" && (inv.payments.length ? inv.payments.map((pm: any) => <div key={pm.id} className="flex justify-between border-b py-2 text-xs"><span>{formatDate(new Date(pm.date))} · {pm.method.replace("_", " ").toLowerCase()}{pm.reference && ` · ${pm.reference}`}</span><b>{formatMoney(pm.amount, inv.currency)}</b></div>) : <EmptyState title="No payments yet" />)}

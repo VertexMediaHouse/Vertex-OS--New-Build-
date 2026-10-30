@@ -9,7 +9,12 @@ function doPost(e) {
 function handleRequest(e) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const lock = LockService.getScriptLock();
-  lock.tryLock(10000);
+  // tryLock returns false on timeout instead of throwing; ignoring it meant a write
+  // proceeded with no lock held and two concurrent writers could interleave.
+  if (!lock.tryLock(10000)) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: "Busy, retry" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 
   try {
     const postData = e.postData ? JSON.parse(e.postData.contents) : null;
@@ -46,46 +51,6 @@ function handleRequest(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 2. SAVE / SYNC MODEL (legacy, full-table overwrite): kept for backward compat.
-    //    Prefer upsertRows/deleteRows below — syncTable wipes and rewrites the whole
-    //    tab, so two concurrent writers can clobber each other's rows.
-    if (action === "syncTable") {
-      const table = postData.table;
-      const rows = postData.rows; // Array of objects
-      if (!table || !Array.isArray(rows)) {
-        return ContentService.createTextOutput(JSON.stringify({ ok: false, error: "Invalid payload" }))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-
-      let sheet = ss.getSheetByName(table);
-      if (!sheet) {
-        sheet = ss.insertSheet(table);
-      }
-
-      if (rows.length === 0) {
-        return ContentService.createTextOutput(JSON.stringify({ ok: true }))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-
-      // Collect all keys as headers
-      const headers = Object.keys(rows[0]);
-      sheet.clearContents();
-      sheet.appendRow(headers);
-
-      const matrix = rows.map(r =>
-        headers.map(h => {
-          const val = r[h];
-          if (val && typeof val === "object") return JSON.stringify(val);
-          return val === undefined || val === null ? "" : val;
-        })
-      );
-
-      sheet.getRange(2, 1, matrix.length, headers.length).setValues(matrix);
-
-      return ContentService.createTextOutput(JSON.stringify({ ok: true, count: rows.length }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
     // 2b. UPSERT ROWS: update rows that already exist (by id), append new ones.
     //     Row-level — does not touch any row not included in the payload, so
     //     concurrent writers touching different rows don't clobber each other.
@@ -114,27 +79,44 @@ function handleRequest(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    // 3. SEED / INITIALIZE ALL TABLES AT ONCE
-    if (action === "seedAll") {
-      const allData = postData.data; // { clients: [...], tasks: [...] }
-      for (const [table, rows] of Object.entries(allData)) {
-        let sheet = ss.getSheetByName(table);
-        if (!sheet) sheet = ss.insertSheet(table);
-        if (Array.isArray(rows) && rows.length > 0) {
-          const headers = Object.keys(rows[0]);
-          sheet.clearContents();
-          sheet.appendRow(headers);
-          const matrix = rows.map(r =>
-            headers.map(h => {
-              const val = r[h];
-              if (val && typeof val === "object") return JSON.stringify(val);
-              return val === undefined || val === null ? "" : val;
-            })
-          );
-          sheet.getRange(2, 1, matrix.length, headers.length).setValues(matrix);
-        }
+    // 4. ENSURE COLUMNS: add any missing header cells to a tab, in place.
+    //    Existing headers keep their column positions and every data cell stays put —
+    //    new names are appended to the right of the header row only. Use this to bring
+    //    a tab up to the full row shape the app writes, instead of waiting for the
+    //    first write that happens to carry each field (see upsertRowsIntoSheet).
+    if (action === "ensureColumns") {
+      const spec = postData.tables; // { tableName: ["col", ...], ... }
+      if (!spec || typeof spec !== "object") {
+        return ContentService.createTextOutput(JSON.stringify({ ok: false, error: "Invalid payload" }))
+          .setMimeType(ContentService.MimeType.JSON);
       }
-      return ContentService.createTextOutput(JSON.stringify({ ok: true }))
+      const added = {};
+      for (const table in spec) {
+        const want = spec[table];
+        if (!Array.isArray(want) || want.length === 0) continue;
+        added[table] = ensureColumnsOnSheet(ss, table, want);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ ok: true, added }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 5. DROP COLUMNS: remove named columns from a tab, cells and all.
+    //    Used to clear out `_placeholder`, the marker an empty tab carried before it
+    //    had real columns. deleteColumns() moves every cell to its right across as one
+    //    operation, so rows stay aligned with their headers.
+    if (action === "dropColumns") {
+      const spec = postData.tables; // { tableName: ["col", ...], ... }
+      if (!spec || typeof spec !== "object") {
+        return ContentService.createTextOutput(JSON.stringify({ ok: false, error: "Invalid payload" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const dropped = {};
+      for (const table in spec) {
+        const cols = spec[table];
+        if (!Array.isArray(cols) || cols.length === 0) continue;
+        dropped[table] = dropColumnsOnSheet(ss, table, cols);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ ok: true, dropped }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -216,13 +198,25 @@ function deleteRowsFromSheet(ss, table, ids) {
   const idSet = new Set(ids.map(String));
   const idValues = sheet.getRange(2, idCol + 1, lastRow - 1, 1).getValues();
 
-  // Delete bottom-up so row numbers above the cursor stay valid as rows are removed.
+  // Collect the 1-based sheet rows to drop, then delete them as contiguous blocks.
+  // deleteRow() per row costs one Sheets API call each; deleteRows(start, n) folds a
+  // run into one. Still bottom-up, so row numbers above the cursor stay valid.
+  const targets = [];
+  for (let i = 0; i < idValues.length; i++) {
+    if (idSet.has(String(idValues[i][0]))) targets.push(i + 2);
+  }
+  if (targets.length === 0) return 0;
+
   let count = 0;
-  for (let i = idValues.length - 1; i >= 0; i--) {
-    if (idSet.has(String(idValues[i][0]))) {
-      sheet.deleteRow(i + 2);
-      count++;
-    }
+  for (let i = targets.length - 1; i >= 0; ) {
+    const end = targets[i];
+    // Walk down while the rows stay consecutive (targets is ascending).
+    let j = i;
+    while (j > 0 && targets[j - 1] === targets[j] - 1) j--;
+    const start = targets[j];
+    sheet.deleteRows(start, end - start + 1);
+    count += end - start + 1;
+    i = j - 1;
   }
   return count;
 }
@@ -230,4 +224,101 @@ function deleteRowsFromSheet(ss, table, ids) {
 function serializeCell(val) {
   if (val && typeof val === "object") return JSON.stringify(val);
   return val === undefined || val === null ? "" : val;
+}
+
+/**
+ * Adds any of `want` that the tab's header row doesn't already have, appending them
+ * to the right. Returns the names actually added.
+ *
+ * Deliberately never moves or rewrites an existing header: the column order in a tab
+ * is whatever past writes produced, and data cells are addressed by that order, so
+ * reordering here would silently shift every value into the wrong column.
+ *
+ * `_placeholder` is the marker an empty tab carries. Once a tab gains real columns the
+ * marker is meaningless, so it's dropped — but only when the tab holds no data rows,
+ * since removing a column from a populated tab would shift its cells.
+ */
+function ensureColumnsOnSheet(ss, table, want) {
+  let sheet = ss.getSheetByName(table);
+  if (!sheet) sheet = ss.insertSheet(table);
+
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  let headers = lastRow > 0 && lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+
+  // Trailing blanks are padding, not columns; drop them so new names land flush.
+  while (headers.length > 0 && String(headers[headers.length - 1]).trim() === "") headers.pop();
+
+  // An empty tab's "_placeholder" column has no meaning once real columns exist.
+  if (lastRow <= 1) {
+    const ph = headers.indexOf("_placeholder");
+    if (ph !== -1) {
+      sheet.clear();
+      headers.splice(ph, 1);
+    }
+  }
+
+  const seen = {};
+  for (let i = 0; i < headers.length; i++) seen[String(headers[i]).trim()] = true;
+
+  const added = [];
+  for (let i = 0; i < want.length; i++) {
+    const col = String(want[i]).trim();
+    if (col === "" || seen[col]) continue;
+    seen[col] = true;
+    headers.push(col);
+    added.push(col);
+  }
+
+  if (added.length > 0 || headers.length !== lastCol) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.setFrozenRows(1);
+  }
+  return added;
+}
+
+/**
+ * Deletes each of `drop` from the tab, by header name. Returns the names removed.
+ *
+ * Also clears rows that only ever existed to carry the marker: a `_placeholder` row
+ * has no value in any other column, so once the column goes it would linger as a blank
+ * record. Rows with content in any surviving column are never touched.
+ *
+ * Right-to-left: deleting a column renumbers the ones after it, so going left-to-right
+ * would delete the wrong column on the second pass.
+ */
+function dropColumnsOnSheet(ss, table, drop) {
+  const sheet = ss.getSheetByName(table);
+  if (!sheet) return [];
+
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  if (lastRow < 1 || lastCol < 1) return [];
+
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const targets = [];
+  for (let i = 0; i < headers.length; i++) {
+    if (drop.indexOf(String(headers[i]).trim()) !== -1) targets.push(i);
+  }
+  if (targets.length === 0) return [];
+
+  // Drop rows that are empty once these columns are gone, before the indices shift.
+  if (lastRow > 1) {
+    const body = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    for (let r = body.length - 1; r >= 0; r--) {
+      let hasOther = false;
+      for (let c = 0; c < body[r].length; c++) {
+        if (targets.indexOf(c) !== -1) continue;
+        if (String(body[r][c]).trim() !== "") { hasOther = true; break; }
+      }
+      if (!hasOther) sheet.deleteRow(r + 2);
+    }
+  }
+
+  const removed = [];
+  for (let i = targets.length - 1; i >= 0; i--) {
+    sheet.deleteColumns(targets[i] + 1, 1);
+    removed.push(String(headers[targets[i]]).trim());
+  }
+  return removed;
 }

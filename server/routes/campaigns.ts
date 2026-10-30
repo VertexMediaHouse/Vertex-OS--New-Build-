@@ -25,7 +25,7 @@ export const campaigns = new Hono<Env>()
   })
   .get("/:id", async (c) => {
     const campaign = await db.emailCampaign.findUnique({ where: { id: c.req.param("id") }, include: { recipients: { orderBy: { sentAt: "desc" }, take: 100 } } });
-    return c.json({ campaign });
+    return c.json({ campaign, canDelete: campaign ? can(c.get("user"), "delete", "campaign", campaign.companyId ?? undefined) : false });
   })
   .post("/", async (c) => {
     const user = c.get("user");
@@ -75,5 +75,23 @@ export const campaigns = new Hono<Env>()
         await tx.emailCampaign.update({ where: { id: r.campaignId }, data: { meetingsCount: { increment: 1 } } });
       }
     });
+    return c.json<ActionResult>({ ok: true });
+  })
+
+  .post("/delete", async (c) => {
+    const user = c.get("user");
+    const { campaignId } = await c.req.json<{ campaignId: string }>();
+    const campaign = await db.emailCampaign.findUniqueOrThrow({ where: { id: id.parse(campaignId) } });
+    assertCan(user, "delete", "campaign", campaign.companyId ?? undefined);
+    // A campaign that has gone out is a record of what was sent to whom; deleting it
+    // would drop the recipients' send/open/reply history with it.
+    if (campaign.sentCount > 0 || campaign.status === "ACTIVE") {
+      return c.json<ActionResult>({ ok: false, error: `${campaign.name} has already been sent to ${campaign.sentCount} recipient${campaign.sentCount === 1 ? "" : "s"}. Pause it instead.` });
+    }
+    await db.$transaction([
+      db.campaignRecipient.deleteMany({ where: { campaignId: campaign.id } }),
+      db.emailCampaign.delete({ where: { id: campaign.id } }),
+      db.activity.create({ data: { companyId: campaign.companyId, actorId: user.id, verb: "deleted", entityType: "CAMPAIGN", entityId: campaign.id, summary: `${user.name} deleted campaign ${campaign.name}` } }),
+    ]);
     return c.json<ActionResult>({ ok: true });
   });

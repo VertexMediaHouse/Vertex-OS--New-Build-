@@ -1,5 +1,12 @@
-// Direct Google Sheets Integration using Web App webhook.
-// Provides zero-auth direct reading and writing to Google Sheets.
+// Google Sheets integration.
+//
+// Reads go through the CSV export endpoint (./csv.ts) — ~0.6s, served from Google's
+// edge. Writes stay on the Apps Script web app, which has no CSV equivalent.
+//
+// The Apps Script `getAll` is kept only as a fallback for when GOOGLE_SHEET_ID isn't
+// set or the sheet isn't link-viewable: it measured 16.0s for 149 rows across 45 tabs
+// (~350ms per tab of RPC overhead, independent of row count).
+import { fetchTablesCsv, isCsvConfigured } from "./csv";
 
 export function isSheetsConfigured(): boolean {
   return Boolean(process.env.GOOGLE_SHEET_WEBAPP_URL);
@@ -36,7 +43,21 @@ export function serializeRowForSheet(row: Record<string, any>): Record<string, a
 /**
  * Fetches all sheets and rows from the Google Sheet.
  */
-export async function fetchAllFromSheets(): Promise<Record<string, any[]> | null> {
+/**
+ * Reads the given tabs (all known tables by default) into `{ table: rows }`.
+ *
+ * Prefers the CSV endpoint. Callers should pass just the tabs they need: 4 tabs land
+ * in ~0.6s, while all 44 at once take ~9s because Google throttles the concurrency.
+ */
+export async function fetchAllFromSheets(tables?: string[]): Promise<Record<string, any[]> | null> {
+  if (isCsvConfigured() && tables?.length) {
+    const data = await fetchTablesCsv(tables);
+    // A partial result still beats a 16s round trip; an empty one means every tab
+    // failed (sheet went private, network down), so fall through to Apps Script.
+    if (Object.keys(data).length > 0) return data;
+    console.warn("[sheets] CSV read returned nothing; falling back to Apps Script");
+  }
+
   if (!isSheetsConfigured()) return null;
   const url = getUrl();
 

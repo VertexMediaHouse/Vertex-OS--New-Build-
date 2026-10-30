@@ -1,5 +1,6 @@
 // Ported from app/(app)/campaigns/page.tsx.
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { DeleteButton } from "@/components/shared/delete-button";
 import { CalendarCheck, Mail, MailOpen, Plus, Reply, Send } from "lucide-react";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { CardSkeleton, EmptyState, PageHeader, SidePanel } from "@/components/shared/layout";
@@ -9,10 +10,12 @@ import { CampaignStatusButtons, RecipientButtons } from "@/components/campaigns/
 import Link from "@/components/ui/link";
 import { formatDate } from "@/lib/format";
 import { useSearchParams } from "@/lib/nav";
-import { api, query } from "@/web/api";
+import { api, call, query } from "@/web/api";
 import { useTitle } from "@/web/title";
 
 const TONE = { DRAFT: "neutral", SCHEDULED: "info", ACTIVE: "success", PAUSED: "warning", COMPLETED: "info" } as const;
+
+const deleteCampaign = (campaignId: string) => call(api.api.campaigns.delete.$post({ json: { campaignId } }));
 
 export default function CampaignsPage() {
   useTitle("Email Campaigns");
@@ -54,6 +57,7 @@ export default function CampaignsPage() {
 }
 
 function CampaignPanel({ id }: { id: string }) {
+  const queryClient = useQueryClient();
   const { data } = useQuery({ queryKey: ["campaigns", "detail", id], queryFn: () => query(api.api.campaigns[":id"].$get({ param: { id } })) });
   const c = data?.campaign;
   if (!c) return null;
@@ -65,6 +69,16 @@ function CampaignPanel({ id }: { id: string }) {
       <ul className="divide-y text-xs">
         {c.recipients.map((r: any) => <li key={r.id} className="flex items-center gap-2 py-2"><span className="min-w-0 flex-1 truncate">{r.name ?? r.email}<span className="block text-2xs text-ink-muted">{r.email}</span></span><StatusPill size="xs" dot={false} label={r.status.toLowerCase()} tone={r.status === "REPLIED" ? "success" : r.status === "OPENED" ? "info" : r.status === "BOUNCED" ? "danger" : "neutral"} /><RecipientButtons id={r.id} replied={Boolean(r.repliedAt)} meeting={Boolean(r.meetingBookedAt)} /></li>)}
       </ul>
+      {data?.canDelete && (
+        <div className="mt-4 border-t pt-3">
+          <DeleteButton
+            action={async () => { const r = await deleteCampaign(c.id); if (r.ok) await queryClient.invalidateQueries({ queryKey: ["campaigns"] }); return r; }}
+            noun="campaign"
+            name={c.name}
+            redirectTo="/campaigns"
+          />
+        </div>
+      )}
     </SidePanel>
   );
 }

@@ -7,12 +7,15 @@ import { CardSkeleton, EmptyState, KeyValue } from "@/components/shared/layout";
 import { CompanyBadges, EnumPill } from "@/components/shared/pills";
 import { Avatar, Card, ProgressBar, SectionCard } from "@/components/shared/primitives";
 import { ClientFormDialog } from "@/components/clients/client-form";
+import { DeleteButton } from "@/components/shared/delete-button";
 import Link from "@/components/ui/link";
 import { now } from "@/lib/clock";
 import { formatDate, formatFileSize, formatINR, formatRelative } from "@/lib/format";
 import { CLIENT_STATUS, INVOICE_STATUS, PROJECT_STATUS } from "@/lib/status";
-import { api, query } from "@/web/api";
+import { api, call, query } from "@/web/api";
 import { useTitle } from "@/web/title";
+
+const deleteClient = (clientId: string) => call(api.api.clients.delete.$post({ json: { clientId } }));
 
 export default function ClientDetailPage() {
   const { id = "" } = useParams();
@@ -20,7 +23,7 @@ export default function ClientDetailPage() {
   useTitle(data?.client.name ?? "Client");
 
   if (!data) return <CardSkeleton className="h-96" />;
-  const { client, activity, notes, owners, color, billed, editable, editableCompanies } = data;
+  const { client, activity, notes, owners, color, billed, editable, editableCompanies, canDelete } = data;
   const t = now();
   const codes = client.companies.map((c: any) => (c.companyId === "vmh" ? "VMH" : "VTH") as "VMH" | "VTH").sort();
   const revenue = client.projects.reduce((a: any, p: any) => a + Number(p.value), 0);
@@ -43,14 +46,17 @@ export default function ClientDetailPage() {
           <div><p className="text-xl font-bold text-ink">{formatINR(revenue)}</p><p className="text-2xs text-ink-muted">Project value</p></div>
           <div><p className="text-xl font-bold text-ink">{formatINR(billed)}</p><p className="text-2xs text-ink-muted">Invoiced</p></div>
         </div>
-        {editable && (
-          <ClientFormDialog
-            // Every company the user may edit, so a company can be added here too.
-            companies={editableCompanies}
-            owners={owners}
-            client={{ id: client.id, name: client.name, domain: client.domain ?? "", type: client.type ?? "", status: client.status as "ACTIVE", companies: client.companies.map((c: any) => c.companyId as "vmh"), ownerId: client.ownerId ?? "", tags: client.tags, notes: client.notes ?? "", address: client.address ?? "" }}
-          />
-        )}
+        <div className="flex items-center gap-2">
+          {editable && (
+            <ClientFormDialog
+              // Every company the user may edit, so a company can be added here too.
+              companies={editableCompanies}
+              owners={owners}
+              client={{ id: client.id, name: client.name, domain: client.domain ?? "", type: client.type ?? "", status: client.status as "ACTIVE", companies: client.companies.map((c: any) => c.companyId as "vmh"), ownerId: client.ownerId ?? "", tags: client.tags, notes: client.notes ?? "", address: client.address ?? "" }}
+            />
+          )}
+          {canDelete && <DeleteButton action={() => deleteClient(client.id)} noun="client" name={client.name} redirectTo="/clients" />}
+        </div>
       </Card>
 
       <div className="grid gap-3.5 xl:grid-cols-3">

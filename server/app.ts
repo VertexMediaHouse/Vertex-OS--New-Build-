@@ -70,7 +70,15 @@ base.onError((err, c) => {
   return c.json({ ok: false, error: "Something went wrong." }, 500);
 });
 
-base.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+// A cold isolate has an empty store (Sheets is the only source of truth and there's
+// no disk cache on Workers), so the user/session/account rows the handler is about to
+// look up may not be loaded yet. Awaiting is ~0.6s via the CSV endpoint and only
+// happens once per isolate; without it the first login on a cold start fails.
+base.on(["GET", "POST"], "/api/auth/*", async (c) => {
+  const { ensureAuthTables } = await import("@/lib/db");
+  await ensureAuthTables();
+  return auth.handler(c.req.raw);
+});
 
 export const app = base
   .get("/api/health", (c) => c.json({ ok: true as const }))

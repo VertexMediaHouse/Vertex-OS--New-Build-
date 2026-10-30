@@ -125,6 +125,9 @@ export const clients = new Hono<Env>()
       color: logoColor(client.name),
       billed: Number(invoiced._sum.total ?? 0),
       editable: client.companies.every((x: any) => can(user, "update", "client", x.companyId)),
+      // Same rule as editable: the right has to hold for every company the client is
+      // filed under, so a VMH-only manager can't delete a client shared with VTH.
+      canDelete: client.companies.every((x: any) => can(user, "delete", "client", x.companyId)),
       editableCompanies: companyIds.filter((x): x is "vmh" | "vth" => can(user, "update", "client", x)),
     });
   })
